@@ -16,16 +16,15 @@ readme = "README.md"
 dependencies = []
 
 [project.optional-dependencies]
-dev = [
-    "pre-commit>=3.3.3",
-]
+dev = ["pre-commit>=3.3.3"]
 
 [project.urls]
 homepage = "https://github.com/randolf-scholz/assorted-hooks"
 documentation = "https://github.com/randolf-scholz/assorted-hooks"
 repository = "https://github.com/randolf-scholz/assorted-hooks"
 
-
+[project.scripts]
+imported-attributes = "assorted_hooks.imported_attributes:main"
 
 
 # region flake8 configuration ----------------------------------------------------------

@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/pre-commit-hooks.iml" filepath="$PROJECT_DIR$/.idea/pre-commit-hooks.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/assorted-hooks.iml" filepath="$PROJECT_DIR$/.idea/assorted-hooks.iml" />
     </modules>
   </component>
 </project>

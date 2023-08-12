@@ -1,0 +1,6 @@
+- id: "imported-attributes"
+  name: "imported-attributes"
+  description: "Check for directly imported attributes."
+  entry: imported-attributes
+  language: python
+  types: [python]

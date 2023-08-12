@@ -145,7 +145,7 @@ def main() -> None:
         description="Apply a script to files matched by fnmatch patterns in the current working directory."
     )
     parser.add_argument(
-        "files", nargs="+", help="One or multiple files or file patterns."
+        "files", nargs="+", help="One or multiple files, folders or file patterns."
     )
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
@@ -157,7 +157,10 @@ def main() -> None:
         # case: file
         path = Path(file_or_pattern).absolute()
         if path.exists():
-            files.append(path)
+            if path.is_file():
+                files.append(path)
+            if path.is_dir():
+                files.extend(path.glob("**/*.py"))
             continue
         else:
             matches = list(root.glob(file_or_pattern))
@@ -166,6 +169,11 @@ def main() -> None:
                     f"Pattern {file_or_pattern!r} did not match any files."
                 )
             files.extend(matches)
+
+    if args.debug:
+        print("Files:")
+        for file in files:
+            print(f"  {file!s}:0")
 
     # apply script to all files
     passed = True
