@@ -17,5 +17,11 @@ def foo(x: Sequence) -> Sequence:
 
 ## jupyter-clear-output
 
-This hook clears the output of jupyter notebooks. This is useful to avoid large diffs in commits. Use the `files` 
+This hook clears the output of jupyter notebooks. This is useful to avoid large diffs in commits. Use the `files`
 and `exclude` configuration options to specify which notebooks should be spared.
+
+## validate-version
+
+Verifies that the version in `pyproject.toml` adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/).
+
+Details: https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions

@@ -11,6 +11,16 @@ Example:
     Would raise an error because `pd.DataFrame` shadows directly imported `DataFrame`.
 """
 
+__all__ = [
+    "get_attributes",
+    "get_full_attribute_parent",
+    "get_imported_symbols",
+    "get_imported_attributes",
+    "check_file",
+    "main",
+]
+
+
 import argparse
 import ast
 import sys
@@ -24,35 +34,6 @@ def get_attributes(tree: AST, /) -> Iterator[Attribute]:
     for node in ast.walk(tree):
         if isinstance(node, Attribute):
             yield node
-
-
-def get_type_hints(tree: AST, /) -> Iterator[AST]:
-    """Get all nodes that are type hints."""
-    for node in ast.walk(tree):
-        ann = getattr(node, "annotation", None)
-        if ann is not None:
-            yield ann
-
-
-def get_attrs_shadow_imported(tree: AST, /) -> Iterator[Attribute]:
-    """Get attribute nodes that shadow directly imported symbols."""
-    imported_symbols = get_imported_symbols(tree)
-
-    # for node in get_type_hints(tree):
-    for node in get_attributes(tree):
-        if node.attr in imported_symbols:
-            yield node
-
-
-def get_full_attribute_string(node: Attribute, /) -> str:
-    """Get the parent of an attribute node."""
-    if isinstance(node.value, Attribute):
-        return get_full_attribute_string(node.value) + "." + node.attr
-
-    if not isinstance(node.value, Name):
-        raise ValueError(f"Expected ast.Name, got {type(node.value)}")
-
-    return node.value.id + "." + node.attr
 
 
 def get_full_attribute_parent(node: Attribute | Name, /) -> tuple[Name, str]:
@@ -86,9 +67,7 @@ def get_imported_symbols(tree: AST, /) -> dict[str, str]:
     return imported_symbols
 
 
-def get_imported_attributes(
-    tree: AST, /, debug: bool = False
-) -> Iterator[tuple[Attribute, Name, str]]:
+def get_imported_attributes(tree: AST, /) -> Iterator[tuple[Attribute, Name, str]]:
     """Finds attributes that can be replaced by directly imported symbols."""
     imported_symbols = get_imported_symbols(tree)
 
@@ -113,7 +92,7 @@ def get_imported_attributes(
                 yield node, parent, string
 
 
-def detect_in_file(file_path: Path, /, debug: bool = False) -> bool:
+def check_file(file_path: Path, /, debug: bool = False) -> bool:
     """Finds shadowed attributes in a file."""
     # Your code here
     with open(file_path, "r") as file:
@@ -178,7 +157,7 @@ def main() -> None:
     # apply script to all files
     passed = True
     for file in files:
-        passed &= detect_in_file(file, debug=args.debug)
+        passed &= check_file(file, debug=args.debug)
 
     if not passed:
         sys.exit(1)

@@ -11,3 +11,8 @@
   entry: jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace
   language: python
   types: [jupyter]
+- id: validate-version-pyproject
+  name: validate-version-pyproject
+  description: "Validate python version. "
+  entry: validate-version
+  language: python

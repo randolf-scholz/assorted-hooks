@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 requires-python = ">=3.11"
 name = "assorted-hooks"
-version = "0.1.0"
+version = "0.1.2"
 
 authors = [{name="Randolf Scholz", email="randolf.scholz@gmail.com"},]
 description = "Custom pre-commit hooks"
@@ -25,7 +25,7 @@ repository = "https://github.com/randolf-scholz/assorted-hooks"
 
 [project.scripts]
 imported-attributes = "assorted_hooks.imported_attributes:main"
-
+validate-version = "assorted_hooks.validate_version:main"
 
 # region flake8 configuration ----------------------------------------------------------
 [tool.flake8]
