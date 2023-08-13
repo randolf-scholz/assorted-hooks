@@ -16,3 +16,4 @@
   description: "Validate python version."
   entry: validate-version
   language: python
+  files: ^pyproject\.toml$
