@@ -9,7 +9,7 @@ __all__ = [
     "VERSION_PATTERN",
     "VERSION_REGEX",
     "validate_version",
-    "get_version_from_pyproject_toml",
+    "process_pyproject",
     "main",
 ]
 
@@ -56,23 +56,35 @@ VERSION_REGEX = re.compile(
 )
 
 
-def get_version_from_pyproject_toml() -> str:
+def get_version(pyproject: dict, /) -> str:
     """Get the version from pyproject.toml."""
-    with open("pyproject.toml", "rb") as f:
-        toml = tomllib.load(f)
+    try:
+        project_version = pyproject["project"]["version"]
+    except KeyError:
+        project_version = None
 
-    version = NotImplemented
+    try:
+        poetry_version = pyproject["tool"]["poetry"]["version"]
+    except KeyError:
+        poetry_version = None
 
-    if "project" in toml:
-        version = toml["project"].get("version", NotImplemented)
-
-    if version is NotImplemented and "tool" in toml and "poetry" in toml["tool"]:
-        version = toml["tool"]["poetry"].get("version", NotImplemented)
-
-    if version is NotImplemented:
-        raise ValueError("Cannot find version in pyproject.toml.")
-
-    return version
+    match project_version, poetry_version:
+        case None, None:
+            raise ValueError("Cannot find version in pyproject.toml.")
+        case str(), None:
+            return project_version
+        case None, str():
+            return poetry_version
+        case str(), str():
+            if project_version != poetry_version:
+                raise ValueError(
+                    "Version in pyproject.toml is ambiguous!"
+                    f" Found project.version={project_version!r}"
+                    f" and tool.poetry.version={poetry_version!r}."
+                )
+            return project_version
+        case _:
+            raise TypeError(f"Unexpected types, expected str..")
 
 
 def validate_version(version: str, /, *, debug: bool = False) -> None:
@@ -91,15 +103,35 @@ def validate_version(version: str, /, *, debug: bool = False) -> None:
         raise ValueError(f"Invalid version string: {version!r}.")
 
 
+def process_pyproject(fname: str, /, *, debug: bool = False) -> None:
+    """Get the version from pyproject.toml."""
+    with open(fname, "rb") as file:
+        toml = tomllib.load(file)
+
+    version = get_version(toml)
+    validate_version(version, debug=debug)
+
+
 def main() -> None:
     """Main program."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("--debug", action="store_true")
+    # optional single argument specifying the pyproject.toml file
+    parser.add_argument(
+        "file",
+        nargs="?",
+        default="pyproject.toml",
+        type=str,
+        help="The path to the pyproject.toml file.",
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Print debug information.",
+    )
     args = parser.parse_args()
 
-    # find version
-    version = get_version_from_pyproject_toml()
-    validate_version(version, debug=args.debug)
+    # run script
+    process_pyproject(args.file, debug=args.debug)
 
 
 if __name__ == "__main__":

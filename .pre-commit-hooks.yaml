@@ -1,7 +1,7 @@
-- id: imported-attributes
-  name: imported-attributes
+- id: check-imported-attributes
+  name: check-imported-attributes
+  entry: check-imported-attributes
   description: "Check for directly imported attributes."
-  entry: imported-attributes
   language: python
   types: [python]
 - id: jupyter-clear-output
@@ -11,9 +11,16 @@
   entry: jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace
   language: python
   types: [jupyter]
-- id: validate-version
-  name: validate-version
-  description: "Validate python version."
-  entry: validate-version
+- id: pyproject-validate-version
+  name: pyproject-validate-version
+  entry: pyproject-validate-version
+  description: "Validate python version (PEP-440)."
   language: python
   files: ^pyproject\.toml$
+- id: pyproject-update-deps
+  name: pyproject-update-deps
+  entry: pyproject-update-deps
+  description: "Update dependencies to >=currently_installed. (default: manual)"
+  language: python
+  files: ^pyproject\.toml$
+  stages: [manual]

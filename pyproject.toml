@@ -24,8 +24,9 @@ documentation = "https://github.com/randolf-scholz/assorted-hooks"
 repository = "https://github.com/randolf-scholz/assorted-hooks"
 
 [project.scripts]
-imported-attributes = "assorted_hooks.imported_attributes:main"
-validate-version = "assorted_hooks.validate_version:main"
+check-imported-attributes = "assorted_hooks.check_imported_attributes:main"
+pyproject-validate-version = "assorted_hooks.pyproject_validate_version:main"
+pyproject-update-deps = "assorted_hooks.pyproject_update_deps:main"
 
 # region flake8 configuration ----------------------------------------------------------
 [tool.flake8]
