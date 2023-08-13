@@ -14,3 +14,8 @@ def foo(x: Sequence) -> Sequence:
     assert isinstance(x, abc.Sequence)  # <- use Sequence instead of abc.Sequence
     return x
 ```
+
+## jupyter-clear-output
+
+This hook clears the output of jupyter notebooks. This is useful to avoid large diffs in commits. Use the `files` 
+and `exclude` configuration options to specify which notebooks should be spared.

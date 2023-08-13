@@ -1,6 +1,13 @@
-- id: "imported-attributes"
-  name: "imported-attributes"
+- id: imported-attributes
+  name: imported-attributes
   description: "Check for directly imported attributes."
   entry: imported-attributes
   language: python
   types: [python]
+- id: jupyter-clear-output
+  name: jupyter-clear-output
+  description: "Remove output from jupyter notebooks."
+  additional_dependencies: [jupyter, nbconvert]
+  entry: jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace
+  language: python
+  types: [jupyter]
