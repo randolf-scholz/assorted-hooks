@@ -19,7 +19,7 @@
   files: ^pyproject\.toml$
 - id: pyproject-update-deps
   name: pyproject-update-deps
-  entry: "./src/assorted_hooks/pyproject_check_dependencies.py"
+  entry: "./src/assorted_hooks/pyproject_update_dependencies.py"
   description: "Update dependencies to >=currently_installed. (default: manual)"
   language: script
   files: ^pyproject\.toml$
