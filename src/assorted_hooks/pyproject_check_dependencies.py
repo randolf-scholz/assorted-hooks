@@ -23,7 +23,7 @@ import tomllib
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Mapping, NamedTuple
+from typing import Any, NamedTuple
 
 
 def get_deps_import(node: ast.Import, /) -> set[str]:
@@ -101,9 +101,7 @@ def get_deps_module(module: str | ModuleType, /, *, silent: bool = True) -> set[
     return dependencies
 
 
-def get_deps_pyproject_section(
-    config: Mapping[str, Any], /, *, section: str
-) -> set[str]:
+def get_deps_pyproject_section(config: dict[str, Any], /, *, section: str) -> set[str]:
     """Get the dependencies from a section of pyproject.toml.
 
     Looking up the section must either result in a list of strings or a dict.
@@ -116,7 +114,7 @@ def get_deps_pyproject_section(
 
     match config:
         case list() as lst:  # type: ignore[unreachable]
-            # assume format `"pacakge<comparator>version"`
+            # assume format `"package<comparator>version"`
             regex = re.compile(r"[a-zA-Z0-9_-]*")  # type: ignore[unreachable]
             return {re.search(regex, dep).group() for dep in lst}
         case dict() as dct:
