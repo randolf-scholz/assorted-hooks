@@ -9,12 +9,37 @@ repos:
     hooks:
       - id: check-imported-attributes
         name: check-imported-attributes
-        description: "Check for directly imported attributes."
-        files: (^src/|^tests/)
-        stages: [commit]
-        types: [python]
-        language: system
         entry: check-imported-attributes
+        description: "Check for directly imported attributes."
+        language: python
+        types: [python]
+      - id: jupyter-clear-output
+        name: jupyter-clear-output
+        description: "Remove output from jupyter notebooks."
+        additional_dependencies: [jupyter, nbconvert]
+        entry: jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace
+        language: python
+        types: [jupyter]
+      - id: pyproject-validate-version
+        name: pyproject-validate-version
+        entry: pyproject-validate-version
+        description: "Validate python version (PEP-440)."
+        language: python
+        files: ^pyproject\.toml$
+      - id: pyproject-update-deps
+        name: pyproject-update-deps
+        entry: pyproject-update-deps
+        description: "Update dependencies to >=currently_installed. (default: manual)"
+        language: python
+        files: ^pyproject\.toml$
+        stages: [manual]
+      - id: pyproject-check-deps
+        name: pyproject-check-deps
+        # entry: python -m assorted_hooks.pyproject_check_dependencies
+        entry: "./src/assorted_hooks/pyproject_check_dependencies.py"
+        description: "Check that listed dependencies are used in code and vice-versa."
+        language: script
+        files: ^pyproject\.toml$
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:

@@ -29,14 +29,16 @@ if sys.version_info >= (3, 10):
     import importlib.metadata as metadata
 else:
     try:
-        import importlib.metadata as metadata
+        metadata = importlib.import_module("importlib_metadata")
     except ImportError as E:
         raise ImportError(
             "This pre-commit hook runs in the local interpreter and requires"
             " the `importlib_metadata` package for python versions < 3.10."
         ) from E
 
-PACKAGES: dict[str, list[str]] = metadata.packages_distributions()  # type:ignore[assignment]
+PACKAGES: dict[
+    str, list[str]
+] = metadata.packages_distributions()  # type:ignore[assignment]
 """A dictionary that maps module names to their pip-package names."""
 
 # NOTE: illogical type hint in stdlib, maybe open issue.
@@ -284,14 +286,19 @@ def collect_dependencies(fname: str | Path, /, raise_notfound: bool = True) -> s
     """Collect the third-party dependencies from files in the given path."""
     path = Path(fname)
     dependencies = set()
-    if not path.exists():  # assume module
-        dependencies |= get_deps_module(str(fname))
-    elif path.is_file():  # Single file
+
+    if path.is_file():  # Single file
         dependencies |= get_deps_file(path)
     elif path.is_dir():  # Directory
         for file_path in path.rglob("*.py"):
             if file_path.is_file():
                 dependencies |= get_deps_file(file_path)
+    elif not path.exists():  # assume module
+        try:
+            dependencies |= get_deps_module(str(fname))
+        except ModuleNotFoundError as exc:
+            if raise_notfound:
+                raise exc
     elif raise_notfound:
         raise FileNotFoundError(f"Invalid path: {path}")
 
@@ -330,6 +337,9 @@ def validate_dependencies(
             f"\nImported dependencies not listed in pyproject.toml: {missing_deps}."
             f"\nUnused dependencies listed in pyproject.toml: {unused_deps}."
             f"\nUnknown dependencies: {unknown_deps}."
+            f"\n"
+            f"\nOptional dependencies are currently not supported (PR welcome)."
+            f"\nWorkaround: use `importlib.import_module('optional_dependency')`."
         )
 
 
