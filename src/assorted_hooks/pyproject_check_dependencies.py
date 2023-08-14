@@ -358,8 +358,7 @@ def validate_dependencies(
     *,
     pyproject_dependencies: set[str],
     imported_dependencies: set[str],
-    raise_unused_dependencies: bool = True,
-) -> None:
+) -> tuple[set[str], set[str], set[str]]:
     """Validate the dependencies."""
     # extract 3rd party dependencies.
     imported_dependencies = group_dependencies(
@@ -388,16 +387,7 @@ def validate_dependencies(
     missing_deps = imported_deps - pyproject_deps
     unused_deps = pyproject_deps - imported_deps
 
-    if missing_deps or unknown_deps or (unused_deps and raise_unused_dependencies):
-        raise ValueError(
-            f"Found discrepancy between imported dependencies and pyproject.toml!"
-            f"\nImported dependencies not listed in pyproject.toml: {missing_deps}."
-            f"\nUnused dependencies listed in pyproject.toml: {unused_deps}."
-            f"\nUnknown dependencies: {unknown_deps}."
-            f"\n"
-            f"\nNOTE: Optional dependencies are currently not supported (PR welcome)."
-            f"\nNOTE: Workaround: use `importlib.import_module('optional_dependency')`."
-        )
+    return missing_deps, unused_deps, unknown_deps
 
 
 def main() -> None:
@@ -455,8 +445,8 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    # get the project name
-    project_name = get_name_pyproject(args.pyproject_file)
+    # get the normalized project name
+    project_name = normalize_dep_name(get_name_pyproject(args.pyproject_file))
 
     # compute the dependencies from the source files
     modules_given = args.modules is not modules_default
@@ -467,14 +457,25 @@ def main() -> None:
         )
     )
     # ignore the project name
-    imported_dependencies -= {normalize_dep_name(project_name)}
+    imported_dependencies -= {project_name}
     # get dependencies from pyproject.toml
     pyproject_dependencies = get_deps_pyproject(args.pyproject_file)
     # validate the dependencies
-    validate_dependencies(
+    missing_deps, unused_deps, unknown_deps = validate_dependencies(
         pyproject_dependencies=pyproject_dependencies,
         imported_dependencies=imported_dependencies,
     )
+    if missing_deps or unknown_deps or (unused_deps and args.error_unused_project_deps):
+        raise ValueError(
+            f"Found discrepancy between imported dependencies and pyproject.toml!"
+            f"\nImported dependencies not listed in pyproject.toml: {missing_deps}."
+            f"\nUnused dependencies listed in pyproject.toml: {unused_deps}."
+            f"\nUnknown dependencies: {unknown_deps}."
+            f"\n"
+            f"\nNOTE: Optional dependencies are currently not supported (PR welcome)."
+            f"\nNOTE: Workaround: use `importlib.import_module('optional_dependency')`."
+        )
+
     # compute the test dependencies from the test files
     tests_given = args.tests is not tests_default
     imported_test_dependencies = set().union(
@@ -483,15 +484,29 @@ def main() -> None:
             for fname in args.tests
         )
     )
-    # ignore the project name
-    imported_test_dependencies -= {normalize_dep_name(project_name)}
+    # ignore the project dependencies
+    imported_test_dependencies -= imported_dependencies | {project_name}
     # get dependencies from pyproject.toml
     pyproject_test_dependencies = get_deps_pyproject(args.pyproject_file)
     # validate the dependencies
-    validate_dependencies(
+    missing_test_deps, unused_test_deps, unknown_test_deps = validate_dependencies(
         pyproject_dependencies=pyproject_test_dependencies,
         imported_dependencies=imported_test_dependencies,
     )
+    if (
+        missing_test_deps
+        or unknown_test_deps
+        or (unused_test_deps and args.error_unused_test_deps)
+    ):
+        raise ValueError(
+            f"Found discrepancy between imported test dependencies and pyproject.toml!"
+            f"\nImported test dependencies not listed in pyproject.toml: {missing_deps}."
+            f"\nUnused test dependencies listed in pyproject.toml: {unused_deps}."
+            f"\nUnknown test dependencies: {unknown_deps}."
+            f"\n"
+            f"\nNOTE: Optional dependencies are currently not supported (PR welcome)."
+            f"\nNOTE: Workaround: use `importlib.import_module('optional_dependency')`."
+        )
 
 
 if __name__ == "__main__":
