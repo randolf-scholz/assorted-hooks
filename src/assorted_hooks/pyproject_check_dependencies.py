@@ -11,7 +11,7 @@ __all__ = [
     "get_deps_module",
     "get_deps_pyproject",
     "get_deps_pyproject_section",
-    "get_deps_pyproject_test",
+    "get_deps_test_pyproject",
     "get_deps_tree",
     "get_name_pyproject",
     "group_dependencies",
@@ -238,7 +238,7 @@ def get_deps_pyproject(fname: str | Path = "pyproject.toml", /) -> set[str]:
     return project_dependencies
 
 
-def get_deps_pyproject_test(fname: str | Path = "pyproject.toml", /) -> set[str]:
+def get_deps_test_pyproject(fname: str | Path = "pyproject.toml", /) -> set[str]:
     """Extract the test dependencies from a pyproject.toml file."""
     with open(fname, "rb") as file:
         pyproject = tomllib.load(file)
@@ -455,6 +455,9 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    # get the project name
+    project_name = get_name_pyproject(args.pyproject_file)
+
     # compute the dependencies from the source files
     modules_given = args.modules is not modules_default
     imported_dependencies = set().union(
@@ -464,7 +467,7 @@ def main() -> None:
         )
     )
     # ignore the project name
-    imported_dependencies -= {get_name_pyproject(args.pyproject_file)}
+    imported_dependencies -= {normalize_dep_name(project_name)}
     # get dependencies from pyproject.toml
     pyproject_dependencies = get_deps_pyproject(args.pyproject_file)
     # validate the dependencies
@@ -472,7 +475,6 @@ def main() -> None:
         pyproject_dependencies=pyproject_dependencies,
         imported_dependencies=imported_dependencies,
     )
-
     # compute the test dependencies from the test files
     tests_given = args.tests is not tests_default
     imported_test_dependencies = set().union(
@@ -482,7 +484,7 @@ def main() -> None:
         )
     )
     # ignore the project name
-    imported_test_dependencies -= {get_name_pyproject(args.pyproject_file)}
+    imported_test_dependencies -= {normalize_dep_name(project_name)}
     # get dependencies from pyproject.toml
     pyproject_test_dependencies = get_deps_pyproject(args.pyproject_file)
     # validate the dependencies
