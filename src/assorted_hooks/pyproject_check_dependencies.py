@@ -443,11 +443,32 @@ def main() -> None:
         action="store_true",
         help="Print debug information.",
     )
+    parser.add_argument(
+        "--ignore-imported",
+        default=[],
+        nargs="*",
+        type=str,
+        help="list of import dependencies to ignore",
+    )
+    parser.add_argument(
+        "--ignore-listed",
+        default=[],
+        nargs="*",
+        type=str,
+        help="list of pyproject dependencies to ignore",
+    )
+    parser.add_argument(
+        "--ignore-listed-test",
+        default=[],
+        nargs="*",
+        type=str,
+        help="list of pyproject test dependencies to ignore",
+    )
     args = parser.parse_args()
 
     # get the normalized project name
     project_name = normalize_dep_name(get_name_pyproject(args.pyproject_file))
-
+    excluded_dependencies = {project_name} | set(args.ignore_imported)
     # compute the dependencies from the source files
     modules_given = args.modules is not modules_default
     imported_dependencies = set().union(
@@ -456,10 +477,12 @@ def main() -> None:
             for fname in args.modules
         )
     )
-    # ignore the project name
-    imported_dependencies -= {project_name}
+    # ignore the excluded dependencies
+    imported_dependencies -= excluded_dependencies
     # get dependencies from pyproject.toml
     pyproject_dependencies = get_deps_pyproject(args.pyproject_file)
+    # remove ignored dependencies
+    pyproject_dependencies -= set(args.ignore_listed)
     # validate the dependencies
     missing_deps, unused_deps, unknown_deps = validate_dependencies(
         pyproject_dependencies=pyproject_dependencies,
@@ -476,7 +499,10 @@ def main() -> None:
             f"\nNOTE: Workaround: use `importlib.import_module('optional_dependency')`."
         )
 
+    # ---------------------------------------------------------------------------------------------
+
     # compute the test dependencies from the test files
+    excluded_dependencies |= imported_dependencies
     tests_given = args.tests is not tests_default
     imported_test_dependencies = set().union(
         *(
@@ -484,10 +510,12 @@ def main() -> None:
             for fname in args.tests
         )
     )
-    # ignore the project dependencies
-    imported_test_dependencies -= imported_dependencies | {project_name}
+    # ignore the excluded dependencies
+    imported_test_dependencies -= excluded_dependencies
     # get dependencies from pyproject.toml
-    pyproject_test_dependencies = get_deps_pyproject(args.pyproject_file)
+    pyproject_test_dependencies = get_deps_test_pyproject(args.pyproject_file)
+    # remove ignored dependencies
+    pyproject_test_dependencies -= set(args.ignore_listed_test)
     # validate the dependencies
     missing_test_deps, unused_test_deps, unknown_test_deps = validate_dependencies(
         pyproject_dependencies=pyproject_test_dependencies,
@@ -500,9 +528,9 @@ def main() -> None:
     ):
         raise ValueError(
             f"Found discrepancy between imported test dependencies and pyproject.toml!"
-            f"\nImported test dependencies not listed in pyproject.toml: {missing_deps}."
-            f"\nUnused test dependencies listed in pyproject.toml: {unused_deps}."
-            f"\nUnknown test dependencies: {unknown_deps}."
+            f"\nImported test dependencies not listed in pyproject.toml: {missing_test_deps}."
+            f"\nUnused test dependencies listed in pyproject.toml: {unused_test_deps}."
+            f"\nUnknown test dependencies: {unknown_test_deps}."
             f"\n"
             f"\nNOTE: Optional dependencies are currently not supported (PR welcome)."
             f"\nNOTE: Workaround: use `importlib.import_module('optional_dependency')`."
