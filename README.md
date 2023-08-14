@@ -33,3 +33,9 @@ Updates dependencies in `pyproject.toml`.
 - `"package>=version"` ⟶ `"package>=currently_installed"` (`[project]` section)
 - `package=">=version"` ⟶ `package=">=currently_installed"` (`[tool.poetry]` section)
 - `package={version=">=version"` ⟶ `package={version=">=currently_installed"` (`[tool.poetry]` section)
+
+## pyproject-check-dependencies
+
+Analyzes all `import`-statements and makes sure all third-party dependencies are listed in `pyproject.toml`. Can be
+applied to test-dependencies as well. This catches missing implicit dependencies, for example package `panads`
+depends on `numpy` but numpy should still be listed in `pyproject.toml` if it is used explicitly.

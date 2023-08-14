@@ -24,3 +24,9 @@
   language: python
   files: ^pyproject\.toml$
   stages: [manual]
+- id: pyproject-check-deps
+  name: pyproject-check-deps
+  entry: pyproject-check-deps
+  description: "Check that listed dependencies are used in code and vice-versa."
+  language: python
+  files: ^pyproject\.toml$

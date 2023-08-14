@@ -1,16 +1,33 @@
 #!/usr/bin/env python
 """Prints the direct dependencies of a module line by line.."""
 
+# TODO: add support for extras.
+
+__all__ = [
+    "get_deps_file",
+    "get_deps_module",
+    "group_dependencies",
+    "collect_dependencies",
+    "main",
+    "get_deps_import",
+    "get_deps_importfrom",
+]
+
+import argparse
 import ast
 import importlib
 import pkgutil
+import re
 import sys
+import tomllib
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from types import ModuleType
+from typing import Any, Mapping, NamedTuple
 
 
-def extract_imports(node: ast.Import, /) -> set[str]:
-    """Extract third-party dependencies from an `import` statement node."""
+def get_deps_import(node: ast.Import, /) -> set[str]:
+    """Extract dependencies from an `import ...` statement."""
     dependencies = set()
     for alias in node.names:
         module = alias.name.split(".")[0]
@@ -19,120 +36,371 @@ def extract_imports(node: ast.Import, /) -> set[str]:
     return dependencies
 
 
-def extract_import_from(node: ast.ImportFrom, /) -> set[str]:
-    """Extract third-party dependencies from an `import from` statement node."""
+def get_deps_importfrom(node: ast.ImportFrom, /) -> set[str]:
+    """Extract dependencies from an `from y import ...` statement."""
     dependencies = set()
     assert node.module is not None
     module = node.module.split(".")[0]
-    if not module.startswith("_"):
+    if not module.startswith("_"):  # ignore _private modules
         dependencies.add(module)
     return dependencies
 
 
-def is_submodule(submodule_name: str, module_name: str, /) -> bool:
-    """True if submodule_name is a submodule of module_name."""
-    return submodule_name.startswith(module_name + ".")
-
-
-def get_file_dependencies(file_path: Path, /) -> set[str]:
-    """Retrieve the list of third-party dependencies imported by a file."""
+def get_deps_tree(tree: ast.AST, /) -> set[str]:
+    """Extract the set of dependencies from `ast.AST` object."""
     dependencies: set[str] = set()
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            dependencies |= get_deps_import(node)
+        elif isinstance(node, ast.ImportFrom):
+            dependencies |= get_deps_importfrom(node)
+
+    return dependencies
+
+
+def get_deps_file(file_path: str | Path, /) -> set[str]:
+    """Extract set of dependencies imported by a script."""
     path = Path(file_path)
 
     if path.suffix != ".py":
-        return dependencies
+        raise ValueError(f"Invalid file extension: {path.suffix}")
 
     with open(path, "r", encoding="utf8") as file:
         tree = ast.parse(file.read())
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                dependencies |= extract_imports(node)
-            elif isinstance(node, ast.ImportFrom):
-                dependencies |= extract_import_from(node)
-    return dependencies
+
+    return get_deps_tree(tree)
 
 
-def get_module_dependencies(module_name: str, /, *, recursive: bool = True) -> set[str]:
-    """Retrieve the list of third-party dependencies imported by a module."""
-    module = importlib.import_module(module_name)
-    dependencies = set()
+def get_deps_module(module: str | ModuleType, /, *, silent: bool = True) -> set[str]:
+    """Extract set of dependencies imported by a module."""
+    # NOTE: Generally there is no correct way to do it without importing the module.
+    # This is because modules can be imported dynamically.
+
+    if isinstance(module, str):
+        with (  # load the submodule silently
+            redirect_stdout(None if silent else sys.stdout),
+            redirect_stderr(None if silent else sys.stderr),
+        ):
+            module = importlib.import_module(module)
 
     # Visit the current module
     assert module.__file__ is not None
-    with open(module.__file__, "r", encoding="utf8") as file:
-        tree = ast.parse(file.read())
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                dependencies |= extract_imports(node)
-            elif isinstance(node, ast.ImportFrom):
-                dependencies |= extract_import_from(node)
+    dependencies = get_deps_file(module.__file__)
 
-    if not recursive:
+    if not hasattr(module, "__path__"):
+        # note: can only recurse into packages.
         return dependencies
 
-    # if it is a package, recurse into it.
-    if hasattr(module, "__path__"):
-        # Visit the sub-packages/modules of the package
-        for module_info in pkgutil.walk_packages(module.__path__):
-            submodule = importlib.import_module(module_name + "." + module_info.name)
-            submodule_name = submodule.__name__
-
-            if is_submodule(submodule_name, module_name):
-                dependencies |= get_module_dependencies(
-                    submodule_name, recursive=recursive
-                )
+    # Visit the sub-packages/modules of the package
+    # TODO: add dynamically imported submodules using the `pkgutil` module.
+    for module_info in pkgutil.walk_packages(module.__path__):
+        submodule_name = f"{module.__name__}.{module_info.name}"
+        dependencies |= get_deps_module(submodule_name, silent=silent)
 
     return dependencies
 
 
-def group_dependencies(dependencies: set[str], /) -> tuple[list[str], list[str]]:
+def get_deps_pyproject_section(
+    pyproject: Mapping[str, Any], /, *, section: str
+) -> set[str]:
+    """Get the dependencies from a section of pyproject.toml.
+
+    Looking up the section must either result in a list of strings or a dict.
+    """
+    keys = section.split(".")
+    deps: set[str] = NotImplemented
+
+    # recursively get the section
+    try:
+        for key in keys:
+            pyproject = pyproject[key]
+    except KeyError:
+        return deps
+
+    match pyproject:
+        case list() as lst:  # type: ignore[unreachable]
+            # assume format `"pacakge<comparator>version"`
+            regex = re.compile(r"[a-zA-Z0-9_-]*")  # type: ignore[unreachable]
+            deps = {re.search(regex, dep).group() for dep in lst}
+        case dict() as dct:
+            # assume format `package = "<comparator>version"`
+            deps = set(dct.keys())
+        case _:
+            raise TypeError(f"Unexpected type: {type(pyproject)}")
+
+    return deps
+
+
+def get_deps_pyproject(fname: str | Path = "pyproject.toml", /) -> set[str]:
+    """Extract the dependencies from a pyproject.toml file.
+
+    There are 6 sections we check:
+    - pyproject.dependencies
+    - pyproject.optional-dependencies.test(s)
+    - tool.poetry.dependencies
+    - tool.poetry.group.test(s).dependencies
+
+    If dependencies are specified in multiple sections, it is validated that they are
+    the same.
+    """
+    with open(fname, "rb") as file:
+        pyproject = tomllib.load(file)
+
+    dependencies = {
+        key: get_deps_pyproject_section(pyproject, section=key)
+        for key in (
+            "project.dependencies",
+            "tool.poetry.dependencies",
+        )
+    }
+
+    match (
+        dependencies["project.dependencies"],
+        dependencies["tool.poetry.dependencies"],
+    ):
+        case set() as a, set() as b:
+            if (left := a - b) | (right := b - a):
+                raise ValueError(
+                    "Found different dependencies in [project] and [tool.poetry]."
+                    f"\n [project]     is missing: {left}, "
+                    f"\n [tool.poetry] is missing: {right}."
+                )
+            project_dependencies = a
+        case set() as a, _:
+            project_dependencies = a
+        case _, set() as b:
+            project_dependencies = b
+        case _:
+            project_dependencies = set()
+
+    return project_dependencies
+
+
+def get_test_deps_pyproject(fname: str | Path = "pyproject.toml", /) -> set[str]:
+    """Extract the test dependencies from a pyproject.toml file."""
+    with open(fname, "rb") as file:
+        pyproject = tomllib.load(file)
+
+    dependencies = {
+        key: get_deps_pyproject_section(pyproject, section=key)
+        for key in (
+            "project.optional-dependencies.test",
+            "project.optional-dependencies.tests",
+            "tool.poetry.group.test.dependencies",
+            "tool.poetry.group.tests.dependencies",
+        )
+    }
+
+    match (
+        dependencies["project.optional-dependencies.test"],
+        dependencies["project.optional-dependencies.tests"],
+    ):
+        case set(), set():
+            raise ValueError(
+                "Found both [project.optional-dependencies.test]"
+                " and [project.optional-dependencies.tests]."
+            )
+        case set() as a, _:
+            project_test_dependencies = a
+        case _, set() as b:
+            project_test_dependencies = b
+        case _:
+            project_test_dependencies = NotImplemented
+
+    match (
+        dependencies["tool.poetry.group.test.dependencies"],
+        dependencies["tool.poetry.group.tests.dependencies"],
+    ):
+        case set(), set():
+            raise ValueError(
+                "Found both [tool.poetry.group.test.dependencies]"
+                " and [tool.poetry.group.tests.dependencies]."
+            )
+        case set() as a, _:
+            poetry_test_dependencies = a
+        case _, set() as b:
+            poetry_test_dependencies = b
+        case _:
+            poetry_test_dependencies = NotImplemented
+
+    match (
+        project_test_dependencies,
+        poetry_test_dependencies,
+    ):
+        case set() as a, set() as b:
+            if (left := a - b) | (right := b - a):
+                raise ValueError(
+                    "Found different test dependencies in [project] and [tool.poetry]."
+                    f"\n [project]     is missing: {left}, "
+                    f"\n [tool.poetry] is missing: {right}."
+                )
+            test_dependencies = a
+        case set() as a, _:
+            test_dependencies = a
+        case _, set() as b:
+            test_dependencies = b
+        case _:
+            test_dependencies = set()
+
+    return test_dependencies
+
+
+class GroupedDependencies(NamedTuple):
+    """A named tuple containing the dependencies grouped by type."""
+
+    imported_dependencies: set[str]
+    stdlib_dependencies: set[str]
+
+
+def group_dependencies(dependencies: set[str], /) -> GroupedDependencies:
     """Splits the dependencies into first-party and third-party."""
+    imported_dependencies = set()
     stdlib_dependencies = set()
-    third_party_dependencies = set()
 
     for dependency in dependencies:
         if dependency in sys.stdlib_module_names:
             stdlib_dependencies.add(dependency)
         else:
-            third_party_dependencies.add(dependency)
+            imported_dependencies.add(dependency)
 
-    return sorted(stdlib_dependencies), sorted(third_party_dependencies)
+    return GroupedDependencies(
+        imported_dependencies=imported_dependencies,
+        stdlib_dependencies=stdlib_dependencies,
+    )
 
 
-def collect_dependencies(fname: str | Path, /) -> set[str]:
+def collect_dependencies(fname: str | Path, /, raise_notfound: bool = True) -> set[str]:
     """Collect the third-party dependencies from files in the given path."""
-    dependencies = set()
     path = Path(fname)
-
+    dependencies = set()
     if not path.exists():  # assume module
-        dependencies = get_module_dependencies(str(fname))
+        dependencies |= get_deps_module(str(fname))
     elif path.is_file():  # Single file
-        dependencies |= get_file_dependencies(path)
+        dependencies |= get_deps_file(path)
     elif path.is_dir():  # Directory
-        for file_path in path.rglob("*"):
+        for file_path in path.rglob("*.py"):
             if file_path.is_file():
-                dependencies |= get_file_dependencies(file_path)
-    else:
-        raise ValueError(f"Invalid path: {path}")
+                dependencies |= get_deps_file(file_path)
+    elif raise_notfound:
+        raise FileNotFoundError(f"Invalid path: {path}")
 
     return dependencies
 
 
+def validate_dependencies(
+    *,
+    pyproject_dependencies: set[str],
+    imported_dependencies: set[str],
+    raise_unused_dependencies: bool = True,
+) -> None:
+    ...
+    # extract 3rd party dependencies.
+    imported_deps = group_dependencies(imported_dependencies).imported_dependencies
+
+    # check if all imported dependencies are listed in pyproject.toml
+    if missing := imported_deps - pyproject_dependencies:
+        raise ValueError(
+            f"Found imported dependencies not listed in pyproject.toml: {missing}."
+        )
+    # check if pyproject.toml lists unused dependencies
+    if unused := pyproject_dependencies - imported_deps:
+        if raise_unused_dependencies:
+            raise ValueError(
+                f"Found dependencies listed in pyproject.toml but not imported: {unused}."
+            )
+        else:
+            print(
+                f"Found dependencies listed in pyproject.toml but not imported: {unused}."
+            )
+
+
 def main() -> None:
     """Print the third-party dependencies of a module."""
-    if len(sys.argv) != 2:
-        print("Usage: python pyproject_check_dependencies.py [module_name]")
-        sys.exit(1)
+    # usage
+    modules_default = ["src/"]
+    tests_default = ["tests/"]
 
-    name = sys.argv[1]
+    parser = argparse.ArgumentParser(
+        description="Print the third-party dependencies of a module.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "pyproject_file",
+        nargs="?",
+        default="pyproject.toml",
+        type=str,
+        help="The path to the pyproject.toml file.",
+    )
+    parser.add_argument(
+        "--modules",
+        nargs="*",
+        default=modules_default,
+        type=str,
+        help="The folder of the module to check.",
+    )
+    parser.add_argument(
+        "--error_unused_project_deps",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Raise error if pyproject.toml lists unused project dependencies",
+    )
+    parser.add_argument(
+        "--tests",
+        nargs="*",
+        default=tests_default,
+        type=str,
+        help="The path to the test directories.",
+    )
+    parser.add_argument(
+        "--error_unused_test_deps",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Raise error if pyproject.toml lists unused test dependencies",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Disables silencing of import messages.",
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Print debug information.",
+    )
+    args = parser.parse_args()
 
-    with redirect_stdout(None), redirect_stderr(None):
-        dependencies = collect_dependencies(name)
+    # compute the dependencies from the source files
+    modules_given = args.modules is not modules_default
+    imported_dependencies = set().union(
+        *(
+            collect_dependencies(fname, raise_notfound=modules_given)
+            for fname in args.modules
+        )
+    )
+    # get dependencies from pyproject.toml
+    pyproject_dependencies = get_deps_pyproject(args.pyproject_file)
+    # validate the dependencies
+    validate_dependencies(
+        pyproject_dependencies=pyproject_dependencies,
+        imported_dependencies=imported_dependencies,
+    )
 
-    _, third_party_dependencies = group_dependencies(dependencies)
-
-    for dependency in third_party_dependencies:
-        print(dependency)
+    # compute the test dependencies from the test files
+    tests_given = args.tests is not tests_default
+    imported_test_dependencies = set().union(
+        *(
+            collect_dependencies(fname, raise_notfound=tests_given)
+            for fname in args.tests
+        )
+    )
+    # get dependencies from pyproject.toml
+    pyproject_test_dependencies = get_deps_pyproject(args.pyproject_file)
+    # validate the dependencies
+    validate_dependencies(
+        pyproject_dependencies=pyproject_test_dependencies,
+        imported_dependencies=imported_test_dependencies,
+    )
 
 
 if __name__ == "__main__":

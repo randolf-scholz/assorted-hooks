@@ -16,7 +16,6 @@ __all__ = [
 
 import argparse
 import re
-
 import tomllib
 
 VERSION_PATTERN = r"""
@@ -84,7 +83,7 @@ def get_version(pyproject: dict, /) -> str:
                 )
             return project_version
         case _:
-            raise TypeError(f"Unexpected types, expected str..")
+            raise TypeError("Unexpected types, expected str.")
 
 
 def validate_version(version: str, /, *, debug: bool = False) -> None:
@@ -114,10 +113,13 @@ def process_pyproject(fname: str, /, *, debug: bool = False) -> None:
 
 def main() -> None:
     """Main program."""
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description="Validate version strings in pyproject.toml.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     # optional single argument specifying the pyproject.toml file
     parser.add_argument(
-        "file",
+        "pyproject_file",
         nargs="?",
         default="pyproject.toml",
         type=str,
@@ -131,7 +133,7 @@ def main() -> None:
     args = parser.parse_args()
 
     # run script
-    process_pyproject(args.file, debug=args.debug)
+    process_pyproject(args.pyproject_file, debug=args.debug)
 
 
 if __name__ == "__main__":

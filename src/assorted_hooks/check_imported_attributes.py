@@ -121,10 +121,13 @@ def check_file(file_path: Path, /, debug: bool = False) -> bool:
 def main() -> None:
     """Main function."""
     parser = argparse.ArgumentParser(
-        description="Apply a script to files matched by fnmatch patterns in the current working directory."
+        description="Check whether attributes in annotations shadow directly imported symbols.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
-        "files", nargs="+", help="One or multiple files, folders or file patterns."
+        "files",
+        nargs="+",
+        help="One or multiple files, folders or file patterns.",
     )
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()

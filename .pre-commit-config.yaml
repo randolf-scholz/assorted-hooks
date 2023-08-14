@@ -7,14 +7,14 @@ repos:
   # local hooks
   - repo: local
     hooks:
-      - id: imported-attributes
-        name: imported-attributes
+      - id: check-imported-attributes
+        name: check-imported-attributes
         description: "Check for directly imported attributes."
         files: (^src/|^tests/)
         stages: [commit]
         types: [python]
         language: system
-        entry: imported-attributes
+        entry: check-imported-attributes
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:

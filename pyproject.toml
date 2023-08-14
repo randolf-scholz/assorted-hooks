@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 requires-python = ">=3.11"
 name = "assorted-hooks"
-version = "0.1.2"
+version = "0.1.5"
 
 authors = [{name="Randolf Scholz", email="randolf.scholz@gmail.com"},]
 description = "Custom pre-commit hooks"
@@ -13,10 +13,19 @@ keywords = ["pre-commit"]
 license = {file = "LICENSE"}
 readme = "README.md"
 
-dependencies = []
+dependencies = ["numpy>=1.0", "pandas>=2.0"]
 
 [project.optional-dependencies]
 dev = ["pre-commit>=3.3.3"]
+test = [
+    "pytest>=7.4.0",
+    "pytest-benchmark>=4.0.0",
+    "pytest-cov>=4.1.0",
+    "pytest-rerunfailures>=12.0",
+    "pytest-xdist>=3.3.1",
+]
+
+
 
 [project.urls]
 homepage = "https://github.com/randolf-scholz/assorted-hooks"
@@ -26,7 +35,8 @@ repository = "https://github.com/randolf-scholz/assorted-hooks"
 [project.scripts]
 check-imported-attributes = "assorted_hooks.check_imported_attributes:main"
 pyproject-validate-version = "assorted_hooks.pyproject_validate_version:main"
-pyproject-update-deps = "assorted_hooks.pyproject_update_deps:main"
+pyproject-update-deps = "assorted_hooks.pyproject_update_dependencies:main"
+pyproject-check-deps = "assorted_hooks.pyproject_check_dependencies:main"
 
 # region flake8 configuration ----------------------------------------------------------
 [tool.flake8]
@@ -263,7 +273,7 @@ ignore_missing_imports = true
 [tool.isort]
 # isort profiles: black, django, pycharm, google, open_stack, plone, attrs, hug, wemake, appnexus
 # black-compatible: black, appnexus
-py_version=310
+py_version=311
 profile="black"
 src_paths=["src/", "tests/"]
 known_first_party = ["linodenet", "tsdm"]
@@ -277,7 +287,7 @@ combine_as_imports = true
 # region Black Configuration -----------------------------------------------------------
 [tool.black]
 line-length = 88
-target-version = ['py310']
+target-version = ['py311']
 color = true
 # endregion Black Configuration --------------------------------------------------------
 

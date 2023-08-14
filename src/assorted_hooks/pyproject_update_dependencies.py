@@ -5,7 +5,7 @@
 __all__ = [
     "get_pip_package_dict",
     "main",
-    "process_pyproject",
+    "pyproject_update_dependencies",
     "strip_version",
     "update_versions",
 ]
@@ -57,7 +57,8 @@ def update_versions(raw_file: str, /, *, version_pattern: re.Pattern) -> str:
     return raw_file
 
 
-def process_pyproject(fname: str, /, *, debug: bool = False) -> None:
+def pyproject_update_dependencies(fname: str, /, *, debug: bool = False) -> None:
+    """Update the dependencies in pyproject.toml."""
     with open(fname, "r", encoding="utf8") as file:
         pyproject = file.read()
 
@@ -85,10 +86,11 @@ def process_pyproject(fname: str, /, *, debug: bool = False) -> None:
 def main() -> None:
     """Run the script."""
     parser = argparse.ArgumentParser(
-        description="Updates the pyproject.toml dependencies to the currently installed versions."
+        description="Updates the pyproject.toml dependencies to the currently installed versions.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
-        "file",
+        "pyproject_file",
         nargs="?",
         default="pyproject.toml",
         type=str,
@@ -101,7 +103,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    process_pyproject(args.file, debug=args.debug)
+    pyproject_update_dependencies(args.pyproject_file, debug=args.debug)
 
 
 if __name__ == "__main__":
