@@ -68,13 +68,12 @@ def normalize_dep_name(dep: str, /) -> str:
 
 def get_deps_import(node: ast.Import, /) -> set[str]:
     """Extract dependencies from an `import ...` statement."""
-    return {alias.name.split(".")[0] for alias in node.names}
-    # dependencies = set()
-    # for alias in node.names:
-    #     module = alias.name.split(".")[0]
-    #     if not module.startswith("_"):
-    #         dependencies.add(module)
-    # return dependencies
+    dependencies = set()
+    for alias in node.names:
+        module = alias.name.split(".")[0]
+        if not module.startswith("_"):
+            dependencies.add(module)
+    return dependencies
 
 
 def get_deps_importfrom(node: ast.ImportFrom, /) -> set[str]:
@@ -333,12 +332,14 @@ def validate_dependencies(
 ) -> None:
     """Validate the dependencies."""
     # extract 3rd party dependencies.
-    used_deps = group_dependencies(imported_dependencies).imported_dependencies
+    imported_dependencies = group_dependencies(
+        imported_dependencies
+    ).imported_dependencies
 
     # map the dependencies to their pip-package names
     imported_deps: set[str] = set()
     unknown_deps: set[str] = set()
-    for dep in used_deps:
+    for dep in imported_dependencies:
         if dep not in PACKAGES:
             unknown_deps.add(dep)
             continue
@@ -364,8 +365,8 @@ def validate_dependencies(
             f"\nUnused dependencies listed in pyproject.toml: {unused_deps}."
             f"\nUnknown dependencies: {unknown_deps}."
             f"\n"
-            f"\nOptional dependencies are currently not supported (PR welcome)."
-            f"\nWorkaround: use `importlib.import_module('optional_dependency')`."
+            f"\nNOTE: Optional dependencies are currently not supported (PR welcome)."
+            f"\nNOTE: Workaround: use `importlib.import_module('optional_dependency')`."
         )
 
 
