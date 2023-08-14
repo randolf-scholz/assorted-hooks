@@ -13,6 +13,7 @@ __all__ = [
     "get_deps_pyproject_section",
     "get_deps_pyproject_test",
     "get_deps_tree",
+    "get_name_pyproject",
     "group_dependencies",
     "main",
     "normalize_dep_name",
@@ -161,6 +162,37 @@ def get_deps_pyproject_section(config: dict[str, Any], /, *, section: str) -> se
             raise TypeError(f"Unexpected type: {type(config)}")
 
 
+def get_name_pyproject(fname: str | Path = "pyproject.toml", /) -> str:
+    """Get the name of the project from pyproject.toml."""
+    with open(fname, "rb") as file:
+        config = tomllib.load(file)
+
+    try:
+        project_name = config["project"]["name"]
+    except KeyError:
+        project_name = NotImplemented
+    try:
+        poetry_name = config["tool"]["poetry"]["name"]
+    except KeyError:
+        poetry_name = NotImplemented
+
+    match project_name, poetry_name:
+        case str() as a, str() as b:
+            if a != b:
+                raise ValueError(
+                    "Found different project names in [project] and [tool.poetry]."
+                    f"\n [project]     is missing: {a}, "
+                    f"\n [tool.poetry] is missing: {b}."
+                )
+            return a
+        case str() as a, _:
+            return a
+        case _, str() as b:
+            return b
+        case _:
+            raise ValueError("No project name found in [project] or [tool.poetry].")
+
+
 def get_deps_pyproject(fname: str | Path = "pyproject.toml", /) -> set[str]:
     """Extract the dependencies from a pyproject.toml file.
 
@@ -192,8 +224,8 @@ def get_deps_pyproject(fname: str | Path = "pyproject.toml", /) -> set[str]:
             if (left := a - b) | (right := b - a):
                 raise ValueError(
                     "Found different dependencies in [project] and [tool.poetry]."
-                    f"\n [project]     is missing: {left}, "
-                    f"\n [tool.poetry] is missing: {right}."
+                    f"\n [project]     is missing: {right}, "
+                    f"\n [tool.poetry] is missing: {left}."
                 )
             project_dependencies = a
         case set() as a, _:
@@ -261,8 +293,8 @@ def get_deps_pyproject_test(fname: str | Path = "pyproject.toml", /) -> set[str]
             if (left := a - b) | (right := b - a):
                 raise ValueError(
                     "Found different test dependencies in [project] and [tool.poetry]."
-                    f"\n [project]     is missing: {left}, "
-                    f"\n [tool.poetry] is missing: {right}."
+                    f"\n [project]     is missing: {right}, "
+                    f"\n [tool.poetry] is missing: {left}."
                 )
             test_dependencies = a
         case set() as a, _:
@@ -431,6 +463,8 @@ def main() -> None:
             for fname in args.modules
         )
     )
+    # ignore the project name
+    imported_dependencies -= {get_name_pyproject(args.pyproject_file)}
     # get dependencies from pyproject.toml
     pyproject_dependencies = get_deps_pyproject(args.pyproject_file)
     # validate the dependencies
@@ -447,6 +481,8 @@ def main() -> None:
             for fname in args.tests
         )
     )
+    # ignore the project name
+    imported_test_dependencies -= {get_name_pyproject(args.pyproject_file)}
     # get dependencies from pyproject.toml
     pyproject_test_dependencies = get_deps_pyproject(args.pyproject_file)
     # validate the dependencies

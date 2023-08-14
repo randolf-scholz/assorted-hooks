@@ -26,17 +26,19 @@ test = [
 ]
 
 
-
 [project.urls]
 homepage = "https://github.com/randolf-scholz/assorted-hooks"
 documentation = "https://github.com/randolf-scholz/assorted-hooks"
 repository = "https://github.com/randolf-scholz/assorted-hooks"
+
 
 [project.scripts]
 check-imported-attributes = "assorted_hooks.check_imported_attributes:main"
 pyproject-validate-version = "assorted_hooks.pyproject_validate_version:main"
 pyproject-update-deps = "assorted_hooks.pyproject_update_dependencies:main"
 pyproject-check-deps = "assorted_hooks.pyproject_check_dependencies:main"
+
+
 
 # region flake8 configuration ----------------------------------------------------------
 [tool.flake8]
