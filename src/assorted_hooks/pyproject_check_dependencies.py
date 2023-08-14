@@ -4,13 +4,18 @@
 # TODO: add support for extras.
 
 __all__ = [
-    "get_deps_file",
-    "get_deps_module",
-    "group_dependencies",
     "collect_dependencies",
-    "main",
+    "get_deps_file",
     "get_deps_import",
     "get_deps_importfrom",
+    "get_deps_module",
+    "get_deps_pyproject",
+    "get_deps_pyproject_section",
+    "get_deps_pyproject_test",
+    "get_deps_tree",
+    "group_dependencies",
+    "main",
+    "normalize_dep_name",
 ]
 
 import argparse
@@ -56,24 +61,29 @@ PACKAGES: dict[
 # https://github.com/python/typeshed/blob/d82a8325faf35aa0c9d03d9e9d4a39b7fcb78f8e/stdlib/importlib/metadata/__init__.pyi#L32
 
 
+def normalize_dep_name(dep: str, /) -> str:
+    """Normalize a dependency name."""
+    return dep.lower().replace("-", "_")
+
+
 def get_deps_import(node: ast.Import, /) -> set[str]:
     """Extract dependencies from an `import ...` statement."""
-    dependencies = set()
-    for alias in node.names:
-        module = alias.name.split(".")[0]
-        if not module.startswith("_"):
-            dependencies.add(module)
-    return dependencies
+    return {alias.name.split(".")[0] for alias in node.names}
+    # dependencies = set()
+    # for alias in node.names:
+    #     module = alias.name.split(".")[0]
+    #     if not module.startswith("_"):
+    #         dependencies.add(module)
+    # return dependencies
 
 
 def get_deps_importfrom(node: ast.ImportFrom, /) -> set[str]:
     """Extract dependencies from an `from y import ...` statement."""
-    dependencies = set()
     assert node.module is not None
-    module = node.module.split(".")[0]
-    if not module.startswith("_"):  # ignore _private modules
-        dependencies.add(module)
-    return dependencies
+    module_name = node.module.split(".")[0]
+    if module_name.startswith("_"):  # ignore _private modules
+        return set()
+    return {module_name}
 
 
 def get_deps_tree(tree: ast.AST, /) -> set[str]:
@@ -199,7 +209,7 @@ def get_deps_pyproject(fname: str | Path = "pyproject.toml", /) -> set[str]:
     return project_dependencies
 
 
-def get_test_deps_pyproject(fname: str | Path = "pyproject.toml", /) -> set[str]:
+def get_deps_pyproject_test(fname: str | Path = "pyproject.toml", /) -> set[str]:
     """Extract the test dependencies from a pyproject.toml file."""
     with open(fname, "rb") as file:
         pyproject = tomllib.load(file)
@@ -332,14 +342,20 @@ def validate_dependencies(
         if dep not in PACKAGES:
             unknown_deps.add(dep)
             continue
+
+        # get the pypi-package name
         values: list[str] = PACKAGES[dep]
         if len(values) > 1:
             raise ValueError(f"Found multiple pip-packages for {dep!r}: {values}.")
         imported_deps.add(values[0])
 
+    # normalize the dependencies
+    pyproject_deps = {normalize_dep_name(dep) for dep in pyproject_dependencies}
+    imported_deps = {normalize_dep_name(dep) for dep in imported_deps}
+
     # check if all imported dependencies are listed in pyproject.toml
-    missing_deps = imported_deps - pyproject_dependencies
-    unused_deps = pyproject_dependencies - imported_deps
+    missing_deps = imported_deps - pyproject_deps
+    unused_deps = pyproject_deps - imported_deps
 
     if missing_deps or unknown_deps or (unused_deps and raise_unused_dependencies):
         raise ValueError(
