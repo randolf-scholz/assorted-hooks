@@ -19,7 +19,6 @@ import importlib
 import pkgutil
 import re
 import sys
-import tomllib
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from types import ModuleType
@@ -34,6 +33,17 @@ else:
         raise ImportError(
             "This pre-commit hook runs in the local interpreter and requires"
             " the `importlib_metadata` package for python versions < 3.10."
+        ) from E
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    try:
+        tomllib = importlib.import_module("tomlkit")
+    except ImportError as E:
+        raise ImportError(
+            "This pre-commit hook runs in the local interpreter and requires"
+            " the `tomlkit` package for python versions < 3.11."
         ) from E
 
 PACKAGES: dict[
