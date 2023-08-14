@@ -26,7 +26,7 @@
   stages: [manual]
 - id: pyproject-check-deps
   name: pyproject-check-deps
-  entry: pyproject-check-deps
+  entry: ./src/assorted_hooks/pyproject_check_dependencies.py
   description: "Check that listed dependencies are used in code and vice-versa."
-  language: python
+  language: system
   files: ^pyproject\.toml$

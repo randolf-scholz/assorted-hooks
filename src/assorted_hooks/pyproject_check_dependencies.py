@@ -16,7 +16,6 @@ __all__ = [
 import argparse
 import ast
 import importlib
-import importlib.metadata
 import pkgutil
 import re
 import sys
@@ -26,9 +25,18 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any, NamedTuple
 
-PACKAGES: dict[
-    str, list[str]
-] = importlib.metadata.packages_distributions()  # type:ignore[assignment]
+if sys.version_info >= (3, 10):
+    import importlib.metadata as metadata
+else:
+    try:
+        import importlib.metadata as metadata
+    except ImportError as E:
+        raise ImportError(
+            "This pre-commit hook runs in the local interpreter and requires"
+            " the `importlib_metadata` package for python versions < 3.10."
+        ) from E
+
+PACKAGES: dict[str, list[str]] = metadata.packages_distributions()  # type:ignore[assignment]
 """A dictionary that maps module names to their pip-package names."""
 
 # NOTE: illogical type hint in stdlib, maybe open issue.
@@ -302,23 +310,26 @@ def validate_dependencies(
 
     # map the dependencies to their pip-package names
     imported_deps: set[str] = set()
+    unknown_deps: set[str] = set()
     for dep in used_deps:
         if dep not in PACKAGES:
-            raise ValueError(f"Cannot find pip-package for {dep!r}.")
+            unknown_deps.add(dep)
+            continue
         values: list[str] = PACKAGES[dep]
         if len(values) > 1:
             raise ValueError(f"Found multiple pip-packages for {dep!r}: {values}.")
         imported_deps.add(values[0])
 
     # check if all imported dependencies are listed in pyproject.toml
-    missing = imported_deps - pyproject_dependencies
-    unused = pyproject_dependencies - imported_deps
+    missing_deps = imported_deps - pyproject_dependencies
+    unused_deps = pyproject_dependencies - imported_deps
 
-    if missing or (unused and raise_unused_dependencies):
+    if missing_deps or unknown_deps or (unused_deps and raise_unused_dependencies):
         raise ValueError(
             f"Found discrepancy between imported dependencies and pyproject.toml!"
-            f"\nImported dependencies not listed in pyproject.toml: {missing}."
-            f"\nUnused dependencies listed in pyproject.toml: {unused}."
+            f"\nImported dependencies not listed in pyproject.toml: {missing_deps}."
+            f"\nUnused dependencies listed in pyproject.toml: {unused_deps}."
+            f"\nUnknown dependencies: {unknown_deps}."
         )
 
 
