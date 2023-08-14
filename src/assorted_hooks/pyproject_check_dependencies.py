@@ -29,8 +29,10 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any, NamedTuple
 
-if sys.version_info >= (3, 10):
+if sys.version_info >= (3, 11):
+    # NOTE: importlib.metadata is bugged in 3.10: https://github.com/python/cpython/issues/94113
     import importlib.metadata as metadata
+    import tomllib
 else:
     try:
         metadata = importlib.import_module("importlib_metadata")
@@ -39,10 +41,6 @@ else:
             "This pre-commit hook runs in the local interpreter and requires"
             " the `importlib_metadata` package for python versions < 3.10."
         ) from E
-
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
     try:
         tomllib = importlib.import_module("tomlkit")
     except ImportError as E:
