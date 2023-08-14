@@ -53,7 +53,6 @@ def update_versions(raw_file: str, /, *, version_pattern: re.Pattern) -> str:
             new = match.replace(old_version, new_version)
             print(f"replacing: {match!r:36}  {new!r}")
             raw_file = raw_file.replace(match, new)
-
     return raw_file
 
 
