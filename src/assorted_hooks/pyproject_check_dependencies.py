@@ -16,6 +16,7 @@ __all__ = [
 import argparse
 import ast
 import importlib
+import importlib.metadata
 import pkgutil
 import re
 import sys
@@ -24,6 +25,15 @@ from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from types import ModuleType
 from typing import Any, NamedTuple
+
+PACKAGES: dict[
+    str, list[str]
+] = importlib.metadata.packages_distributions()  # type:ignore[assignment]
+"""A dictionary that maps module names to their pip-package names."""
+
+# NOTE: illogical type hint in stdlib, maybe open issue.
+# https://github.com/python/cpython/blob/608927b01447b110de5094271fbc4d49c60130b0/Lib/importlib/metadata/__init__.py#L933-L947C29
+# https://github.com/python/typeshed/blob/d82a8325faf35aa0c9d03d9e9d4a39b7fcb78f8e/stdlib/importlib/metadata/__init__.pyi#L32
 
 
 def get_deps_import(node: ast.Import, /) -> set[str]:
@@ -286,25 +296,30 @@ def validate_dependencies(
     imported_dependencies: set[str],
     raise_unused_dependencies: bool = True,
 ) -> None:
-    ...
+    """Validate the dependencies."""
     # extract 3rd party dependencies.
-    imported_deps = group_dependencies(imported_dependencies).imported_dependencies
+    used_deps = group_dependencies(imported_dependencies).imported_dependencies
+
+    # map the dependencies to their pip-package names
+    imported_deps: set[str] = set()
+    for dep in used_deps:
+        if dep not in PACKAGES:
+            raise ValueError(f"Cannot find pip-package for {dep!r}.")
+        values: list[str] = PACKAGES[dep]
+        if len(values) > 1:
+            raise ValueError(f"Found multiple pip-packages for {dep!r}: {values}.")
+        imported_deps.add(values[0])
 
     # check if all imported dependencies are listed in pyproject.toml
-    if missing := imported_deps - pyproject_dependencies:
+    missing = imported_deps - pyproject_dependencies
+    unused = pyproject_dependencies - imported_deps
+
+    if missing or (unused and raise_unused_dependencies):
         raise ValueError(
-            f"Found imported dependencies not listed in pyproject.toml: {missing}."
+            f"Found discrepancy between imported dependencies and pyproject.toml!"
+            f"\nImported dependencies not listed in pyproject.toml: {missing}."
+            f"\nUnused dependencies listed in pyproject.toml: {unused}."
         )
-    # check if pyproject.toml lists unused dependencies
-    if unused := pyproject_dependencies - imported_deps:
-        if raise_unused_dependencies:
-            raise ValueError(
-                f"Found dependencies listed in pyproject.toml but not imported: {unused}."
-            )
-        else:
-            print(
-                f"Found dependencies listed in pyproject.toml but not imported: {unused}."
-            )
 
 
 def main() -> None:

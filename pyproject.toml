@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 requires-python = ">=3.11"
 name = "assorted-hooks"
-version = "0.1.6"
+version = "0.1.7"
 
 authors = [{name="Randolf Scholz", email="randolf.scholz@gmail.com"},]
 description = "Custom pre-commit hooks"
@@ -13,7 +13,7 @@ keywords = ["pre-commit"]
 license = {file = "LICENSE"}
 readme = "README.md"
 
-dependencies = ["numpy>=1.0", "pandas>=2.0"]
+dependencies = []
 
 [project.optional-dependencies]
 dev = ["pre-commit>=3.3.3"]
