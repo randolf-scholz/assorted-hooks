@@ -102,34 +102,28 @@ def get_deps_module(module: str | ModuleType, /, *, silent: bool = True) -> set[
 
 
 def get_deps_pyproject_section(
-    pyproject: Mapping[str, Any], /, *, section: str
+    config: Mapping[str, Any], /, *, section: str
 ) -> set[str]:
     """Get the dependencies from a section of pyproject.toml.
 
     Looking up the section must either result in a list of strings or a dict.
     """
-    keys = section.split(".")
-    deps: set[str] = NotImplemented
-
-    # recursively get the section
-    try:
-        for key in keys:
-            pyproject = pyproject[key]
+    try:  # recursively get the section
+        for key in section.split("."):
+            config = config[key]
     except KeyError:
-        return deps
+        return NotImplemented
 
-    match pyproject:
+    match config:
         case list() as lst:  # type: ignore[unreachable]
             # assume format `"pacakge<comparator>version"`
             regex = re.compile(r"[a-zA-Z0-9_-]*")  # type: ignore[unreachable]
-            deps = {re.search(regex, dep).group() for dep in lst}
+            return {re.search(regex, dep).group() for dep in lst}
         case dict() as dct:
             # assume format `package = "<comparator>version"`
-            deps = set(dct.keys())
+            return set(dct.keys())
         case _:
-            raise TypeError(f"Unexpected type: {type(pyproject)}")
-
-    return deps
+            raise TypeError(f"Unexpected type: {type(config)}")
 
 
 def get_deps_pyproject(fname: str | Path = "pyproject.toml", /) -> set[str]:
