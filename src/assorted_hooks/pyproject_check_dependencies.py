@@ -117,9 +117,9 @@ def get_deps_pyproject_section(config: dict[str, Any], /, *, section: str) -> se
             # assume format `"package<comparator>version"`
             regex = re.compile(r"[a-zA-Z0-9_-]*")  # type: ignore[unreachable]
             return {re.search(regex, dep).group() for dep in lst}
-        case dict() as dct:
+        case dict() as dct:  # poetry
             # assume format `package = "<comparator>version"`
-            return set(dct.keys())
+            return set(dct.keys()) - {"python"}
         case _:
             raise TypeError(f"Unexpected type: {type(config)}")
 
