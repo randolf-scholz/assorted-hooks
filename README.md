@@ -73,3 +73,7 @@ A modified version of the hook at https://github.com/pre-commit/pygrep-hooks.
 
 - allows `<obj>.eval`, e.g. `pandas.eval`.
 - only blank `eval(` and `builtins.eval(` are forbidden.
+
+## `prefer-abc-typing`
+
+Checks that `collections.abc` is used instead of `typing` for Protocols (`Sequence`, `Mapping`, etc.).
