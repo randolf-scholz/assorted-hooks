@@ -21,7 +21,7 @@ __all__ = [
 import argparse
 import ast
 import sys
-from ast import AST, AsyncFunctionDef, Attribute, ClassDef, FunctionDef, Name
+from ast import AST, AsyncFunctionDef, Attribute, Call, ClassDef, FunctionDef, Name
 from collections.abc import Collection, Iterator
 from pathlib import Path
 from typing import TypeAlias
@@ -32,8 +32,11 @@ Func: TypeAlias = FunctionDef | AsyncFunctionDef
 """Type alias for function-defs."""
 
 
-def get_full_attribute_name(node: Attribute | Name, /) -> str:
+def get_full_attribute_name(node: Call | Attribute | Name, /) -> str:
     """Get the parent of an attribute node."""
+    if isinstance(node, Call):
+        assert isinstance(node.func, (Attribute, Name))
+        return get_full_attribute_name(node.func)
     if isinstance(node, Attribute):
         assert isinstance(node.value, (Attribute, Name))
         string = get_full_attribute_name(node.value)
