@@ -162,7 +162,7 @@ def main() -> None:
         passed &= check_file(file)
 
     if not passed:
-        sys.exit("Found mixed positional and keyword arguments.")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
