@@ -7,32 +7,6 @@ repos:
   # local hooks
   - repo: local
     hooks:
-      - id: python-no-blanket-type-ignore
-        name: python-no-blanket-type-ignore
-        description: "Enforce that `# type: ignore` annotations always specify codes."
-        entry: '.# *type: *ignore(?!\[)'
-        language: pygrep
-        types: [python]
-      - id: python-no-builtin-eval
-        name: python-no-builtin-eval
-        description: "Disallows eval() but allows obj.eval()."
-        entry: '((\b)builtins\.|(?<!\.))eval\('
-        language: pygrep
-        types: [python]
-      - id: python-no-mixed-args
-        name: python-no-mixed-args
-        entry: no-mixed-args
-        description: "Check for disallowing positional_or_keyword arguments."
-        language: python
-        types: [python]
-        files: (^src/|^tests/)
-      - id: python-use-imported-attributes
-        name: python-use-imported-attributes
-        entry: check-imported-attributes
-        description: "Checks that Bar is used instead of foo.Bar if both foo and Bar are imported."
-        language: python
-        types: [python]
-        files: (^src/|^tests/)
       - id: jupyter-clear-output
         name: jupyter-clear-output
         description: "Remove output from jupyter notebooks."
@@ -60,6 +34,40 @@ repos:
         description: "Check that listed dependencies are used in code and vice-versa."
         language: script
         files: ^pyproject\.toml$
+      - id: python-no-blanket-type-ignore
+        name: python-no-blanket-type-ignore
+        description: "Enforce that `# type: ignore` annotations always specify codes."
+        entry: '.# *type: *ignore(?!\[)'
+        language: pygrep
+        types: [python]
+      - id: python-no-builtin-eval
+        name: python-no-builtin-eval
+        description: "Disallows eval() but allows obj.eval()."
+        entry: '((\b)builtins\.|(?<!\.))eval\('
+        language: pygrep
+        types: [python]
+      - id: python-no-mixed-args
+        name: python-no-mixed-args
+        entry: no-mixed-args
+        description: "Check for disallowing positional_or_keyword arguments."
+        language: python
+        types: [python]
+        files: (^src/|^tests/)
+      - id: python-use-imported-attributes
+        name: python-use-imported-attributes
+        entry: check-imported-attributes
+        description: "Checks that Bar is used instead of foo.Bar if both foo and Bar are imported."
+        language: python
+        types: [python]
+        files: (^src/|^tests/)
+      - id: python-prefer-abc-typing
+        name: python-prefer-abc-typing
+        description: "Prefer collections.abc over typing Protocols."
+        entry: prefer-abc-typing
+        language: python
+        types: [python]
+        files: (^src/|^tests/)
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:

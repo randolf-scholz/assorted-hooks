@@ -129,6 +129,7 @@ def main() -> None:
     parser.add_argument(
         "files",
         nargs="+",
+        type=str,
         help="One or multiple files, folders or file patterns.",
     )
     parser.add_argument("--debug", action="store_true")

@@ -20,8 +20,9 @@ import argparse
 import ast
 import sys
 from ast import AST, AsyncFunctionDef, ClassDef, FunctionDef
+from collections.abc import Collection, Iterator
 from pathlib import Path
-from typing import Iterator, TypeAlias
+from typing import TypeAlias
 
 from assorted_hooks.utils import get_python_files
 
@@ -109,6 +110,7 @@ def check_file(
     allow_one: bool = False,
     skip_non_po: bool = False,
     ignore_overloads: bool = True,
+    ignore_names: Collection[str] = (),
 ) -> bool:
     """Check whether the file contains mixed positional and keyword arguments."""
     with open(fname, "rb") as file:
@@ -120,6 +122,8 @@ def check_file(
         if skip_non_po and not node.args.posonlyargs:
             continue
         if ignore_overloads and is_overload(node):
+            continue
+        if node.name in ignore_names:
             continue
         if method_has_mixed_args(node, allow_one=allow_one):
             passed = False
@@ -139,6 +143,8 @@ def check_file(
         if skip_non_po and not node.args.posonlyargs:
             continue
         if ignore_overloads and is_overload(node):
+            continue
+        if node.name in ignore_names:
             continue
         if func_has_mixed_args(node, allow_one=allow_one):
             passed = False
@@ -165,6 +171,7 @@ def main() -> None:
     parser.add_argument(
         "files",
         nargs="+",
+        type=str,
         help="One or multiple files, folders or file patterns.",
     )
     parser.add_argument(
@@ -188,7 +195,14 @@ def main() -> None:
         default=True,
         help="Ignore FunctionDefs that are @overload decorated..",
     )
-    parser.add_argument("--debug", action="store_true")
+    parser.add_argument(
+        "--ignore-names",
+        nargs="*",
+        type=str,
+        default=[],
+        help="Ignore all methods/functions with these names. (for example: '__init__')",
+    )
+    parser.add_argument("--debug", action="store_true", help="Print debug information.")
     args = parser.parse_args()
 
     # find all files
@@ -207,6 +221,7 @@ def main() -> None:
             allow_one=args.allow_one,
             skip_non_po=args.ignore_without_positional_only,
             ignore_overloads=args.ignore_overloads,
+            ignore_names=args.ignore_names,
         )
 
     if not passed:

@@ -48,3 +48,9 @@
   entry: '((\b)builtins\.|(?<!\.))eval\('
   language: pygrep
   types: [python]
+- id: python-prefer-abc-typing
+  name: python-prefer-abc-typing
+  description: "Prefer collections.abc over typing Protocols."
+  entry: prefer-abc-typing
+  language: python
+  types: [python]
