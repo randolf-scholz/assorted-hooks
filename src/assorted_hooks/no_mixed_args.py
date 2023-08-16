@@ -21,7 +21,7 @@ __all__ = [
 import argparse
 import ast
 import sys
-from ast import AST, AsyncFunctionDef, ClassDef, FunctionDef
+from ast import AST, AsyncFunctionDef, Attribute, ClassDef, FunctionDef, Name
 from collections.abc import Collection, Iterator
 from pathlib import Path
 from typing import TypeAlias
@@ -30,6 +30,19 @@ from assorted_hooks.utils import get_python_files
 
 Func: TypeAlias = FunctionDef | AsyncFunctionDef
 """Type alias for function-defs."""
+
+
+def get_full_attribute_name(node: Attribute | Name, /) -> str:
+    """Get the parent of an attribute node."""
+    if isinstance(node, Attribute):
+        assert isinstance(node.value, (Attribute, Name))
+        string = get_full_attribute_name(node.value)
+        return f"{string}.{node.attr}"
+
+    if not isinstance(node, Name):
+        raise ValueError(f"Expected ast.Name, got {type(node)}")
+
+    return node.id
 
 
 def get_functions(tree: AST, /) -> Iterator[Func]:
@@ -75,13 +88,13 @@ def func_has_mixed_args(node: Func, /, *, allow_one: bool = False) -> bool:
 
 def is_overload(node: Func, /) -> bool:
     """Checks if the func is an overload."""
-    decorators = (d for d in node.decorator_list if isinstance(d, ast.Name))
+    decorators = (d for d in node.decorator_list if isinstance(d, Name))
     return "overload" in [d.id for d in decorators]
 
 
 def is_staticmethod(node: Func, /) -> bool:
     """Checks if the func is a staticmethod."""
-    decorators = (d for d in node.decorator_list if isinstance(d, ast.Name))
+    decorators = (d for d in node.decorator_list if isinstance(d, Name))
     return "staticmethod" in [d.id for d in decorators]
 
 
@@ -95,6 +108,11 @@ def is_private(node: Func, /) -> bool:
     """Checks if the name is a private name."""
     name = node.name
     return name.startswith("_") and not name.startswith("__") and name.isidentifier()
+
+
+def is_decorated_with(node: Func, name: str, /) -> bool:
+    """Checks if the function is decorated with a certain decorator."""
+    return name in [get_full_attribute_name(d) for d in node.decorator_list]
 
 
 def method_has_mixed_args(node: Func, /, *, allow_one: bool = False) -> bool:
@@ -124,6 +142,7 @@ def check_file(
     allow_one: bool = False,
     ignore_dunder: bool = False,
     ignore_names: Collection[str] = (),
+    ignore_decorators: Collection[str] = (),
     ignore_overloads: bool = True,
     ignore_private: bool = False,
     ignore_wo_pos_only: bool = False,
@@ -137,10 +156,11 @@ def check_file(
     for node in get_funcs_in_classes(tree):
         if (
             (ignore_wo_pos_only and not node.args.posonlyargs)
-            or (ignore_overloads and is_overload(node))
-            or (node.name in ignore_names)
             or (ignore_dunder and is_dunder(node))
+            or (ignore_overloads and is_overload(node))
             or (ignore_private and is_private(node))
+            or (node.name in ignore_names)
+            or any(is_decorated_with(node, name) for name in ignore_decorators)
         ):
             continue
         if method_has_mixed_args(node, allow_one=allow_one):
@@ -160,10 +180,11 @@ def check_file(
     for node in get_funcs_outside_classes(tree):
         if (
             (ignore_wo_pos_only and not node.args.posonlyargs)
-            or (ignore_overloads and is_overload(node))
-            or (node.name in ignore_names)
             or (ignore_dunder and is_dunder(node))
+            or (ignore_overloads and is_overload(node))
             or (ignore_private and is_private(node))
+            or (node.name in ignore_names)
+            or any(is_decorated_with(node, name) for name in ignore_decorators)
         ):
             continue
         if func_has_mixed_args(node, allow_one=allow_one):
@@ -207,6 +228,13 @@ def main() -> None:
         type=str,
         default=[],
         help="Ignore all methods/functions with these names. (for example: 'forward')",
+    )
+    parser.add_argument(
+        "--ignore-decorators",
+        nargs="*",
+        type=str,
+        default=[],
+        help="Ignore all methods/functions with certain decorators. (for example: '@jit.script')",
     )
     parser.add_argument(
         "--ignore-dunder",
@@ -258,6 +286,7 @@ def main() -> None:
             ignore_overloads=args.ignore_overloads,
             ignore_wo_pos_only=args.ignore_without_positional_only,
             ignore_private=args.ignore_private,
+            ignore_decorators=args.ignore_decorators,
         )
 
     if not passed:

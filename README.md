@@ -50,6 +50,7 @@ Options:
   This is often ok, since there is no ambiguity of the order of arguments.
 - `--ignore-overloads`: skip function defs that are overloads of other function defs. (default: `True`)
 - `--ignore-names`: skip function defs with specific names (default: `[]`)
+- `--ignore-decorators`: skip function defs with specific decorators (default: `[]`)
 - `--ignore-dunder`: skip function defs that are dunder methods (default: `False`)
 - `--ignore-private`: skip function defs that are private (default: `False`)
 - `--ignore-without-positional-only`: skip function defs that don't have any `POSITIONAL_ONLY` arguments. (default: `False`)
