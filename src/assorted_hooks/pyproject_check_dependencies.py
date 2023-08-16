@@ -154,7 +154,13 @@ def get_deps_pyproject_section(config: dict[str, Any], /, *, section: str) -> se
         case list() as lst:  # type: ignore[unreachable]
             # assume format `"package<comparator>version"`
             regex = re.compile(r"[a-zA-Z0-9_-]*")  # type: ignore[unreachable]
-            return {re.search(regex, dep).group() for dep in lst}
+            matches: set[str] = set()
+            for dep in lst:  # pyright: ignore reportGeneralTypeIssues
+                match = re.search(regex, dep)
+                if match is None:
+                    raise ValueError(f"Invalid dependency: {dep!r}")
+                matches.add(match.group())
+            return matches
         case dict() as dct:  # poetry
             # assume format `package = "<comparator>version"`
             return set(dct.keys()) - {"python"}

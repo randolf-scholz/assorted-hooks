@@ -39,3 +39,15 @@ Updates dependencies in `pyproject.toml`.
 Analyzes all `import`-statements and makes sure all third-party dependencies are listed in `pyproject.toml`. Can be
 applied to test-dependencies as well. This catches missing implicit dependencies, for example package `panads`
 depends on `numpy` but numpy should still be listed in `pyproject.toml` if it is used explicitly.
+
+## no-mixed -args
+
+Checks that all function definitions allow no `POSITIONAL_OR_KEYWORD` arguments. Only `POSITIONAL_ONLY`, `KEYWORD_ONLY`, `VAR_POSITIONAL` and `VAR_KEYWORD` are allowed.
+
+Excluded are:
+
+- Lambdas
+- functions inside docstrings
+- functions of the form `def foo(self): ...` (self is excluded)
+- functions of the form `def foo(cls): ...` (cls is excluded)
+- these may be updated in the future to capture the first argument of any non-static method

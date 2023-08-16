@@ -145,3 +145,8 @@ repos:
       - id: mypy
         files: (^src/|^tests/)
         additional_dependencies: [types-all]
+  - repo: https://github.com/RobertCraigie/pyright-python
+    rev: v1.1.323
+    hooks:
+      - id: pyright
+        files: (^src/|^tests/)
