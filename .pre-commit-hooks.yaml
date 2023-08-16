@@ -8,7 +8,7 @@
   description: "Check for disallowing positional_or_keyword arguments."
   entry: no-mixed-args
   language: python
-  name: no-mixed-args
+  name: python-no-mixed-args
   types: [python]
 - id: jupyter-clear-output
   additional_dependencies: [jupyter, nbconvert]
