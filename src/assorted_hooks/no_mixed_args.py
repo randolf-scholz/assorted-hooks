@@ -5,9 +5,13 @@
 
 __all__ = [
     "check_file",
+    "func_has_mixed_args",
+    "get_classes",
+    "get_funcs_in_classes",
+    "get_funcs_outside_classes",
     "get_functions",
-    "has_mixed_args",
     "main",
+    "method_has_mixed_args",
 ]
 
 import argparse
@@ -59,62 +63,49 @@ def get_funcs_outside_classes(tree: AST, /) -> Iterator[Func]:
                 yield node
 
 
-def func_has_mixed_args(node: Func, /) -> bool:
+def func_has_mixed_args(node: Func, /, *, allow_one: bool = False) -> bool:
     """Checks if the func allows mixed po/kwargs."""
-    return bool(node.args.args)
+    return len(node.args.args) > (allow_one and not node.args.posonlyargs)
 
 
-def method_has_mixed_args(node: Func, /) -> bool:
+def method_has_mixed_args(node: Func, /, *, allow_one: bool = False) -> bool:
     """Checks if the method allows mixed po/kwargs."""
     decorators = (d for d in node.decorator_list if isinstance(d, ast.Name))
     if "staticmethod" in [d.id for d in decorators]:
         return func_has_mixed_args(node)
 
-    if not node.args.posonlyargs and not node.args.args:
+    po_args = node.args.posonlyargs
+    args = node.args.args
+
+    if not po_args and not args:
         raise ValueError(
             f"Unreachable? Method has neither PO-args nor args"
             f"but is no staticmethod?? {vars(node)=}"
         )
 
-    if node.args.posonlyargs and not node.args.args:
-        # if there are any pos-only args, then the first arg must be self/cls
+    if len(args) <= (1 + allow_one) and not po_args:
         return False
 
-    if not node.args.posonlyargs and len(node.args.args) == 1:
-        return False
-
-    return True
+    return bool(args)
 
 
-def has_mixed_args(node: Func, /) -> bool:
-    """Checks if the node allows mixed po/kwargs."""
-    match len(node.args.args):
-        case 0:
-            return False
-        case 1:
-            arg = node.args.args[0]
-            if arg.arg in ("self", "cls"):
-                return False
-            return True
-        case _:
-            return True
-
-
-def check_file(fname: str | Path, /) -> bool:
+def check_file(
+    fname: str | Path,
+    /,
+    *,
+    allow_one: bool = False,
+    skip_non_po: bool = False,
+) -> bool:
     """Check whether the file contains mixed positional and keyword arguments."""
     with open(fname, "rb") as file:
         tree = ast.parse(file.read(), filename=fname)
 
     passed = True
 
-    # for node in get_functions(tree):
-    #     if has_mixed_args(node):
-    #         passed = False
-    #         arg = node.args.args[0]
-    #         print(f"{fname!s}:{arg.lineno}: Mixed positional and keyword arguments.")
-
     for node in get_funcs_in_classes(tree):
-        if method_has_mixed_args(node):
+        if skip_non_po and not node.args.posonlyargs:
+            continue
+        if method_has_mixed_args(node, allow_one=allow_one):
             passed = False
             arg = node.args.args[0]
             print(
@@ -123,7 +114,9 @@ def check_file(fname: str | Path, /) -> bool:
             )
 
     for node in get_funcs_outside_classes(tree):
-        if func_has_mixed_args(node):
+        if skip_non_po and not node.args.posonlyargs:
+            continue
+        if func_has_mixed_args(node, allow_one=allow_one):
             passed = False
             arg = node.args.args[0]
             print(
@@ -145,6 +138,20 @@ def main() -> None:
         nargs="+",
         help="One or multiple files, folders or file patterns.",
     )
+    parser.add_argument(
+        "--allow-one",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=False,
+        help="Allows a single positional_or_keyword argument (only applies when no PO).",
+    )
+    parser.add_argument(
+        "--skip-non-po",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=False,
+        help="Skip FunctionDefs without positional-only arguments.",
+    )
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
 
@@ -159,7 +166,11 @@ def main() -> None:
     # apply script to all files
     passed = True
     for file in files:
-        passed &= check_file(file)
+        passed &= check_file(
+            file,
+            allow_one=args.allow_one,
+            skip_non_po=args.skip_non_po,
+        )
 
     if not passed:
         sys.exit(1)
