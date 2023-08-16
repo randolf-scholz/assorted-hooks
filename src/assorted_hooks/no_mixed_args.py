@@ -12,6 +12,7 @@ __all__ = [
     "get_functions",
     "is_overload",
     "is_staticmethod",
+    "is_dunder",
     "main",
     "method_has_mixed_args",
 ]
@@ -83,6 +84,12 @@ def is_staticmethod(node: Func, /) -> bool:
     return "staticmethod" in [d.id for d in decorators]
 
 
+def is_dunder(node: Func, /) -> bool:
+    """Checks if the name is a dunder name."""
+    name = node.name
+    return name.startswith("__") and name.endswith("__") and name.isidentifier()
+
+
 def method_has_mixed_args(node: Func, /, *, allow_one: bool = False) -> bool:
     """Checks if the method allows mixed po/kwargs."""
     if is_staticmethod(node):
@@ -108,9 +115,10 @@ def check_file(
     /,
     *,
     allow_one: bool = False,
-    skip_non_po: bool = False,
-    ignore_overloads: bool = True,
+    ignore_dunder: bool = False,
     ignore_names: Collection[str] = (),
+    ignore_overloads: bool = True,
+    ignore_wo_pos_only: bool = False,
 ) -> bool:
     """Check whether the file contains mixed positional and keyword arguments."""
     with open(fname, "rb") as file:
@@ -119,11 +127,12 @@ def check_file(
     passed = True
 
     for node in get_funcs_in_classes(tree):
-        if skip_non_po and not node.args.posonlyargs:
-            continue
-        if ignore_overloads and is_overload(node):
-            continue
-        if node.name in ignore_names:
+        if (
+            (ignore_wo_pos_only and not node.args.posonlyargs)
+            or (ignore_overloads and is_overload(node))
+            or (node.name in ignore_names)
+            or (ignore_dunder and is_dunder(node))
+        ):
             continue
         if method_has_mixed_args(node, allow_one=allow_one):
             passed = False
@@ -140,11 +149,12 @@ def check_file(
             )
 
     for node in get_funcs_outside_classes(tree):
-        if skip_non_po and not node.args.posonlyargs:
-            continue
-        if ignore_overloads and is_overload(node):
-            continue
-        if node.name in ignore_names:
+        if (
+            (ignore_wo_pos_only and not node.args.posonlyargs)
+            or (ignore_overloads and is_overload(node))
+            or (node.name in ignore_names)
+            or (ignore_dunder and is_dunder(node))
+        ):
             continue
         if func_has_mixed_args(node, allow_one=allow_one):
             passed = False
@@ -182,11 +192,18 @@ def main() -> None:
         help="Allows a single positional_or_keyword argument (only applies when no PO).",
     )
     parser.add_argument(
-        "--ignore-without-positional-only",
+        "--ignore-names",
+        nargs="*",
+        type=str,
+        default=[],
+        help="Ignore all methods/functions with these names. (for example: 'forward')",
+    )
+    parser.add_argument(
+        "--ignore-dunder",
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=False,
-        help="Skip FunctionDefs without positional-only arguments.",
+        help="Ignore all methods/functions with dunder names.",
     )
     parser.add_argument(
         "--ignore-overloads",
@@ -196,11 +213,11 @@ def main() -> None:
         help="Ignore FunctionDefs that are @overload decorated..",
     )
     parser.add_argument(
-        "--ignore-names",
-        nargs="*",
-        type=str,
-        default=[],
-        help="Ignore all methods/functions with these names. (for example: '__init__')",
+        "--ignore-without-positional-only",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=False,
+        help="Skip FunctionDefs without positional-only arguments.",
     )
     parser.add_argument("--debug", action="store_true", help="Print debug information.")
     args = parser.parse_args()
@@ -219,9 +236,10 @@ def main() -> None:
         passed &= check_file(
             file,
             allow_one=args.allow_one,
-            skip_non_po=args.ignore_without_positional_only,
-            ignore_overloads=args.ignore_overloads,
+            ignore_dunder=args.ignore_dunder,
             ignore_names=args.ignore_names,
+            ignore_overloads=args.ignore_overloads,
+            ignore_wo_pos_only=args.ignore_without_positional_only,
         )
 
     if not passed:
