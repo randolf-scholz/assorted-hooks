@@ -46,8 +46,10 @@ Checks that all function definitions allow no `POSITIONAL_OR_KEYWORD` arguments.
 
 Options:
 
-- `--allow-one` allows a single `POSITIONAL_OR_KEYWORD` argument, if the function as no `POSITIONAL_ONLY` arguments.
+- `--allow-one` allows a single `POSITIONAL_OR_KEYWORD` argument
+  This is often ok, since there is no ambiguity of the order of arguments.
 - `--skip-non-po`: skip function defs that don't have any `POSITIONAL_ONLY` arguments.
+- `--ignore-overloads`: skip function defs that are overloads of other function defs. (default: `True`)
 
 Excluded are:
 
@@ -55,3 +57,17 @@ Excluded are:
 - functions inside docstrings
 - functions of the form `def foo(self): ...` (self is excluded)
 - functions of the form `def foo(cls): ...` (cls is excluded)
+
+## `python-no-blanket-type-ignore`
+
+A modified version of the hook at https://github.com/pre-commit/pygrep-hooks.
+
+- allows `# type: ignore` at the top of the file to ignore the whole file (cf. https://github.com/python/mypy/issues/964)
+- colon after "type" non-optional.
+
+## `python-no-builtin-eval`
+
+A modified version of the hook at https://github.com/pre-commit/pygrep-hooks.
+
+- allows `<obj>.eval`, e.g. `pandas.eval`.
+- only blank `eval(` and `builtins.eval(` are forbidden.

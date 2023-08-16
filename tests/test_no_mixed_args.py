@@ -1,5 +1,7 @@
 """Test no_mixed_args.py."""
 
+from typing import overload
+
 
 class Foo:
     """Dummy class."""
@@ -32,3 +34,17 @@ class Meta(type):
     def __new__(mcs, *args, **kwargs):
         """Dummy new."""
         return super().__new__(mcs, *args, **kwargs)
+
+
+@overload
+def foo(x, /):
+    ...
+
+
+@overload
+def foo(x, y, /):
+    ...
+
+
+def foo(x, y=None, /):
+    pass

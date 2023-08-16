@@ -7,6 +7,18 @@ repos:
   # local hooks
   - repo: local
     hooks:
+      - id: python-no-blanket-type-ignore
+        name: python-no-blanket-type-ignore
+        description: "Enforce that `# type: ignore` annotations always specify codes."
+        entry: '.# *type: *ignore(?!\[)'
+        language: pygrep
+        types: [python]
+      - id: python-no-builtin-eval
+        name: python-no-builtin-eval
+        description: "Disallows eval() but allows obj.eval()."
+        entry: '((\b)builtins\.|(?<!\.))eval\('
+        language: pygrep
+        types: [python]
       - id: check-imported-attributes
         name: check-imported-attributes
         entry: check-imported-attributes
@@ -17,7 +29,7 @@ repos:
       - id: no-mixed-args
         name: no-mixed-args
         entry: no-mixed-args
-        description: "Check for directly imported attributes."
+        description: "Check for disallowing positional_or_keyword arguments."
         language: python
         types: [python]
         files: (^src/|^tests/)
@@ -71,8 +83,6 @@ repos:
     rev: v1.10.0
     hooks:
       - id: python-check-blanket-noqa
-      - id: python-check-blanket-type-ignore
-      - id: python-no-eval
       - id: python-no-log-warn
       - id: rst-directive-colons
       - id: rst-inline-touching-normal

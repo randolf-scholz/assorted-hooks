@@ -10,6 +10,8 @@ __all__ = [
     "get_funcs_in_classes",
     "get_funcs_outside_classes",
     "get_functions",
+    "is_overload",
+    "is_staticmethod",
     "main",
     "method_has_mixed_args",
 ]
@@ -65,13 +67,24 @@ def get_funcs_outside_classes(tree: AST, /) -> Iterator[Func]:
 
 def func_has_mixed_args(node: Func, /, *, allow_one: bool = False) -> bool:
     """Checks if the func allows mixed po/kwargs."""
-    return len(node.args.args) > (allow_one and not node.args.posonlyargs)
+    return len(node.args.args) > allow_one
+
+
+def is_overload(node: Func, /) -> bool:
+    """Checks if the func is an overload."""
+    decorators = (d for d in node.decorator_list if isinstance(d, ast.Name))
+    return "overload" in [d.id for d in decorators]
+
+
+def is_staticmethod(node: Func, /) -> bool:
+    """Checks if the func is a staticmethod."""
+    decorators = (d for d in node.decorator_list if isinstance(d, ast.Name))
+    return "staticmethod" in [d.id for d in decorators]
 
 
 def method_has_mixed_args(node: Func, /, *, allow_one: bool = False) -> bool:
     """Checks if the method allows mixed po/kwargs."""
-    decorators = (d for d in node.decorator_list if isinstance(d, ast.Name))
-    if "staticmethod" in [d.id for d in decorators]:
+    if is_staticmethod(node):
         return func_has_mixed_args(node)
 
     po_args = node.args.posonlyargs
@@ -86,7 +99,7 @@ def method_has_mixed_args(node: Func, /, *, allow_one: bool = False) -> bool:
     if len(args) <= (1 + allow_one) and not po_args:
         return False
 
-    return bool(args)
+    return len(args) > allow_one
 
 
 def check_file(
@@ -95,6 +108,7 @@ def check_file(
     *,
     allow_one: bool = False,
     skip_non_po: bool = False,
+    ignore_overloads: bool = True,
 ) -> bool:
     """Check whether the file contains mixed positional and keyword arguments."""
     with open(fname, "rb") as file:
@@ -105,9 +119,17 @@ def check_file(
     for node in get_funcs_in_classes(tree):
         if skip_non_po and not node.args.posonlyargs:
             continue
+        if ignore_overloads and is_overload(node):
+            continue
         if method_has_mixed_args(node, allow_one=allow_one):
             passed = False
-            arg = node.args.args[0]
+            try:
+                arg = node.args.args[0]
+            except IndexError as exc:
+                raise RuntimeError(
+                    f'"{fname!s}:{node.lineno}" Something went wrong.' f" {vars(node)=}"
+                ) from exc
+
             print(
                 f"{fname!s}:{arg.lineno}:"
                 f" Mixed positional and keyword arguments in method."
@@ -116,9 +138,16 @@ def check_file(
     for node in get_funcs_outside_classes(tree):
         if skip_non_po and not node.args.posonlyargs:
             continue
+        if ignore_overloads and is_overload(node):
+            continue
         if func_has_mixed_args(node, allow_one=allow_one):
             passed = False
-            arg = node.args.args[0]
+            try:
+                arg = node.args.args[0]
+            except IndexError as exc:
+                raise RuntimeError(
+                    f'"{fname!s}:{node.lineno}" Something went wrong.' f" {vars(node)=}"
+                ) from exc
             print(
                 f"{fname!s}:{arg.lineno}:"
                 f" Mixed positional and keyword arguments in function."
@@ -146,11 +175,18 @@ def main() -> None:
         help="Allows a single positional_or_keyword argument (only applies when no PO).",
     )
     parser.add_argument(
-        "--skip-non-po",
+        "--ignore-without-positional-only",
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=False,
         help="Skip FunctionDefs without positional-only arguments.",
+    )
+    parser.add_argument(
+        "--ignore-overloads",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=True,
+        help="Ignore FunctionDefs that are @overload decorated..",
     )
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
@@ -169,7 +205,8 @@ def main() -> None:
         passed &= check_file(
             file,
             allow_one=args.allow_one,
-            skip_non_po=args.skip_non_po,
+            skip_non_po=args.ignore_without_positional_only,
+            ignore_overloads=args.ignore_overloads,
         )
 
     if not passed:
