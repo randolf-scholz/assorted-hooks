@@ -51,6 +51,7 @@ Options:
 - `--ignore-overloads`: skip function defs that are overloads of other function defs. (default: `True`)
 - `--ignore-names`: skip function defs with specific names (default: `[]`)
 - `--ignore-dunder`: skip function defs that are dunder methods (default: `False`)
+- `--ignore-private`: skip function defs that are private (default: `False`)
 - `--ignore-without-positional-only`: skip function defs that don't have any `POSITIONAL_ONLY` arguments. (default: `False`)
 
 Excluded are:

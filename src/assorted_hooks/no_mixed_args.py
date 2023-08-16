@@ -10,9 +10,10 @@ __all__ = [
     "get_funcs_in_classes",
     "get_funcs_outside_classes",
     "get_functions",
-    "is_overload",
-    "is_staticmethod",
     "is_dunder",
+    "is_overload",
+    "is_private",
+    "is_staticmethod",
     "main",
     "method_has_mixed_args",
 ]
@@ -90,10 +91,16 @@ def is_dunder(node: Func, /) -> bool:
     return name.startswith("__") and name.endswith("__") and name.isidentifier()
 
 
+def is_private(node: Func, /) -> bool:
+    """Checks if the name is a private name."""
+    name = node.name
+    return name.startswith("_") and not name.startswith("__") and name.isidentifier()
+
+
 def method_has_mixed_args(node: Func, /, *, allow_one: bool = False) -> bool:
     """Checks if the method allows mixed po/kwargs."""
     if is_staticmethod(node):
-        return func_has_mixed_args(node)
+        return func_has_mixed_args(node, allow_one=allow_one)
 
     po_args = node.args.posonlyargs
     args = node.args.args
@@ -118,6 +125,7 @@ def check_file(
     ignore_dunder: bool = False,
     ignore_names: Collection[str] = (),
     ignore_overloads: bool = True,
+    ignore_private: bool = False,
     ignore_wo_pos_only: bool = False,
 ) -> bool:
     """Check whether the file contains mixed positional and keyword arguments."""
@@ -132,6 +140,7 @@ def check_file(
             or (ignore_overloads and is_overload(node))
             or (node.name in ignore_names)
             or (ignore_dunder and is_dunder(node))
+            or (ignore_private and is_private(node))
         ):
             continue
         if method_has_mixed_args(node, allow_one=allow_one):
@@ -154,6 +163,7 @@ def check_file(
             or (ignore_overloads and is_overload(node))
             or (node.name in ignore_names)
             or (ignore_dunder and is_dunder(node))
+            or (ignore_private and is_private(node))
         ):
             continue
         if func_has_mixed_args(node, allow_one=allow_one):
@@ -203,7 +213,14 @@ def main() -> None:
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=False,
-        help="Ignore all methods/functions with dunder names.",
+        help="Ignore all dunder methods/functions (e.g. __init__).",
+    )
+    parser.add_argument(
+        "--ignore-private",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=False,
+        help="Ignore all private methods/functions (e.g. _method).",
     )
     parser.add_argument(
         "--ignore-overloads",
@@ -240,6 +257,7 @@ def main() -> None:
             ignore_names=args.ignore_names,
             ignore_overloads=args.ignore_overloads,
             ignore_wo_pos_only=args.ignore_without_positional_only,
+            ignore_private=args.ignore_private,
         )
 
     if not passed:
