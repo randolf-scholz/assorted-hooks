@@ -19,17 +19,17 @@ repos:
         entry: '((\b)builtins\.|(?<!\.))eval\('
         language: pygrep
         types: [python]
-      - id: check-imported-attributes
-        name: check-imported-attributes
-        entry: check-imported-attributes
-        description: "Check for directly imported attributes."
+      - id: python-no-mixed-args
+        name: python-no-mixed-args
+        entry: no-mixed-args
+        description: "Check for disallowing positional_or_keyword arguments."
         language: python
         types: [python]
         files: (^src/|^tests/)
-      - id: no-mixed-args
-        name: no-mixed-args
-        entry: no-mixed-args
-        description: "Check for disallowing positional_or_keyword arguments."
+      - id: python-use-imported-attributes
+        name: python-use-imported-attributes
+        entry: check-imported-attributes
+        description: "Checks that Bar is used instead of foo.Bar if both foo and Bar are imported."
         language: python
         types: [python]
         files: (^src/|^tests/)

@@ -1,10 +1,10 @@
-- id: check-imported-attributes
+- id: python-use-imported-attributes
   description: "Checks that Bar is used instead of foo.Bar if both foo and Bar are imported."
   entry: check-imported-attributes
   language: python
-  name: check-imported-attributes
+  name: python-use-imported-attributes
   types: [python]
-- id: no-mixed-args
+- id: python-no-mixed-args
   description: "Check for disallowing positional_or_keyword arguments."
   entry: no-mixed-args
   language: python
