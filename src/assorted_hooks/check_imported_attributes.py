@@ -28,6 +28,8 @@ from ast import AST, Attribute, Name
 from collections.abc import Iterator
 from pathlib import Path
 
+from assorted_hooks.utils import get_python_files
+
 
 def get_attributes(tree: AST, /) -> Iterator[Attribute]:
     """Get all attribute nodes."""
@@ -92,7 +94,7 @@ def get_imported_attributes(tree: AST, /) -> Iterator[tuple[Attribute, Name, str
                 yield node, parent, string
 
 
-def check_file(file_path: Path, /, debug: bool = False) -> bool:
+def check_file(file_path: Path, /, *, debug: bool = False) -> bool:
     """Finds shadowed attributes in a file."""
     # Your code here
     with open(file_path, "r") as file:
@@ -133,24 +135,7 @@ def main() -> None:
     args = parser.parse_args()
 
     # find all files
-    root = Path.cwd().absolute()
-    files: list[Path] = []
-    for file_or_pattern in args.files:
-        # case: file
-        path = Path(file_or_pattern).absolute()
-        if path.exists():
-            if path.is_file():
-                files.append(path)
-            if path.is_dir():
-                files.extend(path.glob("**/*.py"))
-            continue
-        else:
-            matches = list(root.glob(file_or_pattern))
-            if not matches:
-                raise FileNotFoundError(
-                    f"Pattern {file_or_pattern!r} did not match any files."
-                )
-            files.extend(matches)
+    files: list[Path] = get_python_files(args.files)
 
     if args.debug:
         print("Files:")

@@ -331,7 +331,9 @@ def group_dependencies(dependencies: set[str], /) -> GroupedDependencies:
     )
 
 
-def collect_dependencies(fname: str | Path, /, raise_notfound: bool = True) -> set[str]:
+def collect_dependencies(
+    fname: str | Path, /, *, raise_notfound: bool = True
+) -> set[str]:
     """Collect the third-party dependencies from files in the given path."""
     path = Path(fname)
     dependencies = set()

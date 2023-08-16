@@ -4,6 +4,12 @@
   description: "Check for directly imported attributes."
   language: python
   types: [python]
+- id: no-mixed-args
+  name: no-mixed-args
+  entry: no-mixed-args
+  description: "Check for directly imported attributes."
+  language: python
+  types: [python]
 - id: jupyter-clear-output
   name: jupyter-clear-output
   description: "Remove output from jupyter notebooks."
