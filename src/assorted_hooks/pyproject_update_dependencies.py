@@ -66,15 +66,15 @@ def pyproject_update_dependencies(fname: str, /, *, debug: bool = False) -> None
         print(f"Installed packages: {get_pip_package_dict()}")
 
     # update pyproject.dependencies
-    pyproject_pattern = re.compile(r'"(([a-zA-Z0-9_-]*)>=([0-9.]*)")')
+    pyproject_pattern = re.compile(r'"(([a-zA-Z0-9_-]*)>=([0-9.]*))')
     pyproject = update_versions(pyproject, version_pattern=pyproject_pattern)
 
     # update tool.poetry.dependencies
-    poetry_pattern = re.compile(r'(([a-zA-Z0-9_-]*) = ">=([0-9.]*)")')
+    poetry_pattern = re.compile(r'(([a-zA-Z0-9_-]*) = ">=([0-9.]*))')
     pyproject = update_versions(pyproject, version_pattern=poetry_pattern)
 
     # needed for things like `black = {version = ">=23.7.0", extras = ["d", "jupyter"]}`
-    version_pattern = re.compile(r'(([a-zA-Z0-9_-]*) = \{\s?version = ">=([0-9.]*)")')
+    version_pattern = re.compile(r'(([a-zA-Z0-9_-]*) = \{\s?version = ">=([0-9.]*))')
     pyproject = update_versions(pyproject, version_pattern=version_pattern)
 
     with open(fname, "w", encoding="utf8") as file:
