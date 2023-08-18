@@ -442,6 +442,12 @@ def main() -> None:
         help="Raise error if pyproject.toml lists unused test dependencies",
     )
     parser.add_argument(
+        "--error-superfluous-test-deps",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Raise error if test dependency is superfluous.",
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Disables silencing of import messages.",
@@ -529,6 +535,15 @@ def main() -> None:
         pyproject_dependencies=pyproject_test_dependencies,
         imported_dependencies=imported_test_dependencies,
     )
+
+    if (
+        superfluous_test_deps := imported_dependencies & pyproject_test_dependencies
+    ) and args.error_superfluous_test_deps:
+        raise ValueError(
+            f"Found superfluous test dependencies!"
+            f"\nSuperfluous test dependencies: {superfluous_test_deps}."
+            f"\nAre not needed since they are already listed in [project] or [tool.poetry.dependencies]."
+        )
     if (
         missing_test_deps
         or unknown_test_deps
