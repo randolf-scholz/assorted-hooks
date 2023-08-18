@@ -90,10 +90,3 @@ Tests that "line-break" comments a la
 ```
 
 are exactly 88 characters long.
-
-## jupyter-based hooks
-
-### `jupyter-clear-output`
-
-This hook clears the output of jupyter notebooks. This is useful to avoid large diffs in commits. Use the `files`
-and `exclude` configuration options to specify which notebooks should be spared.

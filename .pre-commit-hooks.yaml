@@ -12,13 +12,6 @@
   language: python
   name: python-no-mixed-args
   types: [python]
-- id: jupyter-clear-output
-  additional_dependencies: [jupyter, nbconvert]
-  description: "Remove output from jupyter notebooks."
-  entry: jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace
-  language: python
-  name: jupyter-clear-output
-  types: [jupyter]
 - id: pyproject-validate-version
   description: "Validate python version (PEP-440)."
   entry: pyproject-validate-version

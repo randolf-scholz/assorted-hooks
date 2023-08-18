@@ -7,13 +7,6 @@ repos:
   # local hooks
   - repo: local
     hooks:
-      - id: jupyter-clear-output
-        name: jupyter-clear-output
-        description: "Remove output from jupyter notebooks."
-        additional_dependencies: [jupyter, nbconvert]
-        entry: jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace
-        language: python
-        types: [jupyter]
       - id: pyproject-validate-version
         name: pyproject-validate-version
         entry: pyproject-validate-version
