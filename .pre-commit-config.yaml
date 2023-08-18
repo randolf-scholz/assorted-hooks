@@ -39,9 +39,9 @@ repos:
         entry: '((\b)builtins\.|(?<!\.))eval\('
         language: pygrep
         types: [python]
-      - id: python-no-mixed-args
-        name: python-no-mixed-args
-        entry: no-mixed-args
+      - id: python-check-no-mixed-args
+        name: python-check-no-mixed-args
+        entry: check-no-mixed-args
         description: "Check for disallowing positional_or_keyword arguments."
         language: python
         types: [python]
@@ -53,11 +53,11 @@ repos:
         language: python
         types: [python]
         files: (^src/|^tests/)
-      - id: python-prefer-abc-typing
-        name: python-prefer-abc-typing
-        description: "Prefer collections.abc over typing Protocols."
-        entry: prefer-abc-typing
+      - id: python-check-standard-generics
+        description: "Use standard generics (PEP-585): typing.Sequence -> abc.Sequence, typing.List -> list."
+        entry: check-standard-generics
         language: python
+        name: python-check-standard-generics
         types: [python]
         files: (^src/|^tests/)
       - id: check-separator-length

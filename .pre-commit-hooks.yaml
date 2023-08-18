@@ -6,11 +6,11 @@
   language: python
   name: python-use-imported-attributes
   types: [python]
-- id: python-no-mixed-args
+- id: python-check-no-mixed-args
   description: "Check for disallowing positional_or_keyword arguments."
-  entry: no-mixed-args
+  entry: check-no-mixed-args
   language: python
-  name: python-no-mixed-args
+  name: python-check-no-mixed-args
   types: [python]
 - id: pyproject-validate-version
   description: "Validate python version (PEP-440)."
@@ -46,11 +46,11 @@
   language: pygrep
   name: python-no-builtin-eval
   types: [python]
-- id: python-prefer-abc-typing
-  description: "Prefer collections.abc over typing Protocols."
-  entry: prefer-abc-typing
+- id: python-check-standard-generics
+  description: "Use standard generics (PEP-585): typing.Sequence -> abc.Sequence, typing.List -> list."
+  entry: check-standard-generics
   language: python
-  name: python-prefer-abc-typing
+  name: python-check-standard-generics
   types: [python]
 - id: check-separator-length
   description: "Check that 'line-break'-comments are the right length (default: 88)."

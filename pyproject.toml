@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 requires-python = ">=3.11"
 name = "assorted-hooks"
-version = "0.1.20"
+version = "0.1.21"
 
 authors = [{name="Randolf Scholz", email="randolf.scholz@gmail.com"},]
 description = "Custom pre-commit hooks"
@@ -34,11 +34,11 @@ repository = "https://github.com/randolf-scholz/assorted-hooks"
 
 [project.scripts]
 check-imported-attributes = "assorted_hooks.check_imported_attributes:main"
-pyproject-validate-version = "assorted_hooks.pyproject_validate_version:main"
-pyproject-update-deps = "assorted_hooks.pyproject_update_dependencies:main"
+check-standard-generics = "assorted_hooks.check_standard_generics:main"
+check-no-mixed-args = "assorted_hooks.no_mixed_args:main"
 pyproject-check-deps = "assorted_hooks.pyproject_check_dependencies:main"
-no-mixed-args = "assorted_hooks.no_mixed_args:main"
-prefer-abc-typing = "assorted_hooks.prefer_abc_typing:main"
+pyproject-update-deps = "assorted_hooks.pyproject_update_dependencies:main"
+pyproject-validate-version = "assorted_hooks.pyproject_validate_version:main"
 
 
 # region flake8 configuration ----------------------------------------------------------
