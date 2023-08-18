@@ -1,3 +1,5 @@
+# Custom hooks for pre-commit.
+
 - id: python-use-imported-attributes
   description: "Checks that Bar is used instead of foo.Bar if both foo and Bar are imported."
   entry: check-imported-attributes
@@ -23,6 +25,7 @@
   files: ^pyproject\.toml$
   language: python
   name: pyproject-validate-version
+  types: [toml]
 - id: pyproject-update-deps
   description: "Update dependencies to >=currently_installed. (default: manual)"
   entry: "./src/assorted_hooks/pyproject_update_dependencies.py"
@@ -30,27 +33,35 @@
   language: script
   name: pyproject-update-deps
   stages: [manual]
+  types: [toml]
 - id: pyproject-check-deps
   description: "Check that listed dependencies are used in code and vice-versa."
   entry: "./src/assorted_hooks/pyproject_check_dependencies.py"
   files: ^pyproject\.toml$
   language: script
   name: pyproject-check-deps
+  types: [toml]
 - id: python-no-blanket-type-ignore
-  name: python-no-blanket-type-ignore
   description: "Enforce that `# type: ignore` annotations always specify codes."
   entry: '.# *type: *ignore(?!\[)'
   language: pygrep
+  name: python-no-blanket-type-ignore
   types: [python]
 - id: python-no-builtin-eval
-  name: python-no-builtin-eval
   description: "Disallows eval() but allows obj.eval()."
   entry: '((\b)builtins\.|(?<!\.))eval\('
   language: pygrep
+  name: python-no-builtin-eval
   types: [python]
 - id: python-prefer-abc-typing
-  name: python-prefer-abc-typing
   description: "Prefer collections.abc over typing Protocols."
   entry: prefer-abc-typing
   language: python
+  name: python-prefer-abc-typing
+  types: [python]
+- id: check-separator-length
+  description: "Check that 'line-break'-comments are the right length (default: 88)."
+  entry: ^#(.{0,83}|.{85,})([-=═─—])\2{2}$
+  language: pygrep
+  name: check-separator-length
   types: [python]

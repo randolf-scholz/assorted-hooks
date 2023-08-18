@@ -67,7 +67,13 @@ repos:
         language: python
         types: [python]
         files: (^src/|^tests/)
-
+      - id: check-separator-length
+        description: "Check that 'line-break'-comments are the right length (default: 88)."
+        entry: ^#(.{0,83}|.{85,})([-=═─—])\2{2}$
+        language: pygrep
+        name: check-separator-length
+        types: [python]
+        files: (^src/|^tests/)
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:

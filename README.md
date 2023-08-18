@@ -2,6 +2,8 @@
 
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
+## python-based hooks
+
 ## `check-imported-attributes`
 
 This hook checks that if both a module is imported and some class/function from that module, always the directly imported symbol is used.
@@ -15,30 +17,9 @@ def foo(x: Sequence) -> Sequence:
     return x
 ```
 
-## `jupyter-clear-output`
+## `prefer-abc-typing`
 
-This hook clears the output of jupyter notebooks. This is useful to avoid large diffs in commits. Use the `files`
-and `exclude` configuration options to specify which notebooks should be spared.
-
-## `pyproject-validate-version`
-
-Verifies that the version in `pyproject.toml` adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/).
-
-Details: https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
-
-## `pyproject-update-deps`
-
-Updates dependencies in `pyproject.toml`.
-
-- `"package>=version"` ⟶ `"package>=currently_installed"` (`[project]` section)
-- `package=">=version"` ⟶ `package=">=currently_installed"` (`[tool.poetry]` section)
-- `package={version=">=version"` ⟶ `package={version=">=currently_installed"` (`[tool.poetry]` section)
-
-## `pyproject-check-dependencies`
-
-Analyzes all `import`-statements and makes sure all third-party dependencies are listed in `pyproject.toml`. Can be
-applied to test-dependencies as well. This catches missing implicit dependencies, for example package `panads`
-depends on `numpy` but numpy should still be listed in `pyproject.toml` if it is used explicitly.
+Checks that `collections.abc` is used instead of `typing` for Protocols (`Sequence`, `Mapping`, etc.).
 
 ## `python-no-mixed-args`
 
@@ -62,20 +43,57 @@ Excluded are:
 - functions of the form `def foo(self): ...` (self is excluded)
 - functions of the form `def foo(cls): ...` (cls is excluded)
 
-## `python-no-blanket-type-ignore`
+## pyproject-validation hooks
+
+### `pyproject-validate-version`
+
+Verifies that the version in `pyproject.toml` adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/).
+
+Details: https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
+
+### `pyproject-update-deps`
+
+Updates dependencies in `pyproject.toml`.
+
+- `"package>=version"` ⟶ `"package>=currently_installed"` (`[project]` section)
+- `package=">=version"` ⟶ `package=">=currently_installed"` (`[tool.poetry]` section)
+- `package={version=">=version"` ⟶ `package={version=">=currently_installed"` (`[tool.poetry]` section)
+
+### `pyproject-check-dependencies`
+
+Analyzes all `import`-statements and makes sure all third-party dependencies are listed in `pyproject.toml`. Can be
+applied to test-dependencies as well. This catches missing implicit dependencies, for example package `panads`
+depends on `numpy` but numpy should still be listed in `pyproject.toml` if it is used explicitly.
+
+## pygrep-based hooks
+
+### `python-no-blanket-type-ignore`
 
 A modified version of the hook at https://github.com/pre-commit/pygrep-hooks.
 
 - allows `# type: ignore` at the top of the file to ignore the whole file (cf. https://github.com/python/mypy/issues/964)
 - colon after "type" non-optional.
 
-## `python-no-builtin-eval`
+### `python-no-builtin-eval`
 
 A modified version of the hook at https://github.com/pre-commit/pygrep-hooks.
 
 - allows `<obj>.eval`, e.g. `pandas.eval`.
 - only blank `eval(` and `builtins.eval(` are forbidden.
 
-## `prefer-abc-typing`
+### `check-separator-length`
 
-Checks that `collections.abc` is used instead of `typing` for Protocols (`Sequence`, `Mapping`, etc.).
+Tests that "line-break" comments a la
+
+```python
+# ------------------------------------------------------
+```
+
+are exactly 88 characters long.
+
+## jupyter-based hooks
+
+### `jupyter-clear-output`
+
+This hook clears the output of jupyter notebooks. This is useful to avoid large diffs in commits. Use the `files`
+and `exclude` configuration options to specify which notebooks should be spared.
