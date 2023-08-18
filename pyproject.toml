@@ -35,7 +35,7 @@ repository = "https://github.com/randolf-scholz/assorted-hooks"
 [project.scripts]
 check-imported-attributes = "assorted_hooks.check_imported_attributes:main"
 check-standard-generics = "assorted_hooks.check_standard_generics:main"
-check-no-mixed-args = "assorted_hooks.no_mixed_args:main"
+check-no-mixed-args = "assorted_hooks.check_no_mixed_args:main"
 pyproject-check-deps = "assorted_hooks.pyproject_check_dependencies:main"
 pyproject-update-deps = "assorted_hooks.pyproject_update_dependencies:main"
 pyproject-validate-version = "assorted_hooks.pyproject_validate_version:main"

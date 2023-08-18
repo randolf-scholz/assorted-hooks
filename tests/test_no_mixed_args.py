@@ -1,4 +1,4 @@
-"""Test no_mixed_args.py."""
+"""Test check_no_mixed_args.py."""
 
 from typing import overload
 
