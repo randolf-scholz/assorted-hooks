@@ -1,8 +1,42 @@
 #!/usr/bin/env python
-"""Updates the pyproject.toml dependencies to the currently installed versions."""
+"""Updates the pyproject.toml dependencies to the currently installed versions.
+
+References
+----------
+- (Final) PEP 440 – Version Identification and Dependency Specification
+  https://peps.python.org/pep-0440/
+- (Final) PEP 508 – Dependency specification for Python Software Packages
+  https://peps.python.org/pep-0508/
+- (Final) PEP 621 – Storing project metadata in pyproject.toml
+  https://peps.python.org/pep-0621/
+- (Superseded) PEP 631 – Dependency specification in pyproject.toml based on PEP 508
+  https://peps.python.org/pep-0631/
+- (Rejected) PEP 633 – Dependency specification in pyproject.toml using an exploded TOML table
+  https://peps.python.org/pep-0633/
+"""
 
 
 __all__ = [
+    # CONSTANTS
+    "EXTRAS",
+    "EXTRAS_GROUP",
+    "EXTRAS_REGEX",
+    "NAME",
+    "NAME_GROUP",
+    "NAME_REGEX",
+    "POETRY_DEP",
+    "POETRY_DEP_GROUP",
+    "POETRY_DEP_REGEX",
+    "POETRY_EXT_DEP",
+    "POETRY_EXT_DEP_GROUP",
+    "POETRY_EXT_DEP_REGEX",
+    "PROJECT_DEP",
+    "PROJECT_DEP_GROUP",
+    "PROJECT_DEP_REGEX",
+    "VERSION",
+    "VERSION_GROUP",
+    "VERSION_REGEX",
+    # Functions
     "get_pip_package_dict",
     "main",
     "pyproject_update_dependencies",
@@ -16,6 +50,64 @@ import re
 import subprocess
 from functools import cache
 from typing import Literal
+
+# https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
+VERSION = r"""(?ix:                                       # case-insensitive, verbose
+    v?(?:
+        (?:(?P<epoch>[0-9]+)!)?                           # epoch
+        (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
+        (?P<pre>                                          # pre-release
+            [-_.]?
+            (?P<pre_l>(a|b|c|rc|alpha|beta|pre|preview))
+            [-_.]?
+            (?P<pre_n>[0-9]+)?
+        )?
+        (?P<post>                                         # post release
+            (?:-(?P<post_n1>[0-9]+))
+            |
+            (?:
+                [-_.]?
+                (?P<post_l>post|rev|r)
+                [-_.]?
+                (?P<post_n2>[0-9]+)?
+            )
+        )?
+        (?P<dev>                                          # dev release
+            [-_.]?
+            (?P<dev_l>dev)
+            [-_.]?
+            (?P<dev_n>[0-9]+)?
+        )?
+    )
+    (?:\+(?P<local>[a-z0-9]+(?:[-_.][a-z0-9]+)*))?        # local version
+)"""
+VERSION_GROUP = rf"""(?P<version>{VERSION})"""
+VERSION_REGEX: re.Pattern = re.compile(VERSION_GROUP)
+
+# https://peps.python.org/pep-0508/#names
+# NOTE: we modify this regex a bit to allow to match inside context
+NAME = r"""\b[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?\b"""
+NAME_GROUP = rf"""(?P<name>{NAME})"""
+NAME_REGEX = re.compile(NAME_GROUP)
+
+# NOTE: to get a list of extras, match NAME_PATTERN with EXTRAS_PATTERN
+EXTRAS = rf"""\[\s*(?:{NAME})(?:\s*,{NAME})*\s*\]"""
+EXTRAS_GROUP = rf"""(?P<extras>{EXTRAS})"""
+EXTRAS_REGEX = re.compile(EXTRAS_GROUP)
+
+PROJECT_DEP = rf"""["']{NAME_GROUP}{EXTRAS_GROUP}?\s*>=\s*{VERSION_GROUP}"""
+PROJECT_DEP_GROUP = rf"""(?P<DEPENDENCY>{PROJECT_DEP})"""
+PROJECT_DEP_REGEX = re.compile(PROJECT_DEP_GROUP)
+
+POETRY_DEP = rf"""{NAME_GROUP}\s*=\s*['"]\s*>=\s*{VERSION_GROUP}"""
+POETRY_DEP_GROUP = rf"""(?P<DEPENDENCY>{POETRY_DEP})"""
+POETRY_DEP_REGEX = re.compile(POETRY_DEP_GROUP)
+
+POETRY_EXT_DEP = (
+    rf"""{NAME_GROUP}\s*=\s*\{{\s*version\s*=\s*['"]\s*>=\s*{VERSION_GROUP}\}}"""
+)
+POETRY_EXT_DEP_GROUP = rf"""(?P<DEPENDENCY>{POETRY_EXT_DEP})"""
+POETRY_EXT_DEP_REGEX = re.compile(POETRY_DEP_GROUP)
 
 
 @cache
@@ -65,17 +157,15 @@ def pyproject_update_dependencies(fname: str, /, *, debug: bool = False) -> None
         print(f"Processing {fname!r}")
         print(f"Installed packages: {get_pip_package_dict()}")
 
-    # update pyproject.dependencies
-    pyproject_pattern = re.compile(r'"(([a-zA-Z0-9_-]*)>=([0-9.]*))')
-    pyproject = update_versions(pyproject, version_pattern=pyproject_pattern)
+    # update [project.dependencies] and [project.optional-dependencies]
+    pyproject = update_versions(pyproject, version_pattern=PROJECT_DEP_REGEX)
 
-    # update tool.poetry.dependencies
-    poetry_pattern = re.compile(r'(([a-zA-Z0-9_-]*) = ">=([0-9.]*))')
-    pyproject = update_versions(pyproject, version_pattern=poetry_pattern)
+    # update [tool.poetry.dependencies] and [tool.poetry.group.<name>.dependencies]
+    pyproject = update_versions(pyproject, version_pattern=POETRY_DEP_REGEX)
 
-    # needed for things like `black = {version = ">=23.7.0", extras = ["d", "jupyter"]}`
-    version_pattern = re.compile(r'(([a-zA-Z0-9_-]*) = \{\s?version = ">=([0-9.]*))')
-    pyproject = update_versions(pyproject, version_pattern=version_pattern)
+    # Update dependencies of the form `black = {version = ">=23.7.0", extras = ["d", "jupyter"]}`
+    # NOTE: We assume that the version is always the first key in the table
+    pyproject = update_versions(pyproject, version_pattern=POETRY_EXT_DEP_REGEX)
 
     with open(fname, "w", encoding="utf8") as file:
         # update the file

@@ -1,13 +1,17 @@
 #!/usr/bin/env python
 """Validate version strings in pyproject.toml.
 
-References:
-    https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
+References
+----------
+- https://peps.python.org/pep-0440
 """
 
 __all__ = [
-    "VERSION_PATTERN",
+    # CONSTANTS
+    "VERSION",
+    "VERSION_GROUP",
     "VERSION_REGEX",
+    # Functions
     "validate_version",
     "process_pyproject",
     "main",
@@ -18,41 +22,38 @@ import argparse
 import re
 import tomllib
 
-VERSION_PATTERN = r"""
-    v?
-    (?:
+# https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
+VERSION = r"""(?ix:                                       # case-insensitive, verbose
+    v?(?:
         (?:(?P<epoch>[0-9]+)!)?                           # epoch
         (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
         (?P<pre>                                          # pre-release
-            [-_\.]?
+            [-_.]?
             (?P<pre_l>(a|b|c|rc|alpha|beta|pre|preview))
-            [-_\.]?
+            [-_.]?
             (?P<pre_n>[0-9]+)?
         )?
         (?P<post>                                         # post release
             (?:-(?P<post_n1>[0-9]+))
             |
             (?:
-                [-_\.]?
+                [-_.]?
                 (?P<post_l>post|rev|r)
-                [-_\.]?
+                [-_.]?
                 (?P<post_n2>[0-9]+)?
             )
         )?
         (?P<dev>                                          # dev release
-            [-_\.]?
+            [-_.]?
             (?P<dev_l>dev)
-            [-_\.]?
+            [-_.]?
             (?P<dev_n>[0-9]+)?
         )?
     )
-    (?:\+(?P<local>[a-z0-9]+(?:[-_\.][a-z0-9]+)*))?       # local version
-"""
-
-VERSION_REGEX = re.compile(
-    r"^\s*" + VERSION_PATTERN + r"\s*$",
-    re.VERBOSE | re.IGNORECASE,
-)
+    (?:\+(?P<local>[a-z0-9]+(?:[-_.][a-z0-9]+)*))?        # local version
+)"""
+VERSION_GROUP = rf"""(?P<version>{VERSION})"""
+VERSION_REGEX: re.Pattern = re.compile(VERSION_GROUP)
 
 
 def get_version(pyproject: dict, /) -> str:
