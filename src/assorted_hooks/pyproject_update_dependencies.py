@@ -51,6 +51,12 @@ import subprocess
 from functools import cache
 from typing import Literal
 
+
+def ignore_subgroups(pattern: str, /) -> str:
+    """Ignore all named groups in the given pattern."""
+    return re.sub(r"\(\?P<[^>]+>", r"(?:", pattern)
+
+
 # https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
 VERSION = r"""(?ix:                                       # case-insensitive, verbose
     v?(?:
@@ -58,7 +64,7 @@ VERSION = r"""(?ix:                                       # case-insensitive, ve
         (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
         (?P<pre>                                          # pre-release
             [-_.]?
-            (?P<pre_l>(a|b|c|rc|alpha|beta|pre|preview))
+            (?P<pre_l>(?:a|b|c|rc|alpha|beta|pre|preview))
             [-_.]?
             (?P<pre_n>[0-9]+)?
         )?
@@ -81,33 +87,39 @@ VERSION = r"""(?ix:                                       # case-insensitive, ve
     )
     (?:\+(?P<local>[a-z0-9]+(?:[-_.][a-z0-9]+)*))?        # local version
 )"""
-VERSION_GROUP = rf"""(?P<version>{VERSION})"""
+VERSION_GROUP = rf"""(?P<version>{ignore_subgroups(VERSION)})"""
 VERSION_REGEX: re.Pattern = re.compile(VERSION_GROUP)
+assert VERSION_REGEX.groups == 1, f"{VERSION_REGEX.groups=}."
 
 # https://peps.python.org/pep-0508/#names
 # NOTE: we modify this regex a bit to allow to match inside context
 NAME = r"""\b[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?\b"""
 NAME_GROUP = rf"""(?P<name>{NAME})"""
 NAME_REGEX = re.compile(NAME_GROUP)
+assert VERSION_REGEX.groups == 1, f"{NAME_REGEX.groups=}."
 
 # NOTE: to get a list of extras, match NAME_PATTERN with EXTRAS_PATTERN
 EXTRAS = rf"""\[\s*(?:{NAME})(?:\s*,{NAME})*\s*\]"""
 EXTRAS_GROUP = rf"""(?P<extras>{EXTRAS})"""
 EXTRAS_REGEX = re.compile(EXTRAS_GROUP)
+assert EXTRAS_REGEX.groups == 1, f"{EXTRAS_REGEX.groups=}."
 
-PROJECT_DEP = rf"""["']{NAME_GROUP}{EXTRAS_GROUP}?\s*>=\s*{VERSION_GROUP}"""
+PROJECT_DEP = rf"""["']{NAME_GROUP}{EXTRAS}?\s*>=\s*{VERSION_GROUP}"""
 PROJECT_DEP_GROUP = rf"""(?P<DEPENDENCY>{PROJECT_DEP})"""
 PROJECT_DEP_REGEX = re.compile(PROJECT_DEP_GROUP)
+assert PROJECT_DEP_REGEX.groups == 3, f"{PROJECT_DEP_REGEX.groups=}."
 
 POETRY_DEP = rf"""{NAME_GROUP}\s*=\s*['"]\s*>=\s*{VERSION_GROUP}"""
 POETRY_DEP_GROUP = rf"""(?P<DEPENDENCY>{POETRY_DEP})"""
 POETRY_DEP_REGEX = re.compile(POETRY_DEP_GROUP)
+assert POETRY_DEP_REGEX.groups == 3, f"{POETRY_DEP_REGEX.groups=}."
 
 POETRY_EXT_DEP = (
     rf"""{NAME_GROUP}\s*=\s*\{{\s*version\s*=\s*['"]\s*>=\s*{VERSION_GROUP}\}}"""
 )
 POETRY_EXT_DEP_GROUP = rf"""(?P<DEPENDENCY>{POETRY_EXT_DEP})"""
 POETRY_EXT_DEP_REGEX = re.compile(POETRY_DEP_GROUP)
+assert POETRY_EXT_DEP_REGEX.groups == 3, f"{POETRY_EXT_DEP_REGEX.groups=}."
 
 
 @cache
@@ -132,6 +144,7 @@ def update_versions(raw_file: str, /, *, version_pattern: re.Pattern) -> str:
     if version_pattern.groups != 3:
         raise ValueError(
             "version_pattern must have 3 groups (whole match, package name, version))"
+            f" Got {version_pattern.groups} groups (pattern: {version_pattern.pattern})."
         )
 
     pkg_dict = get_pip_package_dict()
