@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 requires-python = ">=3.11"
 name = "assorted-hooks"
-version = "0.1.24"
+version = "0.1.25"
 
 authors = [{name="Randolf Scholz", email="randolf.scholz@gmail.com"},]
 description = "Custom pre-commit hooks"
@@ -33,9 +33,10 @@ repository = "https://github.com/randolf-scholz/assorted-hooks"
 
 
 [project.scripts]
+check-__all__-exists = "assorted_hooks.check__all__exists:main"
 check-imported-attributes = "assorted_hooks.check_imported_attributes:main"
-check-standard-generics = "assorted_hooks.check_standard_generics:main"
 check-no-mixed-args = "assorted_hooks.check_no_mixed_args:main"
+check-standard-generics = "assorted_hooks.check_standard_generics:main"
 pyproject-check-deps = "assorted_hooks.pyproject_check_dependencies:main"
 pyproject-update-deps = "assorted_hooks.pyproject_update_dependencies:main"
 pyproject-validate-version = "assorted_hooks.pyproject_validate_version:main"

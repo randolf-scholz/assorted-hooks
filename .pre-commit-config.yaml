@@ -7,66 +7,80 @@ repos:
   # local hooks
   - repo: local
     hooks:
+      # pyproject.toml
       - id: pyproject-validate-version
         name: pyproject-validate-version
         entry: pyproject-validate-version
-        description: "Validate python version (PEP-440)."
-        language: python
         files: ^pyproject\.toml$
+        language: python
+        types: [toml]
+        description: "Validate python version (PEP-440)."
       - id: pyproject-update-deps
         name: pyproject-update-deps
         entry: "./src/assorted_hooks/pyproject_update_dependencies.py"
-        description: "Update dependencies to >=currently_installed. (default: manual)"
-        language: script
         files: ^pyproject\.toml$
+        language: script
         stages: [manual]
+        types: [toml]
+        description: "Update dependencies to >=currently_installed. (default: manual)"
       - id: pyproject-check-deps
         name: pyproject-check-deps
-        # entry: python -m assorted_hooks.pyproject_check_dependencies
         entry: "./src/assorted_hooks/pyproject_check_dependencies.py"
-        description: "Check that listed dependencies are used in code and vice-versa."
-        language: script
         files: ^pyproject\.toml$
+        language: script
+        types: [toml]
+        description: "Check that listed dependencies are used in code and vice-versa."
+      # pygrep
+      - id: check-separator-length
+        name: check-separator-length
+        entry: ^#(.{0,83}|.{85,})([-=═─—])\2{2}$
+        language: pygrep
+        types: [python]
+        files: (^src/|^tests/)
+        description: "Check that 'line-break'-comments are the right length (default: 88)."
       - id: python-no-blanket-type-ignore
         name: python-no-blanket-type-ignore
-        description: "Enforce that `# type: ignore` annotations always specify codes."
         entry: '.# *type: *ignore(?!\[)'
         language: pygrep
         types: [python]
+        files: (^src/|^tests/)
+        description: "Enforce that `# type: ignore` annotations always specify codes."
       - id: python-no-builtin-eval
         name: python-no-builtin-eval
-        description: "Disallows eval() but allows obj.eval()."
         entry: '((\b)builtins\.|(?<!\.))eval\('
         language: pygrep
         types: [python]
-      - id: python-check-no-mixed-args
-        name: python-check-no-mixed-args
-        entry: check-no-mixed-args
-        description: "Check for disallowing positional_or_keyword arguments."
-        language: python
-        types: [python]
         files: (^src/|^tests/)
+        description: "Disallows eval() but allows obj.eval()."
+      # ast-based
       - id: python-use-imported-attributes
         name: python-use-imported-attributes
         entry: check-imported-attributes
-        description: "Checks that Bar is used instead of foo.Bar if both foo and Bar are imported."
         language: python
         types: [python]
         files: (^src/|^tests/)
+        description: "Checks that Bar is used instead of foo.Bar if both foo and Bar are imported."
+      - id: python-check-no-mixed-args
+        name: python-check-no-mixed-args
+        entry: check-no-mixed-args
+        language: python
+        types: [python]
+        files: (^src/|^tests/)
+        description: "Check for disallowing positional_or_keyword arguments."
       - id: python-check-standard-generics
-        description: "Use standard generics (PEP-585): typing.Sequence -> abc.Sequence, typing.List -> list."
+        name: python-check-standard-generics
         entry: check-standard-generics
         language: python
-        name: python-check-standard-generics
         types: [python]
         files: (^src/|^tests/)
-      - id: check-separator-length
-        description: "Check that 'line-break'-comments are the right length (default: 88)."
-        entry: ^#(.{0,83}|.{85,})([-=═─—])\2{2}$
-        language: pygrep
-        name: check-separator-length
+        description: "Use standard generics (PEP-585): typing.Sequence -> abc.Sequence, typing.List -> list."
+      - id: python-check-__all__-exists
+        name: python-check-__all__-exists
+        entry: check-__all__-exists
+        language: python
         types: [python]
-        files: (^src/|^tests/)
+        files: ^src/
+        description: "Check that __all__ exists."
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:

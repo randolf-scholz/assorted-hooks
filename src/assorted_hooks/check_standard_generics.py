@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 """Check to ensure collections.abc is used instead of typing."""
 
+__all__ = [
+    "REPLACEMENTS",
+    "check_file",
+    "get_deprecated_aliases",
+    "main",
+]
 
 import argparse
 import ast

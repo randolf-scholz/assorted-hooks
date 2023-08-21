@@ -90,3 +90,11 @@ Tests that "line-break" comments a la
 ```
 
 are exactly 88 characters long.
+
+### `check-__all__-exists`
+
+- Checks that `__all__` is defined in all modules.
+- Checks that `__all__` is defined at the top of the file.
+- Checks that `__all__` is defined as a literal list (not tuple, set, etc.)
+- Checks that `__all__` is not defined multiple times.
+- Checks that `__all__` is not superfluous (i.e. contains all symbols defined in the module)
