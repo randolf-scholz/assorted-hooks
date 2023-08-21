@@ -48,6 +48,7 @@ import argparse
 import json
 import re
 import subprocess
+import sys
 from functools import cache
 from typing import Literal
 
@@ -161,14 +162,19 @@ def update_versions(raw_file: str, /, *, version_pattern: re.Pattern) -> str:
     return raw_file
 
 
-def pyproject_update_dependencies(fname: str, /, *, debug: bool = False) -> None:
+def pyproject_update_dependencies(
+    fname: str, /, *, autofix: bool = True, debug: bool = False
+) -> None:
     """Update the dependencies in pyproject.toml."""
     with open(fname, "r", encoding="utf8") as file:
-        pyproject = file.read()
+        original_pyproject = file.read()
 
     if debug:
         print(f"Processing {fname!r}")
         print(f"Installed packages: {get_pip_package_dict()}")
+
+    # new reference to the original file (strings are immutable)
+    pyproject = original_pyproject
 
     # update [project.dependencies] and [project.optional-dependencies]
     pyproject = update_versions(pyproject, version_pattern=PROJECT_DEP_REGEX)
@@ -180,9 +186,12 @@ def pyproject_update_dependencies(fname: str, /, *, debug: bool = False) -> None
     # NOTE: We assume that the version is always the first key in the table
     pyproject = update_versions(pyproject, version_pattern=POETRY_EXT_DEP_REGEX)
 
-    with open(fname, "w", encoding="utf8") as file:
+    if pyproject != original_pyproject:
+        if not autofix:
+            sys.exit(1)
         # update the file
-        file.write(pyproject)
+        with open(fname, "w", encoding="utf8") as file:
+            file.write(pyproject)
 
 
 def main() -> None:
@@ -199,13 +208,23 @@ def main() -> None:
         help="The path to the pyproject.toml file.",
     )
     parser.add_argument(
+        "--autofix",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Automatically fix errors.",
+    )
+    parser.add_argument(
         "--debug",
         action="store_true",
         help="Print debug information.",
     )
     args = parser.parse_args()
 
-    pyproject_update_dependencies(args.pyproject_file, debug=args.debug)
+    pyproject_update_dependencies(
+        args.pyproject_file,
+        autofix=args.autofix,
+        debug=args.debug,
+    )
 
 
 if __name__ == "__main__":

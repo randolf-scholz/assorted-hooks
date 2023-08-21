@@ -4,7 +4,7 @@
     <option name="enabledOnSave" value="true" />
     <option name="executionMode" value="BINARY" />
     <option name="pathToExecutable" value="$USER_HOME$/.pyenv/shims/black" />
-    <option name="sdkUUID" value="51f7a2ec-bcc3-4d85-b0b4-c2d15638680d" />
+    <option name="sdkUUID" value="9a8863cc-b4b4-46d9-9274-51b98555d623" />
   </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.11 (assorted-hooks)" project-jdk-type="Python SDK" />
   <component name="PythonCompatibilityInspectionAdvertiser">

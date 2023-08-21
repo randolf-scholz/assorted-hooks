@@ -453,11 +453,6 @@ def main() -> None:
         help="Disables silencing of import messages.",
     )
     parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="Print debug information.",
-    )
-    parser.add_argument(
         "--ignore-imported",
         default=[],
         nargs="*",
@@ -477,6 +472,11 @@ def main() -> None:
         nargs="*",
         type=str,
         help="list of pyproject test dependencies to ignore",
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Print debug information.",
     )
     args = parser.parse_args()
 
