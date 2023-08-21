@@ -101,6 +101,7 @@ are exactly 88 characters long.
 
 - Checks that `__all__` is defined in all modules.
 - Checks that `__all__` is defined at the top of the file.
+  - `__all__` should only be preceded by the module docstring and `__future__` imports.
 - Checks that `__all__` is defined as a literal list (not tuple, set, etc.)
 - Checks that `__all__` is not defined multiple times.
 - Checks that `__all__` is not superfluous (i.e. contains all symbols defined in the module)

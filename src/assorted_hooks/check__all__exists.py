@@ -1,7 +1,7 @@
 """Checks that __all__ exists in modules."""
 
 __all__ = [
-    "all_superfluous",
+    "is_superfluous",
     "check_file",
     "get__all__nodes",
     "main",
@@ -10,7 +10,19 @@ __all__ = [
 import argparse
 import ast
 import sys
-from ast import AST, AnnAssign, Assign, AugAssign, Constant, Expr, List, Module, Name
+from ast import (
+    AST,
+    AnnAssign,
+    Assign,
+    AugAssign,
+    Constant,
+    Expr,
+    Import,
+    ImportFrom,
+    List,
+    Module,
+    Name,
+)
 from collections import Counter
 from collections.abc import Iterator
 from pathlib import Path
@@ -32,6 +44,22 @@ def is__all__node(node: AST, /) -> TypeGuard[Assign | AnnAssign | AugAssign]:
     return False
 
 
+def is_future_import(node: AST, /) -> bool:
+    """Check whether a node is a future import."""
+    if isinstance(node, ImportFrom):
+        return node.module == "__future__"
+    if isinstance(node, Import):
+        return {imp.name for imp in node.names} <= {"__future__"}
+    return False
+
+
+def is_literal_list(node: AST, /) -> bool:
+    """Check whether node is a literal list of strings."""
+    return isinstance(node, List) and all(
+        isinstance(el, Constant) and isinstance(el.value, str) for el in node.elts
+    )
+
+
 def get__all__nodes(tree: Module, /) -> Iterator[Assign | AnnAssign | AugAssign]:
     """Get the __all__ node from the tree."""
     # NOTE: we are only interested in the module body.
@@ -40,7 +68,7 @@ def get__all__nodes(tree: Module, /) -> Iterator[Assign | AnnAssign | AugAssign]
             yield node
 
 
-def all_superfluous(tree: Module, /) -> bool:
+def is_superfluous(tree: Module, /) -> bool:
     """Check whether __all__ is superfluous."""
     # Basically, superfluous is the case if the file
     # only contains statements and expressions that do not produce locals.
@@ -53,12 +81,24 @@ def all_superfluous(tree: Module, /) -> bool:
     )
 
 
-def is_literal_list(node: Assign | AnnAssign, /) -> bool:
-    if not isinstance(node.value, List):
-        return False
-    return all(
-        isinstance(el, Constant) and isinstance(el.value, str) for el in node.value.elts
-    )
+def is_at_top(node: Assign | AnnAssign, /, *, module: Module) -> bool:
+    """Check whether node is at the top of the module.
+
+    The only things allowed before __all__ are:
+        - module docstring
+        - __future__ imports
+    """
+    body = module.body
+    loc = body.index(node)
+
+    # exclude docstring
+    assert len(body) > 0, "Expected at least one node in the body."
+    start = isinstance(body[0], Expr)
+
+    for n in body[start:loc]:
+        if not is_future_import(n):
+            return False
+    return True
 
 
 def check_file(
@@ -94,10 +134,11 @@ def check_file(
             print(f'"{fname!s}:0" No __all__ found.')
             passed = False
         case [node, *nodes]:
-            assert isinstance(
-                node, Assign | AnnAssign
-            ), "Expected __all__ to be an assignment."
-            if assert_literal and not is_literal_list(node):
+            if not isinstance(node, Assign | AnnAssign):
+                raise TypeError("Expected __all__ to be an assignment.")
+            if node.value is None:
+                raise ValueError("Expected __all__ to have a value.")
+            if assert_literal and not is_literal_list(node.value):
                 passed = False
                 print(f'"{fname!s}:{node.lineno}" __all__ is not a literal list.')
             if warn_annotated and isinstance(node, AnnAssign):
@@ -108,10 +149,10 @@ def check_file(
                 print(f'"{fname!s}:{node.lineno}" Multiple __all__ found.')
                 for n in nodes:
                     print(f'"{fname!s}:{n.lineno}" additional __all__.')
-            if warn_superfluous and all_superfluous(tree):
+            if warn_superfluous and is_superfluous(tree):
                 passed = False
                 print(f'"{fname!s}:{node.lineno}" __all__ is superfluous.')
-            if warn_location and node not in tree.body[:2]:
+            if warn_location and not is_at_top(node, module=tree):
                 passed = False
                 print(f'"{fname!s}:{node.lineno}" __all__ is not at the top.')
 
