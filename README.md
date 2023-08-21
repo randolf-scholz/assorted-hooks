@@ -53,6 +53,12 @@ Details: https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-wi
 
 ### `pyproject-update-deps`
 
+**NOTE: THIS HOOK IS SET TO MANUAL BY DEFAULT. RUN VIA**
+
+```bash
+pre-commit run --hook-stage manual pyproject-update-deps
+```
+
 Updates dependencies in `pyproject.toml`.
 
 - `"package>=version"` ⟶ `"package>=currently_installed"` (`[project]` section)
