@@ -12,7 +12,7 @@ Example:
 """
 
 __all__ = [
-    "get_attributes",
+    "get_pure_attributes",
     "get_full_attribute_parent",
     "get_imported_symbols",
     "get_imported_attributes",
@@ -27,14 +27,22 @@ import sys
 from ast import AST, Attribute, Name
 from collections.abc import Iterator
 from pathlib import Path
+from typing import TypeGuard
 
 from assorted_hooks.utils import get_python_files
 
 
-def get_attributes(tree: AST, /) -> Iterator[Attribute]:
-    """Get all attribute nodes."""
+def is_pure_attribute(node: AST, /) -> TypeGuard[Attribute]:
+    """Check whether a node is a pure attribute."""
+    return isinstance(node, Attribute) and (
+        isinstance(node.value, Name) or is_pure_attribute(node.value)
+    )
+
+
+def get_pure_attributes(tree: AST, /) -> Iterator[Attribute]:
+    """Get all nodes that consist only of attributes."""
     for node in ast.walk(tree):
-        if isinstance(node, Attribute):
+        if is_pure_attribute(node):
             yield node
 
 
@@ -43,13 +51,13 @@ def get_full_attribute_parent(node: Attribute | Name, /) -> tuple[Name, str]:
     if isinstance(node, Attribute):
         if not isinstance(node.value, Attribute | Name):
             raise ValueError(
-                f"{node.lineno}: Expected Attribute or Name, got {type(node.value)}"
+                f"Expected Attribute or Name, got {type(node.value)} {vars(node.value)=}"
             )
         parent, string = get_full_attribute_parent(node.value)
         return parent, f"{string}.{node.attr}"
 
     if not isinstance(node, Name):
-        raise ValueError(f"Expected ast.Name, got {type(node)}")
+        raise ValueError(f"Expected ast.Name, got {type(node)=}  {vars(node.value)=}")
 
     return node, node.id
 
@@ -76,7 +84,7 @@ def get_imported_attributes(tree: AST, /) -> Iterator[tuple[Attribute, Name, str
     """Finds attributes that can be replaced by directly imported symbols."""
     imported_symbols = get_imported_symbols(tree)
 
-    for node in get_attributes(tree):
+    for node in get_pure_attributes(tree):
         if node.attr in imported_symbols:
             # parent = get_full_attribute_string(node)
             parent, string = get_full_attribute_parent(node)
