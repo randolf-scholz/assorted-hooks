@@ -41,7 +41,10 @@ def get_attributes(tree: AST, /) -> Iterator[Attribute]:
 def get_full_attribute_parent(node: Attribute | Name, /) -> tuple[Name, str]:
     """Get the parent of an attribute node."""
     if isinstance(node, Attribute):
-        assert isinstance(node.value, (Attribute, Name))
+        if not isinstance(node.value, Attribute | Name):
+            raise ValueError(
+                f"{node.lineno}: Expected Attribute or Name, got {type(node.value)}"
+            )
         parent, string = get_full_attribute_parent(node.value)
         return parent, f"{string}.{node.attr}"
 

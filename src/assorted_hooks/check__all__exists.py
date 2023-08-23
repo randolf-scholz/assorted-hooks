@@ -159,7 +159,7 @@ def check_file(
         case []:
             if not is_superfluous(tree):
                 passed = False
-                print(f'"{fname!s}:0" No __all__ found.')
+                print(f"{fname!s}: No __all__ found.")
         case [node, *nodes]:
             if not isinstance(node, Assign | AnnAssign):
                 raise TypeError("Expected __all__ to be an assignment.")
