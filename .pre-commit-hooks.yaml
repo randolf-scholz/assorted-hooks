@@ -3,14 +3,14 @@
 # pyproject.toml
 - id: pyproject-validate-version
   name: pyproject-validate-version
-  entry: pyproject-validate-version
+  entry: "./src/assorted_hooks/scripts/pyproject_validate_version.py"
   files: ^pyproject\.toml$
-  language: python
+  language: script
   types: [toml]
   description: "Validate python version (PEP-440)."
 - id: pyproject-update-deps
   name: pyproject-update-deps
-  entry: "./src/assorted_hooks/pyproject_update_dependencies.py"
+  entry: "./src/assorted_hooks/scripts/pyproject_update_dependencies.py"
   files: ^pyproject\.toml$
   language: script
   stages: [manual]
@@ -18,7 +18,7 @@
   description: "Update dependencies to >=currently_installed. (default: manual)"
 - id: pyproject-check-deps
   name: pyproject-check-deps
-  entry: "./src/assorted_hooks/pyproject_check_dependencies.py"
+  entry: "./src/assorted_hooks/scripts/pyproject_check_dependencies.py"
   files: ^pyproject\.toml$
   language: script
   types: [toml]

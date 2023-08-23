@@ -31,6 +31,21 @@ from typing import TypeGuard
 from assorted_hooks.utils import get_python_files
 
 
+def is_main(node: AST, /) -> bool:
+    """Check whether node is `if __name__ == "__main__":` check."""
+    return (
+        isinstance(node, ast.If)
+        and isinstance(node.test, ast.Compare)
+        and isinstance(node.test.left, Name)
+        and node.test.left.id == "__name__"
+        and len(node.test.ops) == 1
+        and isinstance(node.test.ops[0], ast.Eq)
+        and len(node.test.comparators) == 1
+        and isinstance(node.test.comparators[0], Constant)
+        and node.test.comparators[0].value == "__main__"
+    )
+
+
 def is__all__node(node: AST, /) -> TypeGuard[Assign | AnnAssign | AugAssign]:
     """Check whether a node is __all__."""
     if isinstance(node, Assign):
@@ -74,11 +89,22 @@ def is_superfluous(tree: Module, /) -> bool:
     # only contains statements and expressions that do not produce locals.
     # currently this function just checks if there is only a single assignment
     # and the rest of statements are Expr.
-    node_types = Counter(type(node) for node in tree.body)
-    return (
-        set(node_types) <= {Expr, Assign, AnnAssign}
-        and node_types.get(Assign, 0) + node_types.get(AnnAssign, 0) == 1
-    )
+    body = list(tree.body)  # make a copy
+
+    # ignore __main__ code if present
+    for node in tree.body:
+        if is_main(node):
+            # remove from copy
+            body.remove(node)
+
+    # ignore first __all__ if present
+    for node in tree.body:
+        if is__all__node(node):
+            body.remove(node)
+            break  # only remove the first occurrence
+
+    node_types = Counter(type(node) for node in body)
+    return set(node_types) <= {Expr, ast.Pass}
 
 
 def is_at_top(node: Assign | AnnAssign, /, *, module: Module) -> bool:
@@ -131,8 +157,9 @@ def check_file(
 
     match node_list:
         case []:
-            print(f'"{fname!s}:0" No __all__ found.')
-            passed = False
+            if not is_superfluous(tree):
+                passed = False
+                print(f'"{fname!s}:0" No __all__ found.')
         case [node, *nodes]:
             if not isinstance(node, Assign | AnnAssign):
                 raise TypeError("Expected __all__ to be an assignment.")

@@ -17,10 +17,23 @@ __all__ = [
     "main",
 ]
 
-
 import argparse
+import importlib
 import re
-import tomllib
+
+# import toml library
+for name in ("tomllib", "tomlkit", "tomli"):
+    try:
+        tomllib = importlib.import_module(name)
+        break
+    except ImportError:
+        pass
+else:
+    raise ImportError(
+        "This pre-commit hook runs in the local interpreter and requires a suitable TOML-library!"
+        " Please use python≥3.11 or install one of 'tomlkit' or 'tomli'."
+    )
+
 
 # https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
 VERSION = r"""(?ix:                                       # case-insensitive, verbose

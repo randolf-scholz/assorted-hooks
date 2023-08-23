@@ -30,29 +30,38 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any, NamedTuple
 
-if sys.version_info >= (3, 11):
+# import metadata library
+for name in (
+    ["importlib.metadata", "importlib_metadata"]
+    if sys.version_info >= (3, 11)
+    else ["importlib_metadata"]
+):
     # NOTE: importlib.metadata is bugged in 3.10: https://github.com/python/cpython/issues/94113
-    import importlib.metadata as metadata
-    import tomllib
+    try:
+        metadata = importlib.import_module(name)
+        break
+    except ImportError:
+        pass
 else:
-    try:
-        metadata = importlib.import_module("importlib_metadata")
-    except ImportError as E:
-        raise ImportError(
-            "This pre-commit hook runs in the local interpreter and requires"
-            " the `importlib_metadata` package for python versions < 3.10."
-        ) from E
-    try:
-        tomllib = importlib.import_module("tomlkit")
-    except ImportError as E:
-        raise ImportError(
-            "This pre-commit hook runs in the local interpreter and requires"
-            " the `tomlkit` package for python versions < 3.11."
-        ) from E
+    raise ImportError(
+        "This pre-commit hook runs in the local interpreter and requires importlib.metadata!"
+        " Please use python≥3.11 or install 'importlib_metadata'."
+    )
 
-PACKAGES: dict[
-    str, list[str]
-] = metadata.packages_distributions()  # type:ignore[assignment]
+# import toml library
+for name in ("tomllib", "tomlkit", "tomli"):
+    try:
+        tomllib = importlib.import_module(name)
+        break
+    except ImportError:
+        pass
+else:
+    raise ImportError(
+        "This pre-commit hook runs in the local interpreter and requires a suitable TOML-library!"
+        " Please use python≥3.11 or install one of 'tomlkit' or 'tomli'."
+    )
+
+PACKAGES: dict[str, list[str]] = metadata.packages_distributions()
 """A dictionary that maps module names to their pip-package names."""
 
 # NOTE: illogical type hint in stdlib, maybe open issue.

@@ -15,7 +15,6 @@ References
   https://peps.python.org/pep-0633/
 """
 
-
 __all__ = [
     # CONSTANTS
     "EXTRAS",
