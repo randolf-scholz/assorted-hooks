@@ -411,9 +411,9 @@ def check_file(
     *,
     modules: Sequence[str] = MODULES_DEFAULT,
     tests: Sequence[str] = TESTS_DEFAULT,
-    ignored_imported_deps: Sequence[str] = (),
-    ignored_project_deps: Sequence[str] = (),
-    ignored_test_deps: Sequence[str] = (),
+    ignore_imported_deps: Sequence[str] = (),
+    ignore_project_deps: Sequence[str] = (),
+    ignore_test_deps: Sequence[str] = (),
     error_superfluous_test_deps: bool,
     error_unused_project_deps: bool,
     error_unused_test_deps: bool,
@@ -426,7 +426,7 @@ def check_file(
 
     # get the normalized project name
     project_name = normalize_dep_name(get_name_pyproject(config))
-    excluded_dependencies = {project_name} | set(ignored_imported_deps)
+    excluded_dependencies = {project_name} | set(ignore_imported_deps)
     # compute the dependencies from the source files
     modules_given = modules is not MODULES_DEFAULT
     imported_dependencies = set().union(
@@ -440,7 +440,7 @@ def check_file(
     # get dependencies from pyproject.toml
     pyproject_dependencies = get_deps_pyproject_project(config)
     # remove ignored dependencies
-    pyproject_dependencies -= set(ignored_project_deps)
+    pyproject_dependencies -= set(ignore_project_deps)
     # validate the dependencies
     missing_deps, unused_deps, unknown_deps = validate_dependencies(
         pyproject_dependencies=pyproject_dependencies,
@@ -471,7 +471,7 @@ def check_file(
     # get dependencies from pyproject.toml
     pyproject_test_dependencies = get_deps_pyproject_tests(config)
     # remove ignored dependencies
-    pyproject_test_dependencies -= set(ignored_test_deps)
+    pyproject_test_dependencies -= set(ignore_test_deps)
     # validate the dependencies
     missing_test_deps, unused_test_deps, unknown_test_deps = validate_dependencies(
         pyproject_dependencies=pyproject_test_dependencies,
@@ -533,21 +533,21 @@ def main() -> None:
         help="The path to the test directories.",
     )
     parser.add_argument(
-        "--ignored-imported-deps",
+        "--ignore-imported-deps",
         default=[],
         nargs="*",
         type=str,
         help="list of import dependencies to ignore",
     )
     parser.add_argument(
-        "--ignored-project-deps",
+        "--ignore-project-deps",
         default=[],
         nargs="*",
         type=str,
         help="list of pyproject dependencies to ignore.",
     )
     parser.add_argument(
-        "--ignored-test-deps",
+        "--ignore-test-deps",
         default=[],
         nargs="*",
         type=str,
@@ -585,9 +585,9 @@ def main() -> None:
             args.pyproject_file,
             modules=args.modules,
             tests=args.tests,
-            ignored_imported_deps=args.ignored_imported_deps,
-            ignored_project_deps=args.ignored_project_deps,
-            ignored_test_deps=args.ignored_test_deps,
+            ignore_imported_deps=args.ignore_imported_deps,
+            ignore_project_deps=args.ignore_project_deps,
+            ignore_test_deps=args.ignore_test_deps,
             error_superfluous_test_deps=args.error_superfluous_test_deps,
             error_unused_project_deps=args.error_unused_project_deps,
             error_unused_test_deps=args.error_unused_test_deps,
