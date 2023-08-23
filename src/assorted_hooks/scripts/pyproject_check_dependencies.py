@@ -9,9 +9,9 @@ __all__ = [
     "get_deps_import",
     "get_deps_importfrom",
     "get_deps_module",
-    "get_deps_pyproject",
+    "get_deps_pyproject_project",
     "get_deps_pyproject_section",
-    "get_deps_test_pyproject",
+    "get_deps_pyproject_tests",
     "get_deps_tree",
     "get_name_pyproject",
     "group_dependencies",
@@ -25,10 +25,17 @@ import importlib
 import pkgutil
 import re
 import sys
+from collections.abc import Sequence
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from types import ModuleType
-from typing import Any, NamedTuple
+from typing import Any, NamedTuple, TypeAlias
+
+Config: TypeAlias = dict[str, Any]
+
+MODULES_DEFAULT = ("src/",)
+TESTS_DEFAULT = ("tests/",)
+
 
 # import metadata library
 for name in (
@@ -148,7 +155,35 @@ def get_deps_module(module: str | ModuleType, /, *, silent: bool = True) -> set[
     return dependencies
 
 
-def get_deps_pyproject_section(config: dict[str, Any], /, *, section: str) -> set[str]:
+def get_name_pyproject(config: Config, /) -> str:
+    """Get the name of the project from pyproject.toml."""
+    try:
+        project_name = config["project"]["name"]
+    except KeyError:
+        project_name = NotImplemented
+    try:
+        poetry_name = config["tool"]["poetry"]["name"]
+    except KeyError:
+        poetry_name = NotImplemented
+
+    match project_name, poetry_name:
+        case str() as a, str() as b:
+            if a != b:
+                raise ValueError(
+                    "Found inconsistent project names in [project] and [tool.poetry]."
+                    f"\n [project]     is missing: {a}, "
+                    f"\n [tool.poetry] is missing: {b}."
+                )
+            return a
+        case str() as a, _:
+            return a
+        case _, str() as b:
+            return b
+        case _:
+            raise ValueError("No project name found in [project] or [tool.poetry].")
+
+
+def get_deps_pyproject_section(config: Config, /, *, section: str) -> set[str]:
     """Get the dependencies from a section of pyproject.toml.
 
     Looking up the section must either result in a list of strings or a dict.
@@ -177,38 +212,7 @@ def get_deps_pyproject_section(config: dict[str, Any], /, *, section: str) -> se
             raise TypeError(f"Unexpected type: {type(config)}")
 
 
-def get_name_pyproject(fname: str | Path = "pyproject.toml", /) -> str:
-    """Get the name of the project from pyproject.toml."""
-    with open(fname, "rb") as file:
-        config = tomllib.load(file)
-
-    try:
-        project_name = config["project"]["name"]
-    except KeyError:
-        project_name = NotImplemented
-    try:
-        poetry_name = config["tool"]["poetry"]["name"]
-    except KeyError:
-        poetry_name = NotImplemented
-
-    match project_name, poetry_name:
-        case str() as a, str() as b:
-            if a != b:
-                raise ValueError(
-                    "Found different project names in [project] and [tool.poetry]."
-                    f"\n [project]     is missing: {a}, "
-                    f"\n [tool.poetry] is missing: {b}."
-                )
-            return a
-        case str() as a, _:
-            return a
-        case _, str() as b:
-            return b
-        case _:
-            raise ValueError("No project name found in [project] or [tool.poetry].")
-
-
-def get_deps_pyproject(fname: str | Path = "pyproject.toml", /) -> set[str]:
+def get_deps_pyproject_project(config: Config, /) -> set[str]:
     """Extract the dependencies from a pyproject.toml file.
 
     There are 6 sections we check:
@@ -220,11 +224,8 @@ def get_deps_pyproject(fname: str | Path = "pyproject.toml", /) -> set[str]:
     If dependencies are specified in multiple sections, it is validated that they are
     the same.
     """
-    with open(fname, "rb") as file:
-        pyproject = tomllib.load(file)
-
     dependencies = {
-        key: get_deps_pyproject_section(pyproject, section=key)
+        key: get_deps_pyproject_section(config, section=key)
         for key in (
             "project.dependencies",
             "tool.poetry.dependencies",
@@ -238,7 +239,7 @@ def get_deps_pyproject(fname: str | Path = "pyproject.toml", /) -> set[str]:
         case set() as a, set() as b:
             if (left := a - b) | (right := b - a):
                 raise ValueError(
-                    "Found different dependencies in [project] and [tool.poetry]."
+                    "Found inconsistent dependencies in [project] and [tool.poetry]."
                     f"\n [project]     is missing: {right}, "
                     f"\n [tool.poetry] is missing: {left}."
                 )
@@ -253,13 +254,10 @@ def get_deps_pyproject(fname: str | Path = "pyproject.toml", /) -> set[str]:
     return project_dependencies
 
 
-def get_deps_test_pyproject(fname: str | Path = "pyproject.toml", /) -> set[str]:
+def get_deps_pyproject_tests(config: Config, /) -> set[str]:
     """Extract the test dependencies from a pyproject.toml file."""
-    with open(fname, "rb") as file:
-        pyproject = tomllib.load(file)
-
     dependencies = {
-        key: get_deps_pyproject_section(pyproject, section=key)
+        key: get_deps_pyproject_section(config, section=key)
         for key in (
             "project.optional-dependencies.test",
             "project.optional-dependencies.tests",
@@ -407,12 +405,108 @@ def validate_dependencies(
     return missing_deps, unused_deps, unknown_deps
 
 
+def check_file(
+    fname: str | Path,
+    /,
+    *,
+    modules: Sequence[str] = MODULES_DEFAULT,
+    tests: Sequence[str] = TESTS_DEFAULT,
+    ignored_imported_deps: Sequence[str] = (),
+    ignored_project_deps: Sequence[str] = (),
+    ignored_test_deps: Sequence[str] = (),
+    error_superfluous_test_deps: bool,
+    error_unused_project_deps: bool,
+    error_unused_test_deps: bool,
+) -> bool:
+    """Check a single file."""
+    passed = True
+
+    with open(fname, "rb") as file:
+        config = tomllib.load(file)
+
+    # get the normalized project name
+    project_name = normalize_dep_name(get_name_pyproject(config))
+    excluded_dependencies = {project_name} | set(ignored_imported_deps)
+    # compute the dependencies from the source files
+    modules_given = modules is not MODULES_DEFAULT
+    imported_dependencies = set().union(
+        *(
+            collect_dependencies(fname, raise_notfound=modules_given)
+            for fname in modules
+        )
+    )
+    # ignore the excluded dependencies
+    imported_dependencies -= excluded_dependencies
+    # get dependencies from pyproject.toml
+    pyproject_dependencies = get_deps_pyproject_project(config)
+    # remove ignored dependencies
+    pyproject_dependencies -= set(ignored_project_deps)
+    # validate the dependencies
+    missing_deps, unused_deps, unknown_deps = validate_dependencies(
+        pyproject_dependencies=pyproject_dependencies,
+        imported_dependencies=imported_dependencies,
+    )
+    if missing_deps or unknown_deps or (unused_deps and error_unused_project_deps):
+        passed = False
+        print(
+            f"Found discrepancy between imported dependencies and pyproject.toml!"
+            f"\nImported dependencies not listed in pyproject.toml: {missing_deps}."
+            f"\nUnused dependencies listed in pyproject.toml: {unused_deps}."
+            f"\nUnknown dependencies: {unknown_deps}."
+            f"\n"
+            f"\nNOTE: Optional dependencies are currently not supported (PR welcome)."
+            f"\nNOTE: Workaround: use `importlib.import_module('optional_dependency')`."
+        )
+
+    # ---------------------------------------------------------------------------------------------
+
+    # compute the test dependencies from the test files
+    excluded_dependencies |= imported_dependencies
+    tests_given = tests is not TESTS_DEFAULT
+    imported_test_dependencies = set().union(
+        *(collect_dependencies(fname, raise_notfound=tests_given) for fname in tests)
+    )
+    # ignore the excluded dependencies
+    imported_test_dependencies -= excluded_dependencies
+    # get dependencies from pyproject.toml
+    pyproject_test_dependencies = get_deps_pyproject_tests(config)
+    # remove ignored dependencies
+    pyproject_test_dependencies -= set(ignored_test_deps)
+    # validate the dependencies
+    missing_test_deps, unused_test_deps, unknown_test_deps = validate_dependencies(
+        pyproject_dependencies=pyproject_test_dependencies,
+        imported_dependencies=imported_test_dependencies,
+    )
+
+    if (
+        superfluous_test_deps := imported_dependencies & pyproject_test_dependencies
+    ) and error_superfluous_test_deps:
+        passed = False
+        print(
+            f"Found superfluous test dependencies!"
+            f"\nSuperfluous test dependencies: {superfluous_test_deps}."
+            f"\nAre not needed since they are already listed in [project] or [tool.poetry.dependencies]."
+        )
+    if (
+        missing_test_deps
+        or unknown_test_deps
+        or (unused_test_deps and error_unused_test_deps)
+    ):
+        passed = False
+        print(
+            f"Found discrepancy between imported test dependencies and pyproject.toml!"
+            f"\nImported test dependencies not listed in pyproject.toml: {missing_test_deps}."
+            f"\nUnused test dependencies listed in pyproject.toml: {unused_test_deps}."
+            f"\nUnknown test dependencies: {unknown_test_deps}."
+            f"\n"
+            f"\nNOTE: Optional dependencies are currently not supported (PR welcome)."
+            f"\nNOTE: Workaround: use `importlib.import_module('optional_dependency')`."
+        )
+    return passed
+
+
 def main() -> None:
     """Print the third-party dependencies of a module."""
-    # usage
-    modules_default = ["src/"]
-    tests_default = ["tests/"]
-
     parser = argparse.ArgumentParser(
         description="Print the third-party dependencies of a module.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -427,33 +521,33 @@ def main() -> None:
     parser.add_argument(
         "--modules",
         nargs="*",
-        default=modules_default,
+        default=MODULES_DEFAULT,
         type=str,
         help="The folder of the module to check.",
     )
     parser.add_argument(
         "--tests",
         nargs="*",
-        default=tests_default,
+        default=TESTS_DEFAULT,
         type=str,
         help="The path to the test directories.",
     )
     parser.add_argument(
-        "--ignore-imported",
+        "--ignored-imported-deps",
         default=[],
         nargs="*",
         type=str,
         help="list of import dependencies to ignore",
     )
     parser.add_argument(
-        "--ignore-listed",
+        "--ignored-project-deps",
         default=[],
         nargs="*",
         type=str,
-        help="list of pyproject dependencies to ignore",
+        help="list of pyproject dependencies to ignore.",
     )
     parser.add_argument(
-        "--ignore-listed-test",
+        "--ignored-test-deps",
         default=[],
         nargs="*",
         type=str,
@@ -486,84 +580,23 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    # get the normalized project name
-    project_name = normalize_dep_name(get_name_pyproject(args.pyproject_file))
-    excluded_dependencies = {project_name} | set(args.ignore_imported)
-    # compute the dependencies from the source files
-    modules_given = args.modules is not modules_default
-    imported_dependencies = set().union(
-        *(
-            collect_dependencies(fname, raise_notfound=modules_given)
-            for fname in args.modules
+    try:
+        passed = check_file(
+            args.pyproject_file,
+            modules=args.modules,
+            tests=args.tests,
+            ignored_imported_deps=args.ignored_imported_deps,
+            ignored_project_deps=args.ignored_project_deps,
+            ignored_test_deps=args.ignored_test_deps,
+            error_superfluous_test_deps=args.error_superfluous_test_deps,
+            error_unused_project_deps=args.error_unused_project_deps,
+            error_unused_test_deps=args.error_unused_test_deps,
         )
-    )
-    # ignore the excluded dependencies
-    imported_dependencies -= excluded_dependencies
-    # get dependencies from pyproject.toml
-    pyproject_dependencies = get_deps_pyproject(args.pyproject_file)
-    # remove ignored dependencies
-    pyproject_dependencies -= set(args.ignore_listed)
-    # validate the dependencies
-    missing_deps, unused_deps, unknown_deps = validate_dependencies(
-        pyproject_dependencies=pyproject_dependencies,
-        imported_dependencies=imported_dependencies,
-    )
-    if missing_deps or unknown_deps or (unused_deps and args.error_unused_project_deps):
-        raise ValueError(
-            f"Found discrepancy between imported dependencies and pyproject.toml!"
-            f"\nImported dependencies not listed in pyproject.toml: {missing_deps}."
-            f"\nUnused dependencies listed in pyproject.toml: {unused_deps}."
-            f"\nUnknown dependencies: {unknown_deps}."
-            f"\n"
-            f"\nNOTE: Optional dependencies are currently not supported (PR welcome)."
-            f"\nNOTE: Workaround: use `importlib.import_module('optional_dependency')`."
-        )
+    except Exception as exc:
+        raise RuntimeError(f'Checking file "{args.pyproject_file!s}" failed!') from exc
 
-    # ---------------------------------------------------------------------------------------------
-
-    # compute the test dependencies from the test files
-    excluded_dependencies |= imported_dependencies
-    tests_given = args.tests is not tests_default
-    imported_test_dependencies = set().union(
-        *(
-            collect_dependencies(fname, raise_notfound=tests_given)
-            for fname in args.tests
-        )
-    )
-    # ignore the excluded dependencies
-    imported_test_dependencies -= excluded_dependencies
-    # get dependencies from pyproject.toml
-    pyproject_test_dependencies = get_deps_test_pyproject(args.pyproject_file)
-    # remove ignored dependencies
-    pyproject_test_dependencies -= set(args.ignore_listed_test)
-    # validate the dependencies
-    missing_test_deps, unused_test_deps, unknown_test_deps = validate_dependencies(
-        pyproject_dependencies=pyproject_test_dependencies,
-        imported_dependencies=imported_test_dependencies,
-    )
-
-    if (
-        superfluous_test_deps := imported_dependencies & pyproject_test_dependencies
-    ) and args.error_superfluous_test_deps:
-        raise ValueError(
-            f"Found superfluous test dependencies!"
-            f"\nSuperfluous test dependencies: {superfluous_test_deps}."
-            f"\nAre not needed since they are already listed in [project] or [tool.poetry.dependencies]."
-        )
-    if (
-        missing_test_deps
-        or unknown_test_deps
-        or (unused_test_deps and args.error_unused_test_deps)
-    ):
-        raise ValueError(
-            f"Found discrepancy between imported test dependencies and pyproject.toml!"
-            f"\nImported test dependencies not listed in pyproject.toml: {missing_test_deps}."
-            f"\nUnused test dependencies listed in pyproject.toml: {unused_test_deps}."
-            f"\nUnknown test dependencies: {unknown_test_deps}."
-            f"\n"
-            f"\nNOTE: Optional dependencies are currently not supported (PR welcome)."
-            f"\nNOTE: Workaround: use `importlib.import_module('optional_dependency')`."
-        )
+    if not passed:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
