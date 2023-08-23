@@ -123,7 +123,7 @@ def check_file(file_path: Path, /, *, debug: bool = False) -> bool:
 def main() -> None:
     """Main function."""
     parser = argparse.ArgumentParser(
-        description="Check whether attributes in annotations shadow directly imported symbols.",
+        description="Checks that Bar is used instead of foo.Bar if both foo and Bar are imported.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
@@ -132,7 +132,13 @@ def main() -> None:
         type=str,
         help="One or multiple files, folders or file patterns.",
     )
-    parser.add_argument("--debug", action="store_true")
+    parser.add_argument(
+        "--debug",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=False,
+        help="Print debug information.",
+    )
     args = parser.parse_args()
 
     # find all files

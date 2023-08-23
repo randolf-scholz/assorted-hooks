@@ -423,34 +423,11 @@ def main() -> None:
         help="The folder of the module to check.",
     )
     parser.add_argument(
-        "--error_unused_project_deps",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Raise error if pyproject.toml lists unused project dependencies",
-    )
-    parser.add_argument(
         "--tests",
         nargs="*",
         default=tests_default,
         type=str,
         help="The path to the test directories.",
-    )
-    parser.add_argument(
-        "--error_unused_test_deps",
-        action=argparse.BooleanOptionalAction,
-        default=False,
-        help="Raise error if pyproject.toml lists unused test dependencies",
-    )
-    parser.add_argument(
-        "--error-superfluous-test-deps",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Raise error if test dependency is superfluous.",
-    )
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Disables silencing of import messages.",
     )
     parser.add_argument(
         "--ignore-imported",
@@ -474,8 +451,28 @@ def main() -> None:
         help="list of pyproject test dependencies to ignore",
     )
     parser.add_argument(
+        "--error_unused_project_deps",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Raise error if pyproject.toml lists unused project dependencies",
+    )
+    parser.add_argument(
+        "--error_unused_test_deps",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Raise error if pyproject.toml lists unused test dependencies",
+    )
+    parser.add_argument(
+        "--error-superfluous-test-deps",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Raise error if test dependency is superfluous.",
+    )
+    parser.add_argument(
         "--debug",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=False,
         help="Print debug information.",
     )
     args = parser.parse_args()

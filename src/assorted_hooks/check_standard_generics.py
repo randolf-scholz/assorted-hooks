@@ -119,7 +119,7 @@ def check_file(fname: str | Path, /) -> bool:
 def main() -> None:
     """Main program."""
     parser = argparse.ArgumentParser(
-        description="Check whether attributes in annotations shadow directly imported symbols.",
+        description="Use standard generics (PEP-585): typing.Sequence -> abc.Sequence, typing.List -> list.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
@@ -135,7 +135,13 @@ def main() -> None:
         default=True,
         help="Hint to use typing.Never instead of typing.NoReturn.",
     )
-    parser.add_argument("--debug", action="store_true", help="Print debug information.")
+    parser.add_argument(
+        "--debug",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=False,
+        help="Print debug information.",
+    )
     args = parser.parse_args()
 
     if args.use_never:

@@ -209,7 +209,7 @@ def check_file(
 def main() -> None:
     """Main program."""
     parser = argparse.ArgumentParser(
-        description="Check whether attributes in annotations shadow directly imported symbols.",
+        description="Check for disallowing positional_or_keyword arguments.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
@@ -267,7 +267,13 @@ def main() -> None:
         default=False,
         help="Skip FunctionDefs without positional-only arguments.",
     )
-    parser.add_argument("--debug", action="store_true", help="Print debug information.")
+    parser.add_argument(
+        "--debug",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=False,
+        help="Print debug information.",
+    )
     args = parser.parse_args()
 
     # find all files

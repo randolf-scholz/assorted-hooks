@@ -162,7 +162,7 @@ def check_file(
 def main():
     """Main program."""
     parser = argparse.ArgumentParser(
-        description="Check whether attributes in annotations shadow directly imported symbols.",
+        description="Check that __all__ exists.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
@@ -215,7 +215,9 @@ def main():
     )
     parser.add_argument(
         "--debug",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=False,
         help="Print debug information.",
     )
     args = parser.parse_args()
