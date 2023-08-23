@@ -287,16 +287,19 @@ def main() -> None:
     # apply script to all files
     passed = True
     for file in files:
-        passed &= check_file(
-            file,
-            allow_one=args.allow_one,
-            ignore_dunder=args.ignore_dunder,
-            ignore_names=args.ignore_names,
-            ignore_overloads=args.ignore_overloads,
-            ignore_wo_pos_only=args.ignore_without_positional_only,
-            ignore_private=args.ignore_private,
-            ignore_decorators=args.ignore_decorators,
-        )
+        try:
+            passed &= check_file(
+                file,
+                allow_one=args.allow_one,
+                ignore_dunder=args.ignore_dunder,
+                ignore_names=args.ignore_names,
+                ignore_overloads=args.ignore_overloads,
+                ignore_wo_pos_only=args.ignore_without_positional_only,
+                ignore_private=args.ignore_private,
+                ignore_decorators=args.ignore_decorators,
+            )
+        except Exception as exc:
+            raise RuntimeError(f'Checking file "{file!s}" failed!') from exc
 
     if not passed:
         sys.exit(1)

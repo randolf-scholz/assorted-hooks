@@ -260,15 +260,18 @@ def main():
     # apply script to all files
     passed = True
     for file in files:
-        passed &= check_file(
-            file,
-            allow_missing=args.allow_missing,
-            assert_literal=args.assert_literal,
-            warn_annotated=args.warn_annotated,
-            warn_location=args.warn_location,
-            warn_multiple=args.warn_multiple,
-            warn_superfluous=args.warn_superfluous,
-        )
+        try:
+            passed &= check_file(
+                file,
+                allow_missing=args.allow_missing,
+                assert_literal=args.assert_literal,
+                warn_annotated=args.warn_annotated,
+                warn_location=args.warn_location,
+                warn_multiple=args.warn_multiple,
+                warn_superfluous=args.warn_superfluous,
+            )
+        except Exception as exc:
+            raise RuntimeError(f'Checking file "{file!s}" failed!') from exc
 
     if not passed:
         sys.exit(1)

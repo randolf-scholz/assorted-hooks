@@ -155,7 +155,10 @@ def main() -> None:
     # apply script to all files
     passed = True
     for file in files:
-        passed &= check_file(file, debug=args.debug)
+        try:
+            passed &= check_file(file, debug=args.debug)
+        except Exception as exc:
+            raise RuntimeError(f'Checking file "{file!s}" failed!') from exc
 
     if not passed:
         sys.exit(1)
