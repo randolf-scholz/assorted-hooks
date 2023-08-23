@@ -195,13 +195,13 @@ repos:
     hooks:
       - id: pydocstyle
         files: (^src/|^tests/)
-  #  # slotscheck
-  #  - repo: https://github.com/ariebovenberg/slotscheck
-  #    rev: v0.17.0
-  #    hooks:
-  #      - id: slotscheck
-  #        language: script
-  #        files: ^src/
+  # slotscheck
+  - repo: https://github.com/ariebovenberg/slotscheck
+    rev: v0.17.0
+    hooks:
+      - id: slotscheck
+        entry: env PYTHONPATH=src slotscheck --verbose
+        files: ^src/
   # mypy
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.5.1
@@ -211,7 +211,7 @@ repos:
         additional_dependencies: [types-all]
         stages: [pre-push]
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.323
+    rev: v1.1.324
     hooks:
       - id: pyright
         files: (^src/|^tests/)
