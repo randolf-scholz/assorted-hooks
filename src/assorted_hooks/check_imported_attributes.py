@@ -108,7 +108,7 @@ def get_imported_attributes(tree: AST, /) -> Iterator[tuple[Attribute, Name, str
 def check_file(file_path: Path, /, *, debug: bool = False) -> bool:
     """Finds shadowed attributes in a file."""
     # Your code here
-    with open(file_path, "r") as file:
+    with open(file_path, "r", encoding="utf8") as file:
         tree = ast.parse(file.read())
 
     # find all violations
@@ -123,7 +123,7 @@ def check_file(file_path: Path, /, *, debug: bool = False) -> bool:
     if not passed and debug:
         imported_symbols = get_imported_symbols(tree)
         pad = " " * 4
-        max_key_len = max(len(key) for key in imported_symbols.keys())
+        max_key_len = max(map(len, imported_symbols), default=0)
         print(pad, "Imported symbols:")
         for key, value in imported_symbols.items():
             print(2 * pad, f"{key:{max_key_len}} -> {value}")

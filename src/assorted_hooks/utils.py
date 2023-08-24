@@ -26,12 +26,13 @@ def get_python_files(
             if path.is_dir():
                 files.extend(path.glob("**/*.py"))
             continue
-        else:
-            matches = list(root.glob(file_or_pattern))
-            if not matches and raise_notfound:
-                raise FileNotFoundError(
-                    f"Pattern {file_or_pattern!r} did not match any files."
-                )
-            files.extend(matches)
+
+        # else: path does not exist
+        matches = list(root.glob(file_or_pattern))
+        if not matches and raise_notfound:
+            raise FileNotFoundError(
+                f"Pattern {file_or_pattern!r} did not match any files."
+            )
+        files.extend(matches)
 
     return files

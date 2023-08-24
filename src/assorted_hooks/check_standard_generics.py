@@ -102,8 +102,8 @@ def get_deprecated_aliases(node: AST, /) -> set[str]:
 
 def check_file(fname: str | Path, /) -> bool:
     """Check a single file."""
-    with open(fname, "r") as f:
-        tree = ast.parse(f.read())
+    with open(fname, "r", encoding="utf8") as file:
+        tree = ast.parse(file.read())
 
     passed = True
 

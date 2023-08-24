@@ -10,16 +10,19 @@ __all__ = [
     # CONSTANTS
     "VERSION",
     "VERSION_GROUP",
-    "VERSION_REGEX",
+    "RE_VERSION_GROUP",
+    "RE_VERSION",
     # Functions
+    "get_version",
     "validate_version",
-    "process_pyproject",
+    "check_file",
     "main",
 ]
 
 import argparse
 import importlib
 import re
+import sys
 
 # import toml library
 for name in ("tomllib", "tomlkit", "tomli"):
@@ -35,38 +38,48 @@ else:
     )
 
 
+def ignore_subgroups(pattern: str | re.Pattern, /) -> str:
+    """Ignore all named groups in the given pattern."""
+    pattern = pattern if isinstance(pattern, str) else pattern.pattern
+    return re.sub(r"\(\?P<[^>]+>", r"(?:", pattern)
+
+
 # https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
-VERSION = r"""(?ix:                                       # case-insensitive, verbose
-    v?(?:
-        (?:(?P<epoch>[0-9]+)!)?                           # epoch
-        (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
-        (?P<pre>                                          # pre-release
-            [-_.]?
-            (?P<pre_l>(a|b|c|rc|alpha|beta|pre|preview))
-            [-_.]?
-            (?P<pre_n>[0-9]+)?
-        )?
-        (?P<post>                                         # post release
-            (?:-(?P<post_n1>[0-9]+))
-            |
-            (?:
+RE_VERSION = re.compile(
+    r"""(?ix:                                       # case-insensitive, verbose
+        v?(?:
+            (?:(?P<epoch>[0-9]+)!)?                           # epoch
+            (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
+            (?P<pre>                                          # pre-release
                 [-_.]?
-                (?P<post_l>post|rev|r)
+                (?P<pre_l>(?:a|b|c|rc|alpha|beta|pre|preview))
                 [-_.]?
-                (?P<post_n2>[0-9]+)?
-            )
-        )?
-        (?P<dev>                                          # dev release
-            [-_.]?
-            (?P<dev_l>dev)
-            [-_.]?
-            (?P<dev_n>[0-9]+)?
-        )?
-    )
-    (?:\+(?P<local>[a-z0-9]+(?:[-_.][a-z0-9]+)*))?        # local version
-)"""
-VERSION_GROUP = rf"""(?P<version>{VERSION})"""
-VERSION_REGEX: re.Pattern = re.compile(VERSION_GROUP)
+                (?P<pre_n>[0-9]+)?
+            )?
+            (?P<post>                                         # post release
+                (?:-(?P<post_n1>[0-9]+))
+                |
+                (?:
+                    [-_.]?
+                    (?P<post_l>post|rev|r)
+                    [-_.]?
+                    (?P<post_n2>[0-9]+)?
+                )
+            )?
+            (?P<dev>                                          # dev release
+                [-_.]?
+                (?P<dev_l>dev)
+                [-_.]?
+                (?P<dev_n>[0-9]+)?
+            )?
+        )
+        (?:\+(?P<local>[a-z0-9]+(?:[-_.][a-z0-9]+)*))?        # local version
+    )"""
+)
+VERSION = RE_VERSION.pattern
+RE_VERSION_GROUP = re.compile(rf"""(?P<version>{VERSION})""")
+VERSION_GROUP = RE_VERSION_GROUP.pattern
+assert "version" in RE_VERSION_GROUP.groupindex, f"{RE_VERSION_GROUP.groupindex=}."
 
 
 def get_version(pyproject: dict, /) -> str:
@@ -100,29 +113,36 @@ def get_version(pyproject: dict, /) -> str:
             raise TypeError("Unexpected types, expected str.")
 
 
-def validate_version(version: str, /, *, debug: bool = False) -> None:
+def validate_version(version: str, /, *, debug: bool = False) -> bool:
     """Validate a version string."""
-    match = VERSION_REGEX.match(version)
+    passed = True
+    match = RE_VERSION_GROUP.match(version)
 
     if match is None:
-        raise ValueError(f"Invalid version string: {version!r}.")
-
-    if debug:
-        groups = {k: v for k, v in match.groupdict().items() if v is not None}
-        print(f"Version {version}, consisting of {groups=}")
+        print(f"Invalid version string: {version!r}.")
+        return False
 
     groups = match.groupdict()
+
+    if debug:
+        print(f"Version {version}, consisting of {groups=}")
+
     if groups["epoch"] is not None and groups["release"] is None:
-        raise ValueError(f"Invalid version string: {version!r}.")
+        passed = False
+        print(f"Invalid version string: {version!r}.")
+
+    return passed
 
 
-def process_pyproject(fname: str, /, *, debug: bool = False) -> None:
+def check_file(fname: str, /, *, debug: bool = False) -> bool:
     """Get the version from pyproject.toml."""
     with open(fname, "rb") as file:
         toml = tomllib.load(file)
 
+    # get version
     version = get_version(toml)
-    validate_version(version, debug=debug)
+
+    return validate_version(version, debug=debug)
 
 
 def main() -> None:
@@ -149,7 +169,13 @@ def main() -> None:
     args = parser.parse_args()
 
     # run script
-    process_pyproject(args.pyproject_file, debug=args.debug)
+    try:
+        passed = check_file(args.pyproject_file, debug=args.debug)
+    except Exception as exc:
+        raise RuntimeError(f'Checking file "{args.pyproject_file!s}" failed!') from exc
+
+    if not passed:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

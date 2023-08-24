@@ -63,7 +63,7 @@ def get_classes(tree: AST, /) -> Iterator[ClassDef]:
 
 
 def get_funcs_in_classes(tree: AST, /) -> Iterator[Func]:
-    """Get all function-defs from the tree."""
+    """Get all function that are defined directly inside class bodies."""
     for cls in get_classes(tree):
         for node in cls.body:
             if isinstance(node, Func):
@@ -71,7 +71,7 @@ def get_funcs_in_classes(tree: AST, /) -> Iterator[Func]:
 
 
 def get_funcs_outside_classes(tree: AST, /) -> Iterator[Func]:
-    """Get all function-defs from the tree."""
+    """Get all functions that are nod defined inside class body."""
     nodes_in_classes: set[AST] = set()
 
     for node in ast.walk(tree):
@@ -151,20 +151,25 @@ def check_file(
     ignore_wo_pos_only: bool = False,
 ) -> bool:
     """Check whether the file contains mixed positional and keyword arguments."""
+
+    def is_ignorable(func: Func, /) -> bool:
+        """Checks if the func can be ignored."""
+        return (
+            (ignore_wo_pos_only and not func.args.posonlyargs)
+            or (ignore_dunder and is_dunder(func))
+            or (ignore_overloads and is_overload(func))
+            or (ignore_private and is_private(func))
+            or (func.name in ignore_names)
+            or any(is_decorated_with(func, name) for name in ignore_decorators)
+        )
+
     with open(fname, "rb") as file:
         tree = ast.parse(file.read(), filename=fname)
 
     passed = True
 
     for node in get_funcs_in_classes(tree):
-        if (
-            (ignore_wo_pos_only and not node.args.posonlyargs)
-            or (ignore_dunder and is_dunder(node))
-            or (ignore_overloads and is_overload(node))
-            or (ignore_private and is_private(node))
-            or (node.name in ignore_names)
-            or any(is_decorated_with(node, name) for name in ignore_decorators)
-        ):
+        if is_ignorable(node):
             continue
         if method_has_mixed_args(node, allow_one=allow_one):
             passed = False
@@ -174,21 +179,13 @@ def check_file(
                 raise RuntimeError(
                     f'"{fname!s}:{node.lineno}" Something went wrong.' f" {vars(node)=}"
                 ) from exc
-
             print(
                 f"{fname!s}:{arg.lineno}:"
-                f" Mixed positional and keyword arguments in method."
+                f" Mixed positional and keyword arguments in function."
             )
 
     for node in get_funcs_outside_classes(tree):
-        if (
-            (ignore_wo_pos_only and not node.args.posonlyargs)
-            or (ignore_dunder and is_dunder(node))
-            or (ignore_overloads and is_overload(node))
-            or (ignore_private and is_private(node))
-            or (node.name in ignore_names)
-            or any(is_decorated_with(node, name) for name in ignore_decorators)
-        ):
+        if is_ignorable(node):
             continue
         if func_has_mixed_args(node, allow_one=allow_one):
             passed = False

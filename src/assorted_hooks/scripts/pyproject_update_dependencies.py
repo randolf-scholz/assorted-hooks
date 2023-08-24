@@ -3,42 +3,51 @@
 
 References
 ----------
-- (Final) PEP 440 – Version Identification and Dependency Specification
+- (Final) PEP 440 – Version Identification and dependency Specification
   https://peps.python.org/pep-0440/
-- (Final) PEP 508 – Dependency specification for Python Software Packages
+- (Final) PEP 508 – dependency specification for Python Software Packages
   https://peps.python.org/pep-0508/
 - (Final) PEP 621 – Storing project metadata in pyproject.toml
   https://peps.python.org/pep-0621/
-- (Superseded) PEP 631 – Dependency specification in pyproject.toml based on PEP 508
+- (Superseded) PEP 631 – dependency specification in pyproject.toml based on PEP 508
   https://peps.python.org/pep-0631/
-- (Rejected) PEP 633 – Dependency specification in pyproject.toml using an exploded TOML table
+- (Rejected) PEP 633 – dependency specification in pyproject.toml using an exploded TOML table
   https://peps.python.org/pep-0633/
 """
 
 __all__ = [
-    # CONSTANTS
-    "EXTRAS",
-    "EXTRAS_GROUP",
-    "EXTRAS_REGEX",
+    # CONSTANTS COLLECTIONS
+    "PATTERNS",
+    "REGEXPS",
+    # PATTERNS
     "NAME",
     "NAME_GROUP",
-    "NAME_REGEX",
+    "EXTRAS",
+    "EXTRAS_GROUP",
     "POETRY_DEP",
     "POETRY_DEP_GROUP",
-    "POETRY_DEP_REGEX",
-    "POETRY_EXT_DEP",
-    "POETRY_EXT_DEP_GROUP",
-    "POETRY_EXT_DEP_REGEX",
     "PROJECT_DEP",
     "PROJECT_DEP_GROUP",
-    "PROJECT_DEP_REGEX",
     "VERSION",
     "VERSION_GROUP",
-    "VERSION_REGEX",
+    # REGEXPS
+    "RE_EXTRAS",
+    "RE_EXTRAS_GROUP",
+    "RE_NAME",
+    "RE_NAME_GROUP",
+    "RE_NAME_GROUP",
+    "RE_POETRY_DEP",
+    "RE_POETRY_DEP_GROUP",
+    "RE_PROJECT_DEP",
+    "RE_PROJECT_DEP_GROUP",
+    "RE_VERSION",
+    "RE_VERSION_GROUP",
     # Functions
     "get_pip_package_dict",
+    "ignore_subgroups",
+    "is_dependency_pattern",
     "main",
-    "pyproject_update_dependencies",
+    "check_file",
     "strip_version",
     "update_versions",
 ]
@@ -49,84 +58,133 @@ import re
 import subprocess
 import sys
 from functools import cache
-from typing import Literal
+from re import Pattern
 
 
-def ignore_subgroups(pattern: str, /) -> str:
+def ignore_subgroups(pattern: str | Pattern, /) -> str:
     """Ignore all named groups in the given pattern."""
+    pattern = pattern if isinstance(pattern, str) else pattern.pattern
     return re.sub(r"\(\?P<[^>]+>", r"(?:", pattern)
 
 
+def is_dependency_pattern(pattern: str | Pattern, /) -> bool:
+    """Check whether the pattern includes the 3 named groups {'dependency', 'name', 'version'}."""
+    if not isinstance(pattern, Pattern):
+        pattern = re.compile(pattern)
+    return {"dependency", "name", "version"} <= pattern.groupindex.keys()
+
+
 # https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
-VERSION = r"""(?ix:                                       # case-insensitive, verbose
-    v?(?:
-        (?:(?P<epoch>[0-9]+)!)?                           # epoch
-        (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
-        (?P<pre>                                          # pre-release
-            [-_.]?
-            (?P<pre_l>(?:a|b|c|rc|alpha|beta|pre|preview))
-            [-_.]?
-            (?P<pre_n>[0-9]+)?
-        )?
-        (?P<post>                                         # post release
-            (?:-(?P<post_n1>[0-9]+))
-            |
-            (?:
+RE_VERSION = re.compile(
+    r"""(?ix:                                       # case-insensitive, verbose
+        v?(?:
+            (?:(?P<epoch>[0-9]+)!)?                           # epoch
+            (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
+            (?P<pre>                                          # pre-release
                 [-_.]?
-                (?P<post_l>post|rev|r)
+                (?P<pre_l>(?:a|b|c|rc|alpha|beta|pre|preview))
                 [-_.]?
-                (?P<post_n2>[0-9]+)?
-            )
-        )?
-        (?P<dev>                                          # dev release
-            [-_.]?
-            (?P<dev_l>dev)
-            [-_.]?
-            (?P<dev_n>[0-9]+)?
-        )?
-    )
-    (?:\+(?P<local>[a-z0-9]+(?:[-_.][a-z0-9]+)*))?        # local version
-)"""
-VERSION_GROUP = rf"""(?P<version>{ignore_subgroups(VERSION)})"""
-VERSION_REGEX: re.Pattern = re.compile(VERSION_GROUP)
-assert VERSION_REGEX.groups == 1, f"{VERSION_REGEX.groups=}."
+                (?P<pre_n>[0-9]+)?
+            )?
+            (?P<post>                                         # post release
+                (?:-(?P<post_n1>[0-9]+))
+                |
+                (?:
+                    [-_.]?
+                    (?P<post_l>post|rev|r)
+                    [-_.]?
+                    (?P<post_n2>[0-9]+)?
+                )
+            )?
+            (?P<dev>                                          # dev release
+                [-_.]?
+                (?P<dev_l>dev)
+                [-_.]?
+                (?P<dev_n>[0-9]+)?
+            )?
+        )
+        (?:\+(?P<local>[a-z0-9]+(?:[-_.][a-z0-9]+)*))?        # local version
+    )"""
+)
+VERSION = RE_VERSION.pattern
+RE_VERSION_GROUP = re.compile(rf"""(?P<version>{VERSION})""")
+VERSION_GROUP = RE_VERSION_GROUP.pattern
+assert "version" in RE_VERSION_GROUP.groupindex, f"{RE_VERSION_GROUP.groupindex=}."
 
 # https://peps.python.org/pep-0508/#names
 # NOTE: we modify this regex a bit to allow to match inside context
-NAME = r"""\b[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?\b"""
-NAME_GROUP = rf"""(?P<name>{NAME})"""
-NAME_REGEX = re.compile(NAME_GROUP)
-assert VERSION_REGEX.groups == 1, f"{NAME_REGEX.groups=}."
+RE_NAME = re.compile(r"""\b[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?\b""")
+NAME = RE_NAME.pattern
+RE_NAME_GROUP = re.compile(rf"""(?P<name>{NAME})""")
+NAME_GROUP = RE_NAME_GROUP.pattern
+assert RE_NAME_GROUP.groups == 1, f"{RE_NAME_GROUP.groups=}."
 
 # NOTE: to get a list of extras, match NAME_PATTERN with EXTRAS_PATTERN
-EXTRAS = rf"""\[\s*(?:{NAME})(?:\s*,{NAME})*\s*\]"""
-EXTRAS_GROUP = rf"""(?P<extras>{EXTRAS})"""
-EXTRAS_REGEX = re.compile(EXTRAS_GROUP)
-assert EXTRAS_REGEX.groups == 1, f"{EXTRAS_REGEX.groups=}."
+RE_EXTRAS = re.compile(rf"""(?:\[\s*)(?:{NAME})(?:\s*,{NAME})*(?:\s*\])""")
+EXTRAS = RE_EXTRAS.pattern
+RE_EXTRAS_GROUP = re.compile(rf"""(?P<extras>{EXTRAS})""")
+EXTRAS_GROUP = RE_EXTRAS_GROUP.pattern
+assert RE_EXTRAS_GROUP.groups == 1, f"{RE_EXTRAS_GROUP.groups=}."
 
-PROJECT_DEP = rf"""["']{NAME_GROUP}{EXTRAS}?\s*>=\s*{VERSION_GROUP}"""
-PROJECT_DEP_GROUP = rf"""(?P<DEPENDENCY>{PROJECT_DEP})"""
-PROJECT_DEP_REGEX = re.compile(PROJECT_DEP_GROUP)
-assert PROJECT_DEP_REGEX.groups == 3, f"{PROJECT_DEP_REGEX.groups=}."
-
-POETRY_DEP = rf"""{NAME_GROUP}\s*=\s*['"]\s*>=\s*{VERSION_GROUP}"""
-POETRY_DEP_GROUP = rf"""(?P<DEPENDENCY>{POETRY_DEP})"""
-POETRY_DEP_REGEX = re.compile(POETRY_DEP_GROUP)
-assert POETRY_DEP_REGEX.groups == 3, f"{POETRY_DEP_REGEX.groups=}."
-
-POETRY_EXT_DEP = (
-    rf"""{NAME_GROUP}\s*=\s*\{{\s*version\s*=\s*['"]\s*>=\s*{VERSION_GROUP}\}}"""
+RE_PROJECT_DEP = re.compile(
+    rf"""["']{NAME_GROUP}{EXTRAS_GROUP}?(?:\s*>=\s*){VERSION_GROUP}"""
 )
-POETRY_EXT_DEP_GROUP = rf"""(?P<DEPENDENCY>{POETRY_EXT_DEP})"""
-POETRY_EXT_DEP_REGEX = re.compile(POETRY_DEP_GROUP)
-assert POETRY_EXT_DEP_REGEX.groups == 3, f"{POETRY_EXT_DEP_REGEX.groups=}."
+PROJECT_DEP = RE_PROJECT_DEP.pattern
+RE_PROJECT_DEP_GROUP = re.compile(rf"""(?P<dependency>{PROJECT_DEP})""")
+PROJECT_DEP_GROUP = RE_PROJECT_DEP_GROUP.pattern
+assert is_dependency_pattern(
+    RE_PROJECT_DEP_GROUP
+), f"{RE_PROJECT_DEP_GROUP.groupindex=}."
+
+RE_POETRY_DEP = re.compile(
+    rf"""(?x:
+        {NAME_GROUP}
+        (?:\s*=\s*)
+        (?:{{\s*version\s*=\s*)?   # deps of the form `black = {{version = ">=23.7.0", extras = ["d"]}}`
+        (?:['"]\s*>=\s*)
+        {VERSION_GROUP}
+    )"""
+)
+POETRY_DEP = RE_POETRY_DEP.pattern
+RE_POETRY_DEP_GROUP = re.compile(rf"""(?P<dependency>{POETRY_DEP})""")
+POETRY_DEP_GROUP = RE_POETRY_DEP_GROUP.pattern
+assert is_dependency_pattern(
+    RE_POETRY_DEP_GROUP
+), f"{RE_PROJECT_DEP_GROUP.groupindex=}."
+
+
+PATTERNS: dict[str, str] = {
+    "NAME": NAME,
+    "NAME_GROUP": NAME_GROUP,
+    "EXTRAS": EXTRAS,
+    "EXTRAS_GROUP": EXTRAS_GROUP,
+    "VERSION": VERSION,
+    "VERSION_GROUP": VERSION_GROUP,
+    "PROJECT_DEP": PROJECT_DEP,
+    "PROJECT_DEP_GROUP": PROJECT_DEP_GROUP,
+    "POETRY_DEP": POETRY_DEP,
+    "POETRY_DEP_GROUP": POETRY_DEP_GROUP,
+}
+
+REGEXPS: dict[str, Pattern] = {
+    "NAME_REGEX": RE_NAME,
+    "NAME_GROUP": RE_NAME_GROUP,
+    "EXTRAS_REGEX": RE_EXTRAS,
+    "EXTRAS_GROUP": RE_EXTRAS_GROUP,
+    "VERSION_REGEX": RE_VERSION,
+    "VERSION_GROUP": RE_VERSION_GROUP,
+    "PROJECT_DEP_REGEX": RE_PROJECT_DEP,
+    "PROJECT_DEP_GROUP": RE_PROJECT_DEP_GROUP,
+    "POETRY_DEP_REGEX": RE_POETRY_DEP,
+    "POETRY_DEP_GROUP": RE_POETRY_DEP_GROUP,
+}
 
 
 @cache
 def get_pip_package_dict() -> dict[str, str]:
     """Construct dictionary package -> version."""
     output = subprocess.check_output(["pip", "list", "--format=json"])
-    pip_list: list[dict[Literal["name", "version"], str]] = json.loads(output)
+    pip_list: list[dict[str, str]] = json.loads(output)
     return {pkg["name"].lower(): pkg["version"] for pkg in pip_list}
 
 
@@ -139,32 +197,52 @@ def strip_version(version: str, /) -> str:
     return version
 
 
-def update_versions(raw_file: str, /, *, version_pattern: re.Pattern) -> str:
+def update_versions(raw_content: str, /, *, dependency_pattern: str | Pattern) -> str:
     """Update the dependencies in pyproject.toml according to version_pattern."""
-    if version_pattern.groups != 3:
+    if not isinstance(dependency_pattern, Pattern):
+        dependency_pattern = re.compile(dependency_pattern)
+
+    if not is_dependency_pattern(dependency_pattern):
         raise ValueError(
-            "version_pattern must have 3 groups (whole match, package name, version))"
-            f" Got {version_pattern.groups} groups (pattern: {version_pattern.pattern})."
+            "dependency_pattern must include 3 named groups {'dependency', 'name', 'version'}."
+            f" Got {dependency_pattern.groupindex=} instead."
         )
 
+    # get the installed packages
     pkg_dict = get_pip_package_dict()
 
+    # collect the new dependencies
+    new_dependencies: dict[str, str] = {}
     # match all dependencies in the file
-    for match, pkg, old_version in version_pattern.findall(raw_file):
+    for match in dependency_pattern.finditer(raw_content):
+        # extract the dependency, name, and version from the match
+        groups = match.groupdict()
+        dep: str = groups["dependency"]
+        pkg: str = groups["name"]
+        old_version: str = groups["version"]
+
         # get the new version from the pip list
         new_version = strip_version(pkg_dict.get(pkg, old_version))
+
         # if the version changed, replace the old version with the new one
         if old_version != new_version:
-            new = match.replace(old_version, new_version)
-            print(f"replacing: {match!r:36}  {new!r}")
-            raw_file = raw_file.replace(match, new)
-    return raw_file
+            new_dependencies[dep] = dep.replace(old_version, new_version)
+
+    # make a copy of the original content
+    new_content = raw_content
+    max_key_len = max(map(len, new_dependencies), default=0)
+    # iterate over the new dependencies
+    for dep, new_dep in new_dependencies.items():
+        print(f"{dep!r:<{max_key_len}} -> {new_dep!r}")
+        new_content = new_content.replace(dep, new_dep)
+
+    return new_content
 
 
-def pyproject_update_dependencies(
-    fname: str, /, *, autofix: bool = True, debug: bool = False
-) -> None:
+def check_file(fname: str, /, *, autofix: bool = True, debug: bool = False) -> bool:
     """Update the dependencies in pyproject.toml."""
+    passed = True
+
     with open(fname, "r", encoding="utf8") as file:
         original_pyproject = file.read()
 
@@ -176,21 +254,19 @@ def pyproject_update_dependencies(
     pyproject = original_pyproject
 
     # update [project.dependencies] and [project.optional-dependencies]
-    pyproject = update_versions(pyproject, version_pattern=PROJECT_DEP_REGEX)
+    pyproject = update_versions(pyproject, dependency_pattern=RE_PROJECT_DEP_GROUP)
 
     # update [tool.poetry.dependencies] and [tool.poetry.group.<name>.dependencies]
-    pyproject = update_versions(pyproject, version_pattern=POETRY_DEP_REGEX)
-
-    # Update dependencies of the form `black = {version = ">=23.7.0", extras = ["d", "jupyter"]}`
-    # NOTE: We assume that the version is always the first key in the table
-    pyproject = update_versions(pyproject, version_pattern=POETRY_EXT_DEP_REGEX)
+    pyproject = update_versions(pyproject, dependency_pattern=RE_POETRY_DEP_GROUP)
 
     if pyproject != original_pyproject:
-        if not autofix:
-            sys.exit(1)
-        # update the file
-        with open(fname, "w", encoding="utf8") as file:
-            file.write(pyproject)
+        passed = False
+
+        if autofix:  # update the file
+            with open(fname, "w", encoding="utf8") as file:
+                file.write(pyproject)
+
+    return passed
 
 
 def main() -> None:
@@ -221,11 +297,22 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    pyproject_update_dependencies(
-        args.pyproject_file,
-        autofix=args.autofix,
-        debug=args.debug,
-    )
+    if args.autofix:
+        print("Updating dependencies...")
+    else:
+        print("Checking dependencies (DRY RUN)...")
+
+    try:
+        passed = check_file(
+            args.pyproject_file,
+            autofix=args.autofix,
+            debug=args.debug,
+        )
+    except Exception as exc:
+        raise RuntimeError(f'Checking file "{args.pyproject_file!s}" failed!') from exc
+
+    if not passed:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
