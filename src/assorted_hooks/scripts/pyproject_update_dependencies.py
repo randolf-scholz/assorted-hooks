@@ -28,6 +28,10 @@ __all__ = [
     "POETRY_DEP_GROUP",
     "PROJECT_DEP",
     "PROJECT_DEP_GROUP",
+    "URI",
+    "URI_GROUP",
+    "URL",
+    "URL_GROUP",
     "VERSION",
     "VERSION_GROUP",
     # REGEXPS
@@ -40,6 +44,10 @@ __all__ = [
     "RE_POETRY_DEP_GROUP",
     "RE_PROJECT_DEP",
     "RE_PROJECT_DEP_GROUP",
+    "RE_URI",
+    "RE_URI_GROUP",
+    "RE_URL",
+    "RE_URL_GROUP",
     "RE_VERSION",
     "RE_VERSION_GROUP",
     # Functions
@@ -126,6 +134,17 @@ RE_EXTRAS_GROUP = re.compile(rf"""(?P<extras>{EXTRAS})""")
 EXTRAS_GROUP = RE_EXTRAS_GROUP.pattern
 assert RE_EXTRAS_GROUP.groups == 1, f"{RE_EXTRAS_GROUP.groups=}."
 
+# for dependencies like ``name [fred,bar] @ http://foo.com ; python_version=='2.7'``
+RE_URL = re.compile(r"""\b[\w:/-]+\b""")
+URL = RE_URL.pattern
+RE_URL_GROUP = re.compile(rf"""(?P<url>{URL})""")
+URL_GROUP = RE_URL_GROUP.pattern
+# URI
+RE_URI = re.compile(rf"""\s*@\s*{URL_GROUP}\s*""")
+URI = RE_URI.pattern
+RE_URI_GROUP = re.compile(rf"""(?P<uri>{URI})""")
+URI_GROUP = RE_URI_GROUP.pattern
+
 RE_PROJECT_DEP = re.compile(
     rf"""["']{NAME_GROUP}{EXTRAS_GROUP}?(?:\s*>=\s*){VERSION_GROUP}"""
 )
@@ -154,29 +173,37 @@ assert is_dependency_pattern(
 
 
 PATTERNS: dict[str, str] = {
-    "NAME": NAME,
-    "NAME_GROUP": NAME_GROUP,
     "EXTRAS": EXTRAS,
     "EXTRAS_GROUP": EXTRAS_GROUP,
-    "VERSION": VERSION,
-    "VERSION_GROUP": VERSION_GROUP,
-    "PROJECT_DEP": PROJECT_DEP,
-    "PROJECT_DEP_GROUP": PROJECT_DEP_GROUP,
+    "NAME": NAME,
+    "NAME_GROUP": NAME_GROUP,
     "POETRY_DEP": POETRY_DEP,
     "POETRY_DEP_GROUP": POETRY_DEP_GROUP,
+    "PROJECT_DEP": PROJECT_DEP,
+    "PROJECT_DEP_GROUP": PROJECT_DEP_GROUP,
+    "URI": URI,
+    "URI_GROUP": URI_GROUP,
+    "URL": URL,
+    "URL_GROUP": URL_GROUP,
+    "VERSION": VERSION,
+    "VERSION_GROUP": VERSION_GROUP,
 }
 
 REGEXPS: dict[str, Pattern] = {
-    "NAME_REGEX": RE_NAME,
-    "NAME_GROUP": RE_NAME_GROUP,
-    "EXTRAS_REGEX": RE_EXTRAS,
-    "EXTRAS_GROUP": RE_EXTRAS_GROUP,
-    "VERSION_REGEX": RE_VERSION,
-    "VERSION_GROUP": RE_VERSION_GROUP,
-    "PROJECT_DEP_REGEX": RE_PROJECT_DEP,
-    "PROJECT_DEP_GROUP": RE_PROJECT_DEP_GROUP,
-    "POETRY_DEP_REGEX": RE_POETRY_DEP,
-    "POETRY_DEP_GROUP": RE_POETRY_DEP_GROUP,
+    "RE_EXTRAS": RE_EXTRAS,
+    "RE_EXTRAS_GROUP": RE_EXTRAS_GROUP,
+    "RE_NAME": RE_NAME,
+    "RE_NAME_GROUP": RE_NAME_GROUP,
+    "RE_POETRY_DEP": RE_POETRY_DEP,
+    "RE_POETRY_DEP_GROUP": RE_POETRY_DEP_GROUP,
+    "RE_PROJECT_DEP": RE_PROJECT_DEP,
+    "RE_PROJECT_DEP_GROUP": RE_PROJECT_DEP_GROUP,
+    "RE_URI": RE_URI,
+    "RE_URI_GROUP": RE_URI_GROUP,
+    "RE_URL": RE_URL,
+    "RE_URL_GROUP": RE_URL_GROUP,
+    "RE_VERSION": RE_VERSION,
+    "RE_VERSION_GROUP": RE_VERSION_GROUP,
 }
 
 

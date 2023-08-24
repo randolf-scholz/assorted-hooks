@@ -1,5 +1,12 @@
 #!/usr/bin/env python
-"""Prints the direct dependencies of a module line by line.."""
+"""Prints the direct dependencies of a module line by line.
+
+References:
+    - https://peps.python.org/pep-0508/
+    - https://peps.python.org/pep-0621/
+    - https://packaging.python.org/en/latest/specifications/
+    - https://packaging.python.org/en/latest/specifications/declaring-project-metadata/#declaring-project-metadata
+"""
 
 # TODO: add support for extras.
 
@@ -35,6 +42,14 @@ Config: TypeAlias = dict[str, Any]
 
 MODULES_DEFAULT = ("src/",)
 TESTS_DEFAULT = ("tests/",)
+
+# https://peps.python.org/pep-0508/#names
+# NOTE: we modify this regex a bit to allow to match inside context
+RE_NAME = re.compile(r"""\b[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?\b""")
+NAME = RE_NAME.pattern
+RE_NAME_GROUP = re.compile(rf"""(?P<name>{NAME})""")
+NAME_GROUP = RE_NAME_GROUP.pattern
+assert RE_NAME_GROUP.groups == 1, f"{RE_NAME_GROUP.groups=}."
 
 
 # import metadata library
@@ -188,25 +203,26 @@ def get_deps_pyproject_section(config: Config, /, *, section: str) -> set[str]:
 
     Looking up the section must either result in a list of strings or a dict.
     """
+    conf: Any = config  # otherwise typing errors...
+
     try:  # recursively get the section
         for key in section.split("."):
-            config = config[key]
+            conf = conf[key]
     except KeyError:
         return NotImplemented
 
-    match config:
-        case list() as lst:  # type: ignore[unreachable]
-            # assume format `"package<comparator>version"`
-            regex = re.compile(r"[a-zA-Z0-9_-]*")  # type: ignore[unreachable]
+    match conf:
+        # assume format `"package<comparator>version"`
+        case list() as lst:
             matches: set[str] = set()
-            for dep in lst:  # pyright: ignore reportGeneralTypeIssues
-                match = re.search(regex, dep)
+            for dep in lst:
+                match = re.search(RE_NAME, dep)
                 if match is None:
                     raise ValueError(f"Invalid dependency: {dep!r}")
                 matches.add(match.group())
             return matches
+        # assume format `package = "<comparator>version"`
         case dict() as dct:  # poetry
-            # assume format `package = "<comparator>version"`
             return set(dct.keys()) - {"python"}
         case _:
             raise TypeError(f"Unexpected type: {type(config)}")
@@ -414,9 +430,10 @@ def check_file(
     ignore_imported_deps: Sequence[str] = (),
     ignore_project_deps: Sequence[str] = (),
     ignore_test_deps: Sequence[str] = (),
-    error_superfluous_test_deps: bool,
-    error_unused_project_deps: bool,
-    error_unused_test_deps: bool,
+    error_superfluous_test_deps: bool = True,
+    error_unused_project_deps: bool = True,
+    error_unused_test_deps: bool = False,
+    debug: bool = False,
 ) -> bool:
     """Check a single file."""
     passed = True
@@ -426,6 +443,10 @@ def check_file(
 
     # get the normalized project name
     project_name = normalize_dep_name(get_name_pyproject(config))
+
+    if debug:
+        print(f"{project_name=}")
+
     excluded_dependencies = {project_name} | set(ignore_imported_deps)
     # compute the dependencies from the source files
     modules_given = modules is not MODULES_DEFAULT
@@ -554,6 +575,12 @@ def main() -> None:
         help="list of pyproject test dependencies to ignore",
     )
     parser.add_argument(
+        "--error-superfluous-test-deps",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Raise error if test dependency is superfluous.",
+    )
+    parser.add_argument(
         "--error_unused_project_deps",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -564,12 +591,6 @@ def main() -> None:
         action=argparse.BooleanOptionalAction,
         default=False,
         help="Raise error if pyproject.toml lists unused test dependencies",
-    )
-    parser.add_argument(
-        "--error-superfluous-test-deps",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Raise error if test dependency is superfluous.",
     )
     parser.add_argument(
         "--debug",
@@ -591,6 +612,7 @@ def main() -> None:
             error_superfluous_test_deps=args.error_superfluous_test_deps,
             error_unused_project_deps=args.error_unused_project_deps,
             error_unused_test_deps=args.error_unused_test_deps,
+            debug=args.debug,
         )
     except Exception as exc:
         raise RuntimeError(f'Checking file "{args.pyproject_file!s}" failed!') from exc
