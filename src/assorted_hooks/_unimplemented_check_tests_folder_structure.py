@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 """Check that tests/ directory structure mirrors /src."""
 
+# IDEA: Check that tests/ directory structure mirrors /src.
+# IDEA: --autofix: Automatically create missing folders.
+# IDEA: check leading docstrings for standardized format.
+# IDEA: check shebangs for standardized format.
+# IDEA: check for main() function in all scripts.
 
 # __all__ = []
-
 
 # import argparse
 # import ast
