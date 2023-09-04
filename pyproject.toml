@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 requires-python = ">=3.11"
 name = "assorted-hooks"
-version = "0.1.32"
+version = "0.1.33"
 
 authors = [{name="Randolf Scholz", email="randolf.scholz@gmail.com"},]
 description = "Custom pre-commit hooks"
@@ -37,10 +37,10 @@ check-__all__-exists = "assorted_hooks.check__all__exists:main"
 check-imported-attributes = "assorted_hooks.check_imported_attributes:main"
 check-no-mixed-args = "assorted_hooks.check_no_mixed_args:main"
 check-standard-generics = "assorted_hooks.check_standard_generics:main"
+check-clean-interface = "assorted_hooks.scripts.check_clean_interface:main"
 pyproject-check-deps = "assorted_hooks.scripts.pyproject_check_dependencies:main"
 pyproject-update-deps = "assorted_hooks.scripts.pyproject_update_dependencies:main"
 pyproject-validate-version = "assorted_hooks.scripts.pyproject_validate_version:main"
-
 
 # region flake8 configuration ----------------------------------------------------------
 [tool.flake8]
@@ -280,7 +280,6 @@ ignore_missing_imports = true
 py_version=311
 profile="black"
 src_paths=["src/", "tests/"]
-known_first_party = ["linodenet", "tsdm"]
 combine_as_imports = true
 # flake8-profiles: appnexus, cryptography, edited, google, pep8, pycharm, smarkets
 # black-compatible: black, appnexus

@@ -39,7 +39,6 @@ __all__ = [
     "RE_EXTRAS_GROUP",
     "RE_NAME",
     "RE_NAME_GROUP",
-    "RE_NAME_GROUP",
     "RE_POETRY_DEP",
     "RE_POETRY_DEP_GROUP",
     "RE_PROJECT_DEP",

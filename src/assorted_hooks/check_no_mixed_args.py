@@ -20,6 +20,7 @@ __all__ = [
 
 import argparse
 import ast
+import logging
 import sys
 from ast import AST, AsyncFunctionDef, Attribute, Call, ClassDef, FunctionDef, Name
 from collections.abc import Collection, Iterator
@@ -27,6 +28,8 @@ from pathlib import Path
 from typing import TypeAlias
 
 from assorted_hooks.utils import get_python_files
+
+__logger__ = logging.getLogger(__name__)
 
 Func: TypeAlias = FunctionDef | AsyncFunctionDef
 """Type alias for function-defs."""
@@ -151,6 +154,7 @@ def check_file(
     ignore_wo_pos_only: bool = False,
 ) -> bool:
     """Check whether the file contains mixed positional and keyword arguments."""
+    passed = True
 
     def is_ignorable(func: Func, /) -> bool:
         """Checks if the func can be ignored."""
@@ -165,8 +169,6 @@ def check_file(
 
     with open(fname, "rb") as file:
         tree = ast.parse(file.read(), filename=fname)
-
-    passed = True
 
     for node in get_funcs_in_classes(tree):
         if is_ignorable(node):
@@ -273,17 +275,17 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    if args.debug:
+        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+        __logger__.debug("args: %s", vars(args))
+
     # find all files
     files: list[Path] = get_python_files(args.files)
-
-    if args.debug:
-        print("Files:")
-        for file in files:
-            print(f"  {file!s}:0")
 
     # apply script to all files
     passed = True
     for file in files:
+        __logger__.debug('Checking "%s:0"', file)
         try:
             passed &= check_file(
                 file,
@@ -296,7 +298,7 @@ def main() -> None:
                 ignore_decorators=args.ignore_decorators,
             )
         except Exception as exc:
-            raise RuntimeError(f'Checking file "{file!s}" failed!') from exc
+            raise RuntimeError(f"{file!s}: Checking file failed!") from exc
 
     if not passed:
         sys.exit(1)

@@ -11,12 +11,15 @@ __all__ = [
 import argparse
 import ast
 import collections.abc
+import logging
 import sys
 import typing
 from ast import AST, Attribute, Import, ImportFrom, Name
 from pathlib import Path
 
 from assorted_hooks.utils import get_python_files
+
+__logger__ = logging.getLogger(__name__)
 
 REPLACEMENTS = {
     # fmt: off
@@ -102,10 +105,10 @@ def get_deprecated_aliases(node: AST, /) -> set[str]:
 
 def check_file(fname: str | Path, /) -> bool:
     """Check a single file."""
+    passed = True
+
     with open(fname, "r", encoding="utf8") as file:
         tree = ast.parse(file.read())
-
-    passed = True
 
     for node in ast.walk(tree):
         for alias in get_deprecated_aliases(node):
@@ -144,24 +147,24 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    if args.debug:
+        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+        __logger__.debug("args: %s", vars(args))
+
     if args.use_never:
         REPLACEMENTS["typing.NoReturn"] = "typing.Never"
 
     # find all files
     files: list[Path] = get_python_files(args.files)
 
-    if args.debug:
-        print("Files:")
-        for file in files:
-            print(f"  {file!s}:0")
-
     # apply script to all files
     passed = True
     for file in files:
+        __logger__.debug('Checking "%s:0"', file)
         try:
             passed &= check_file(file)
         except Exception as exc:
-            raise RuntimeError(f'Checking file "{file!s}" failed!') from exc
+            raise RuntimeError(f"{file!s}: Checking file failed!") from exc
 
     if not passed:
         sys.exit(1)

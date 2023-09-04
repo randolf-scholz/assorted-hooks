@@ -105,3 +105,8 @@ are exactly 88 characters long.
 - Checks that `__all__` is defined as a literal list (not tuple, set, etc.)
 - Checks that `__all__` is not defined multiple times.
 - Checks that `__all__` is not superfluous (i.e. contains all symbols defined in the module)
+
+### `check-clean-interface`
+
+Checks that `dir(module)` is equal to `__all__` (i.e. that `__all__` contains all symbols defined in the module).
+By default only applies to packages (i.e.`__init__.py` files).

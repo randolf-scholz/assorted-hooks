@@ -83,6 +83,13 @@ repos:
         types: [python]
         files: ^src/
         description: "Check that __all__ exists."
+      # scripts
+      - id: python-check-clean-interface
+        name: python-check-clean-interface
+        entry: "./src/assorted_hooks/scripts/check_clean_interface.py"
+        language: script
+        types: [python]
+        description: "Check for clean interface."
   - repo: https://github.com/pre-commit/pre-commit-hooks
     # https://pre-commit.com/hooks.html
     rev: v4.4.0
@@ -135,7 +142,7 @@ repos:
         description: "Detect mistake of inline code touching normal text in rst"
   # prettier
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.0.2
+    rev: v3.0.3
     hooks:
       - id: prettier
   # absolufy-imports
@@ -163,7 +170,7 @@ repos:
         types: [python]
   # ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.0.285
+    rev: v0.0.287
     hooks:
       - id: ruff
         files: (^src/|^tests/)
@@ -212,7 +219,7 @@ repos:
   #        stages: [pre-push]
   # pyright
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.324
+    rev: v1.1.325
     hooks:
       - id: pyright
         files: (^src/|^tests/)

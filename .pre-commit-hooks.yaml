@@ -67,3 +67,9 @@
   language: python
   types: [python]
   description: "Check that __all__ exists."
+- id: python-check-clean-interface
+  name: python-check-clean-interface
+  entry: "./src/assorted_hooks/scripts/check_clean_interface.py"
+  language: script
+  types: [python]
+  description: "Check for clean interface."

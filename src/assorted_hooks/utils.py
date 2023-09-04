@@ -23,9 +23,10 @@ def get_python_files(
     *,
     root: Optional[Path] = None,
     raise_notfound: bool = True,
+    relative_to_root: bool = True,
 ) -> list[Path]:
     """Get all python files from the given list of files or patterns."""
-    root = Path.cwd().absolute() if root is None else root.absolute()
+    root = (Path.cwd() if root is None else root).absolute()
     files: list[Path] = []
 
     for file_or_pattern in files_or_pattern:
@@ -44,6 +45,9 @@ def get_python_files(
                 f"Pattern {file_or_pattern!r} did not match any files."
             )
         files.extend(matches)
+
+    if relative_to_root:
+        files = [file.relative_to(root) for file in files]
 
     return files
 
@@ -128,9 +132,11 @@ BUILTIN_EXCEPTIONS: list[str] = [
     # A
     "ArithmeticError", "AssertionError", "AttributeError",
     # B
-    "BaseException", "BlockingIOError", "BrokenPipeError", "BufferError", "BytesWarning",
+    "BaseException", "BlockingIOError", "BrokenPipeError", "BufferError",
+    "BytesWarning",
     # C
-    "ChildProcessError", "ConnectionAbortedError", "ConnectionError", "ConnectionRefusedError", "ConnectionResetError",
+    "ChildProcessError", "ConnectionAbortedError", "ConnectionError",
+    "ConnectionRefusedError", "ConnectionResetError",
     # D
     "DeprecationWarning",
     # E
@@ -140,7 +146,8 @@ BUILTIN_EXCEPTIONS: list[str] = [
     # G
     "GeneratorExit",
     # I
-    "IOError", "ImportError", "ImportWarning", "IndentationError", "IndexError", "InterruptedError", "IsADirectoryError",
+    "IOError", "ImportError", "ImportWarning", "IndentationError", "IndexError",
+    "InterruptedError", "IsADirectoryError",
     # K
     "KeyError", "KeyboardInterrupt",
     # L
@@ -156,11 +163,13 @@ BUILTIN_EXCEPTIONS: list[str] = [
     # R
     "RecursionError", "ReferenceError", "ResourceWarning", "RuntimeError", "RuntimeWarning",
     # S
-    "StopAsyncIteration", "StopIteration", "SyntaxError", "SyntaxWarning", "SystemError", "SystemExit",
+    "StopAsyncIteration", "StopIteration", "SyntaxError", "SyntaxWarning",
+    "SystemError", "SystemExit",
     # T
     "TabError", "TimeoutError", "TypeError",
     # U
-    "UnboundLocalError", "UnicodeDecodeError", "UnicodeEncodeError", "UnicodeError", "UnicodeTranslateError", "UnicodeWarning", "UserWarning",
+    "UnboundLocalError", "UnicodeDecodeError", "UnicodeEncodeError", "UnicodeError",
+    "UnicodeTranslateError", "UnicodeWarning", "UserWarning",
     # V
     "ValueError",
     # W

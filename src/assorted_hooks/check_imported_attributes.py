@@ -23,6 +23,7 @@ __all__ = [
 
 import argparse
 import ast
+import logging
 import sys
 from ast import AST, Attribute, Name
 from collections.abc import Iterator
@@ -30,6 +31,8 @@ from pathlib import Path
 from typing import TypeGuard
 
 from assorted_hooks.utils import get_python_files
+
+__logger__ = logging.getLogger(__name__)
 
 
 def is_pure_attribute(node: AST, /) -> TypeGuard[Attribute]:
@@ -107,18 +110,19 @@ def get_imported_attributes(tree: AST, /) -> Iterator[tuple[Attribute, Name, str
 
 def check_file(file_path: Path, /, *, debug: bool = False) -> bool:
     """Finds shadowed attributes in a file."""
+    passed = True
+
     # Your code here
     with open(file_path, "r", encoding="utf8") as file:
         tree = ast.parse(file.read())
 
     # find all violations
-    node: Attribute = NotImplemented
     for node, _, string in get_imported_attributes(tree):
+        passed = False
         print(
             f"{file_path!s}:{node.lineno!s}"
             f" use directly imported {node.attr!r} instead of {string!r}"
         )
-    passed = node is NotImplemented
 
     if not passed and debug:
         imported_symbols = get_imported_symbols(tree)
@@ -152,21 +156,21 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    if args.debug:
+        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+        __logger__.debug("args: %s", vars(args))
+
     # find all files
     files: list[Path] = get_python_files(args.files)
-
-    if args.debug:
-        print("Files:")
-        for file in files:
-            print(f"  {file!s}:0")
 
     # apply script to all files
     passed = True
     for file in files:
+        __logger__.debug('Checking "%s:0"', file)
         try:
             passed &= check_file(file, debug=args.debug)
         except Exception as exc:
-            raise RuntimeError(f'Checking file "{file!s}" failed!') from exc
+            raise RuntimeError(f"{file!s}: Checking file failed!") from exc
 
     if not passed:
         sys.exit(1)

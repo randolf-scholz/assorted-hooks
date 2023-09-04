@@ -1,14 +1,17 @@
 """Checks that __all__ exists in modules."""
 
 __all__ = [
-    "is_superfluous",
     "check_file",
     "get__all__nodes",
+    "is__all__node",
+    "is_literal_list",
+    "is_superfluous",
     "main",
 ]
 
 import argparse
 import ast
+import logging
 import sys
 from ast import (
     AST,
@@ -19,7 +22,6 @@ from ast import (
     Expr,
     Import,
     ImportFrom,
-    List,
     Module,
     Name,
 )
@@ -29,6 +31,8 @@ from pathlib import Path
 from typing import TypeGuard
 
 from assorted_hooks.utils import get_python_files
+
+__logger__ = logging.getLogger(__name__)
 
 
 def is_main(node: AST, /) -> bool:
@@ -70,17 +74,9 @@ def is_future_import(node: AST, /) -> bool:
 
 def is_literal_list(node: AST, /) -> bool:
     """Check whether node is a literal list of strings."""
-    return isinstance(node, List) and all(
+    return isinstance(node, ast.List) and all(
         isinstance(el, Constant) and isinstance(el.value, str) for el in node.elts
     )
-
-
-def get__all__nodes(tree: Module, /) -> Iterator[Assign | AnnAssign | AugAssign]:
-    """Get the __all__ node from the tree."""
-    # NOTE: we are only interested in the module body.
-    for node in tree.body:
-        if is__all__node(node):
-            yield node
 
 
 def is_superfluous(tree: Module, /) -> bool:
@@ -127,15 +123,32 @@ def is_at_top(node: Assign | AnnAssign, /, *, module: Module) -> bool:
     return True
 
 
+def get_duplicate_keys(node: Assign | AnnAssign | AugAssign, /) -> set[str]:
+    """Check if __all__ node has duplicate keys."""
+    assert node.value is not None, "Expected __all__ to have a value."
+    assert is_literal_list(node.value), "Expected literal list."
+    elements = Counter(el.value for el in node.value.elts)  # type: ignore[attr-defined]
+    return {key for key, count in elements.items() if count > 1}
+
+
+def get__all__nodes(tree: Module, /) -> Iterator[Assign | AnnAssign | AugAssign]:
+    """Get the __all__ node from the tree."""
+    # NOTE: we are only interested in the module body.
+    for node in tree.body:
+        if is__all__node(node):
+            yield node
+
+
 def check_file(
     fname: str | Path,
     /,
     *,
     allow_missing: bool = True,
-    assert_literal: bool = True,
+    warn_non_literal: bool = True,
     warn_annotated: bool = True,
+    warn_duplicate_keys: bool = True,
     warn_location: bool = True,
-    warn_multiple: bool = True,
+    warn_multiple_definitions: bool = True,
     warn_superfluous: bool = True,
 ) -> bool:
     """Check a single file."""
@@ -159,29 +172,32 @@ def check_file(
         case []:
             if not is_superfluous(tree):
                 passed = False
-                print(f"{fname!s}: No __all__ found.")
+                print(f"{fname!s}:0: No __all__ found.")
         case [node, *nodes]:
             if not isinstance(node, Assign | AnnAssign):
                 raise TypeError("Expected __all__ to be an assignment.")
             if node.value is None:
                 raise ValueError("Expected __all__ to have a value.")
-            if assert_literal and not is_literal_list(node.value):
+            if warn_non_literal and not is_literal_list(node.value):
                 passed = False
-                print(f'"{fname!s}:{node.lineno}" __all__ is not a literal list.')
+                print(f"{fname!s}:{node.lineno}: __all__ is not a literal list.")
             if warn_annotated and isinstance(node, AnnAssign):
                 passed = False
-                print(f'"{fname!s}:{node.lineno}" __all__ is annotated.')
-            if nodes and warn_multiple:
+                print(f"{fname!s}:{node.lineno}: __all__ is annotated.")
+            if warn_multiple_definitions and nodes:
                 passed = False
-                print(f'"{fname!s}:{node.lineno}" Multiple __all__ found.')
+                print(f"{fname!s}:{node.lineno}: Multiple __all__ found.")
                 for n in nodes:
-                    print(f'"{fname!s}:{n.lineno}" additional __all__.')
+                    print(f"{fname!s}:{n.lineno}: additional __all__.")
             if warn_superfluous and is_superfluous(tree):
                 passed = False
-                print(f'"{fname!s}:{node.lineno}" __all__ is superfluous.')
+                print(f"{fname!s}:{node.lineno}: __all__ is superfluous.")
             if warn_location and not is_at_top(node, module=tree):
                 passed = False
-                print(f'"{fname!s}:{node.lineno}" __all__ is not at the top.')
+                print(f"{fname!s}:{node.lineno}: __all__ is not at the top.")
+            if warn_duplicate_keys and (keys := get_duplicate_keys(node)):
+                passed = False
+                print(f"{fname!s}:{node.lineno}: __all__ has duplicate {keys=}.")
 
     return passed
 
@@ -199,7 +215,7 @@ def main():
         help="One or multiple files, folders or file patterns.",
     )
     parser.add_argument(
-        "--assert-literal",
+        "--warn-non-literal",
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=True,
@@ -234,11 +250,18 @@ def main():
         help="Warn if __all__ is superfluous.",
     )
     parser.add_argument(
-        "--warn-multiple",
+        "--warn-multiple-definitions",
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=True,
-        help="Warn if multiple __all__ are present.",
+        help="Warn if multiple __all__ definitions are present.",
+    )
+    parser.add_argument(
+        "--warn-duplicate-keys",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=True,
+        help="Warn if __all__ contains the same key twice.",
     )
     parser.add_argument(
         "--debug",
@@ -249,29 +272,30 @@ def main():
     )
     args = parser.parse_args()
 
+    if args.debug:
+        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+        __logger__.debug("args: %s", vars(args))
+
     # find all files
     files: list[Path] = get_python_files(args.files)
-
-    if args.debug:
-        print("Files:")
-        for file in files:
-            print(f"  {file!s}:0")
 
     # apply script to all files
     passed = True
     for file in files:
+        __logger__.debug('Checking "%s:0"', file)
         try:
             passed &= check_file(
                 file,
                 allow_missing=args.allow_missing,
-                assert_literal=args.assert_literal,
                 warn_annotated=args.warn_annotated,
+                warn_duplicate_keys=args.warn_duplicate_keys,
                 warn_location=args.warn_location,
-                warn_multiple=args.warn_multiple,
+                warn_multiple_definitions=args.warn_multiple_definitions,
+                warn_non_literal=args.warn_non_literal,
                 warn_superfluous=args.warn_superfluous,
             )
         except Exception as exc:
-            raise RuntimeError(f'Checking file "{file!s}" failed!') from exc
+            raise RuntimeError(f"{file!s}: Checking file failed!") from exc
 
     if not passed:
         sys.exit(1)
