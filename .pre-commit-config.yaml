@@ -87,6 +87,7 @@ repos:
       - id: python-check-clean-interface
         name: python-check-clean-interface
         entry: "./src/assorted_hooks/scripts/check_clean_interface.py"
+        require_serial: true # otherwise module is loaded multiple times
         language: script
         types: [python]
         files: ^src/

@@ -69,6 +69,7 @@
   description: "Check that __all__ exists."
 - id: python-check-clean-interface
   name: python-check-clean-interface
+  require_serial: true # otherwise module is loaded multiple times
   entry: "./src/assorted_hooks/scripts/check_clean_interface.py"
   language: script
   types: [python]
