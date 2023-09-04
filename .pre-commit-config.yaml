@@ -89,6 +89,7 @@ repos:
         entry: "./src/assorted_hooks/scripts/check_clean_interface.py"
         language: script
         types: [python]
+        files: ^src/
         description: "Check for clean interface."
   - repo: https://github.com/pre-commit/pre-commit-hooks
     # https://pre-commit.com/hooks.html
