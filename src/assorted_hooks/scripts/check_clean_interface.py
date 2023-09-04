@@ -15,6 +15,7 @@ import argparse
 import logging
 import sys
 from collections.abc import Iterable
+from contextlib import redirect_stderr, redirect_stdout
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from types import ModuleType
@@ -124,7 +125,7 @@ def check_module(
     # check all keys
     for key in vars(module):
         if ignore_dunder_attributes and is_dunder(key):
-            # logger.debug(f"%s Skipped! - dunder attribute!", key.ljust(max_length))
+            logger.debug("%s Skipped! - dunder attribute!", key.ljust(max_length))
             continue
         if ignore_private_attributes and is_private(key):
             logger.debug("%s Skipped! - private attribute!", key.ljust(max_length))
@@ -145,6 +146,7 @@ def check_file(
     ignore_non_packages: bool,
     ignore_private_attributes: bool,
     ignore_private_modules: bool,
+    silent: bool = True,
 ) -> bool:
     """Check a single file."""
     path = Path(fname)
@@ -160,7 +162,13 @@ def check_file(
     assert spec is not None, f"{path=} has no spec ?!?!"
     assert spec.loader is not None, f"{path=} has no loader ?!?!"
     module = module_from_spec(spec)
-    spec.loader.exec_module(module)
+
+    # load the module silently
+    with (
+        redirect_stdout(None if silent else sys.stdout),
+        redirect_stderr(None if silent else sys.stderr),
+    ):
+        spec.loader.exec_module(module)
 
     return check_module(
         module,
@@ -212,6 +220,13 @@ def main() -> None:
         help="Ignore 'private' modules, i.e. files starting with a single underscore.",
     )
     parser.add_argument(
+        "--load-silent",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=True,
+        help="Load modules silently.",
+    )
+    parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,
         type=bool,
@@ -238,6 +253,7 @@ def main() -> None:
                 ignore_non_packages=args.ignore_non_packages,
                 ignore_private_attributes=args.ignore_private_attributes,
                 ignore_private_modules=args.ignore_private_modules,
+                silent=args.load_silent,
             )
         except Exception as exc:
             raise RuntimeError(f"{file!s}: Checking file failed!") from exc
