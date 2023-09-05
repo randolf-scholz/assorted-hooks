@@ -86,7 +86,9 @@ def check_module(
     /,
     *,
     ignore_dunder_attributes: bool,
-    ignore_non_packages: bool,
+    ignore_imports_modules: bool,
+    ignore_imports_packages: bool,
+    ignore_modules: bool,
     ignore_private_attributes: bool,
     ignore_private_modules: bool,
 ) -> bool:
@@ -105,7 +107,7 @@ def check_module(
     logger.addHandler(handler)
     logger.propagate = False  # don't propagate to root logger
 
-    if ignore_non_packages and not is_package(module):
+    if ignore_modules and not is_package(module):
         logger.debug("Skipped! - not a package!")
         return True
     if ignore_private_modules and is_private(module_name):
@@ -115,9 +117,21 @@ def check_module(
         print(f"{path!s}:0 module vars() does not agree with dir() ???")
         return False
     if hasattr(module, "__all__"):
-        exported_keys = module.__all__
+        exported_keys: set[str] = set(module.__all__)
     else:
-        exported_keys = []
+        exported_keys = set()
+
+    # remove excluded keys
+    excluded_keys: set[str] = set()
+    if ignore_imports_modules and not is_package(module):
+        # get imported variables
+        # excluded_keys |= ...
+        raise NotImplementedError
+    elif ignore_imports_packages and is_package(module):
+        # get imported variables
+        # excluded_keys |= ...
+        raise NotImplementedError
+    exported_keys -= excluded_keys
 
     # get max length of variable names
     max_length = max(map(len, dir(module)), default=0)
@@ -143,10 +157,12 @@ def check_file(
     /,
     *,
     ignore_dunder_attributes: bool,
-    ignore_non_packages: bool,
+    ignore_imports_modules: bool,
+    ignore_imports_packages: bool,
+    ignore_modules: bool,
     ignore_private_attributes: bool,
     ignore_private_modules: bool,
-    silent: bool = True,
+    load_silent: bool = True,
 ) -> bool:
     """Check a single file."""
     path = Path(fname)
@@ -165,15 +181,17 @@ def check_file(
 
     # load the module silently
     with (
-        redirect_stdout(None if silent else sys.stdout),
-        redirect_stderr(None if silent else sys.stderr),
+        redirect_stdout(None if load_silent else sys.stdout),
+        redirect_stderr(None if load_silent else sys.stderr),
     ):
         spec.loader.exec_module(module)
 
     return check_module(
         module,
         ignore_dunder_attributes=ignore_dunder_attributes,
-        ignore_non_packages=ignore_non_packages,
+        ignore_imports_modules=ignore_imports_modules,
+        ignore_imports_packages=ignore_imports_packages,
+        ignore_modules=ignore_modules,
         ignore_private_attributes=ignore_private_attributes,
         ignore_private_modules=ignore_private_modules,
     )
@@ -192,26 +210,41 @@ def main() -> None:
         help="One or multiple files, folders or file patterns.",
     )
     parser.add_argument(
+        "--ignore-modules",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=True,
+        help="Ignore modules, i.e. only check packages (__init__.py files).",
+    )
+    parser.add_argument(
+        "--ignore-imports-packages",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=False,
+        help="Ignore imported variables in packages (__init__.py).",
+    )
+    parser.add_argument(
+        "--ignore-imports-modules",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=False,
+        help="Ignore imported variables in (non-package) modules.",
+    )
+    parser.add_argument(
         "--ignore-dunder-attributes",
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=True,
-        help="Ignore 'dunder' attributes, i.e. attributes starting and ending in double underscores.",
+        help="Ignore 'dunder' variables, i.e. attributes starting and ending in double underscores.",
     )
     parser.add_argument(
         "--ignore-private-attributes",
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=True,
-        help="Ignore 'private' attributes, i.e. attributes starting with a single underscore.",
+        help="Ignore 'private' variables, i.e. attributes starting with a single underscore.",
     )
-    parser.add_argument(
-        "--ignore-non-packages",
-        action=argparse.BooleanOptionalAction,
-        type=bool,
-        default=True,
-        help="Ignore modules, i.e. only check packages (__init__.py files).",
-    )
+
     parser.add_argument(
         "--ignore-private-modules",
         action=argparse.BooleanOptionalAction,
@@ -250,10 +283,12 @@ def main() -> None:
             passed &= check_file(
                 file,
                 ignore_dunder_attributes=args.ignore_dunder_attributes,
-                ignore_non_packages=args.ignore_non_packages,
+                ignore_imports_modules=args.ignore_imports_modules,
+                ignore_imports_packages=args.ignore_imports_packages,
+                ignore_modules=args.ignore_modules,
                 ignore_private_attributes=args.ignore_private_attributes,
                 ignore_private_modules=args.ignore_private_modules,
-                silent=args.load_silent,
+                load_silent=args.load_silent,
             )
         except Exception as exc:
             raise RuntimeError(f"{file!s}: Checking file failed!") from exc
