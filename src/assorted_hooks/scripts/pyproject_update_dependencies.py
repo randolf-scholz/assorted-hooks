@@ -118,6 +118,11 @@ RE_VERSION_GROUP = re.compile(rf"""(?P<version>{VERSION})""")
 VERSION_GROUP = RE_VERSION_GROUP.pattern
 assert "version" in RE_VERSION_GROUP.groupindex, f"{RE_VERSION_GROUP.groupindex=}."
 
+RE_VERSION_NUMERIC = re.compile(r"""[0-9]+(?:[.][0-9]+)*""")
+VERSION_NUMERIC = RE_VERSION_NUMERIC.pattern
+RE_VERSION_NUMERIC_GROUP = re.compile(rf"""(?P<version>{VERSION_NUMERIC})""")
+VERSION_NUMERIC_GROUP = RE_VERSION_NUMERIC_GROUP.pattern
+
 # https://peps.python.org/pep-0508/#names
 # NOTE: we modify this regex a bit to allow to match inside context
 RE_NAME = re.compile(r"""\b[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?\b""")
@@ -186,6 +191,8 @@ PATTERNS: dict[str, str] = {
     "URL_GROUP": URL_GROUP,
     "VERSION": VERSION,
     "VERSION_GROUP": VERSION_GROUP,
+    "VERSION_NUMERIC": VERSION_NUMERIC,
+    "VERSION_NUMERIC_GROUP": VERSION_NUMERIC_GROUP,
 }
 
 REGEXPS: dict[str, Pattern] = {
@@ -203,6 +210,8 @@ REGEXPS: dict[str, Pattern] = {
     "RE_URL_GROUP": RE_URL_GROUP,
     "RE_VERSION": RE_VERSION,
     "RE_VERSION_GROUP": RE_VERSION_GROUP,
+    "RE_VERSION_NUMERIC": RE_VERSION_NUMERIC,
+    "RE_VERSION_NUMERIC_GROUP": RE_VERSION_NUMERIC_GROUP,
 }
 
 
@@ -216,10 +225,26 @@ def get_pip_package_dict() -> dict[str, str]:
 
 def strip_version(version: str, /) -> str:
     """Strip the version string to the first three parts."""
-    sub = version.split(".")
-    version = ".".join(sub[:3])
-    # strip everything after the first non-numeric, non-dot character
-    version = re.sub(r"[^0-9.].*", "", version)
+    # get numeric part of version
+    numeric_version = re.search(RE_VERSION_NUMERIC_GROUP, version)
+    assert numeric_version is not None
+    version = numeric_version.group("version")
+
+    # make sure we return precisely 3 segments
+    segments = version.split(".")
+    match segments:
+        case []:
+            raise ValueError(f"Unreachable? {version=}")
+        case [major]:
+            # version = f"{version}.0.0"
+            version = f"{major}.0"
+        case [major, minor]:
+            # version = f"{version}.0"
+            version = f"{major}.{minor}"
+        case [major, minor, patch, *_]:
+            # version = f"{version}"
+            version = f"{major}.{minor}.{patch}"
+
     return version
 
 
