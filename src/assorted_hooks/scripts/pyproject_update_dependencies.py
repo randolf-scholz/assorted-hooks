@@ -81,6 +81,7 @@ def is_dependency_pattern(pattern: str | Pattern, /) -> bool:
     return {"dependency", "name", "version"} <= pattern.groupindex.keys()
 
 
+# region PATTERNS ----------------------------------------------------------------------
 # https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
 RE_VERSION = re.compile(
     r"""(?ix:                                       # case-insensitive, verbose
@@ -175,7 +176,6 @@ assert is_dependency_pattern(
     RE_POETRY_DEP_GROUP
 ), f"{RE_PROJECT_DEP_GROUP.groupindex=}."
 
-
 PATTERNS: dict[str, str] = {
     "EXTRAS": EXTRAS,
     "EXTRAS_GROUP": EXTRAS_GROUP,
@@ -213,6 +213,7 @@ REGEXPS: dict[str, Pattern] = {
     "RE_VERSION_NUMERIC": RE_VERSION_NUMERIC,
     "RE_VERSION_NUMERIC_GROUP": RE_VERSION_NUMERIC_GROUP,
 }
+# endregion Patterns -------------------------------------------------------------------
 
 
 @cache
@@ -248,7 +249,9 @@ def strip_version(version: str, /) -> str:
     return version
 
 
-def update_versions(raw_content: str, /, *, dependency_pattern: str | Pattern) -> str:
+def update_versions(
+    raw_pyproject_file: str, /, *, dependency_pattern: str | Pattern
+) -> str:
     """Update the dependencies in pyproject.toml according to version_pattern."""
     if not isinstance(dependency_pattern, Pattern):
         dependency_pattern = re.compile(dependency_pattern)
@@ -260,27 +263,37 @@ def update_versions(raw_content: str, /, *, dependency_pattern: str | Pattern) -
         )
 
     # get the installed packages
-    pkg_dict = get_pip_package_dict()
+    installed_versions = get_pip_package_dict()
 
     # collect the new dependencies
     new_dependencies: dict[str, str] = {}
     # match all dependencies in the file
-    for match in dependency_pattern.finditer(raw_content):
+    for match in dependency_pattern.finditer(raw_pyproject_file):
         # extract the dependency, name, and version from the match
         groups = match.groupdict()
         dep: str = groups["dependency"]
-        pkg: str = groups["name"]
+        pkg_name: str = groups["name"]
         old_version: str = groups["version"]
 
         # get the new version from the pip list
-        new_version = strip_version(pkg_dict.get(pkg, old_version))
+        new_version = installed_versions.get(pkg_name)
+        # try replacing underscores with dashes and vice versa
+        if new_version is None:
+            new_version = installed_versions.get(pkg_name.replace("_", "-"))
+        if new_version is None:
+            new_version = installed_versions.get(pkg_name.replace("-", "_"))
+        if new_version is None:
+            new_version = installed_versions.get(pkg_name, old_version)
+
+        # strip the version to the first three parts
+        new_version = strip_version(new_version)
 
         # if the version changed, replace the old version with the new one
         if old_version != new_version:
             new_dependencies[dep] = dep.replace(old_version, new_version)
 
     # make a copy of the original content
-    new_content = raw_content
+    new_content = raw_pyproject_file
     max_key_len = max(map(len, new_dependencies), default=0)
     # iterate over the new dependencies
     for dep, new_dep in new_dependencies.items():
@@ -297,12 +310,12 @@ def check_file(fname: str, /, *, autofix: bool = True, debug: bool = False) -> b
     with open(fname, "r", encoding="utf8") as file:
         original_pyproject = file.read()
 
+        # new reference to the original file (strings are immutable)
+        pyproject = original_pyproject
+
     if debug:
         print(f"Processing {fname!r}")
         print(f"Installed packages: {get_pip_package_dict()}")
-
-    # new reference to the original file (strings are immutable)
-    pyproject = original_pyproject
 
     # update [project.dependencies] and [project.optional-dependencies]
     pyproject = update_versions(pyproject, dependency_pattern=RE_PROJECT_DEP_GROUP)
