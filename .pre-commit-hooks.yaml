@@ -42,6 +42,12 @@
   language: pygrep
   types: [python]
   description: "Disallows eval() but allows obj.eval()."
+- id: python-consider-using-raw-string
+  name: python-consider-using-raw-string
+  entry: '\s+"""\S'
+  language: pygrep
+  types: [python]
+  description: "Checks that triple quoted strings are raw (docstrings)."
 # ast-based
 - id: python-use-imported-attributes
   name: python-use-imported-attributes

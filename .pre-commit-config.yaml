@@ -32,6 +32,15 @@ repos:
         language: script
         types: [toml]
         description: "Check that listed dependencies are used in code and vice-versa."
+      # scripts
+      - id: python-check-clean-interface
+        name: python-check-clean-interface
+        entry: "./src/assorted_hooks/scripts/check_clean_interface.py"
+        require_serial: true # otherwise module is loaded multiple times
+        language: script
+        types: [python]
+        files: ^src/
+        description: "Check for clean interface."
       # pygrep
       - id: check-separator-length
         name: check-separator-length
@@ -54,6 +63,12 @@ repos:
         types: [python]
         files: (^src/|^tests/)
         description: "Disallows eval() but allows obj.eval()."
+      #      - id: python-consider-using-raw-string
+      #        name: python-consider-using-raw-string
+      #        entry: '\s+"""\S'
+      #        language: pygrep
+      #        types: [python]
+      #        description: "Checks that triple quoted strings are raw (docstrings)."
       # ast-based
       - id: python-use-imported-attributes
         name: python-use-imported-attributes
@@ -83,15 +98,6 @@ repos:
         types: [python]
         files: ^src/
         description: "Check that __all__ exists."
-      # scripts
-      - id: python-check-clean-interface
-        name: python-check-clean-interface
-        entry: "./src/assorted_hooks/scripts/check_clean_interface.py"
-        require_serial: true # otherwise module is loaded multiple times
-        language: script
-        types: [python]
-        files: ^src/
-        description: "Check for clean interface."
   - repo: https://github.com/pre-commit/pre-commit-hooks
     # https://pre-commit.com/hooks.html
     rev: v4.4.0
@@ -102,8 +108,8 @@ repos:
         description: "simply checks whether the files parse as valid python."
       - id: check-builtin-literals
         description: "requires literal syntax when initializing empty or zero python builtin types."
-      - id: check-byte-order-marker
-        description: "forbids files which have a utf-8 byte-order marker."
+      - id: check-case-conflict
+        description: "checks for files with names that would conflict on a case-insensitive filesystem."
       - id: check-json
         description: "checks json files for parseable syntax."
       - id: check-executables-have-shebangs
@@ -122,10 +128,11 @@ repos:
         description: "checks for debugger imports and py37+ `breakpoint()` calls in python source."
       - id: end-of-file-fixer
         description: "ensures that a file is either empty, or ends with one newline."
-        exclude: ^.*.ipynb$ # FIXME: https://github.com/deshaw/nbstripout-fast/issues/8
+      - id: fix-byte-order-marker
+        description: "removes utf-8 byte order marker."
       - id: pretty-format-json
         args: ["--autofix"]
-        exclude: ^.*.ipynb$ # FIXME: https://github.com/deshaw/nbstripout-fast/issues/8
+        exclude: ^.*.ipynb$
         description: "sets a standard for formatting json files."
       - id: requirements-txt-fixer
         description: "sorts entries in requirements.txt"

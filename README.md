@@ -2,7 +2,7 @@
 
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
-## python-based hooks
+## python-based hooks (using AST — will not import your code)
 
 ## `check-imported-attributes`
 
@@ -43,7 +43,31 @@ Excluded are:
 - functions of the form `def foo(self): ...` (self is excluded)
 - functions of the form `def foo(cls): ...` (cls is excluded)
 
-## pyproject-validation hooks
+### `check-__all__-exists`
+
+- Checks that `__all__` is defined in all modules.
+- Checks that `__all__` is defined at the top of the file.
+  - `__all__` should only be preceded by the module docstring and `__future__` imports.
+- Checks that `__all__` is defined as a literal list (not tuple, set, etc.)
+- Checks that `__all__` is not defined multiple times.
+- Checks that `__all__` is not superfluous (i.e. contains all symbols defined in the module)
+
+### `check-clean-interface`
+
+- Checks that `dir(module)` is equal to `__all__` (i.e. that `__all__` contains all symbols defined in the module).
+- By default only applies to packages (i.e.`__init__.py` files).
+- Generally if something is not in `__all__` it should not be used outside the module, functions, classes and constants
+  that are not exported should be given a name with a single leading underscore: `_private`
+
+### `check_naming_convention` (not implemented yet)
+
+Checks that naming conventions are followed. Defaults:
+
+- constants: exported: `UPPERCASE_WITH_UNDERSCORES`, internal: `_UPPERCASE_WITH_UNDERSCORES`, special: `__dunder__`
+- functions: exported: `snake_case`, internal: `_snake_case`, special: `__dunder__`
+- classes: exported: `PascalCase`, internal: `_PascalCase`, special: `__dunder__`
+
+## Script-based hooks (may import your code)
 
 ### `pyproject-validate-version`
 
@@ -97,26 +121,7 @@ Tests that "line-break" comments a la
 
 are exactly 88 characters long.
 
-### `check-__all__-exists`
+### `python-consider-using-raw-string`
 
-- Checks that `__all__` is defined in all modules.
-- Checks that `__all__` is defined at the top of the file.
-  - `__all__` should only be preceded by the module docstring and `__future__` imports.
-- Checks that `__all__` is defined as a literal list (not tuple, set, etc.)
-- Checks that `__all__` is not defined multiple times.
-- Checks that `__all__` is not superfluous (i.e. contains all symbols defined in the module)
-
-### `check-clean-interface`
-
-- Checks that `dir(module)` is equal to `__all__` (i.e. that `__all__` contains all symbols defined in the module).
-- By default only applies to packages (i.e.`__init__.py` files).
-- Generally if something is not in `__all__` it should not be used outside the module, functions, classes and constants
-  that are not exported should be given a name with a single leading underscore: `_private`
-
-### `check_naming_convention` (not implemented yet)
-
-Checks that naming conventions are followed. Defaults:
-
-- constants: exported: `UPPERCASE_WITH_UNDERSCORES`, internal: `_UPPERCASE_WITH_UNDERSCORES`, special: `__dunder__`
-- functions: exported: `snake_case`, internal: `_snake_case`, special: `__dunder__`
-- classes: exported: `PascalCase`, internal: `_PascalCase`, special: `__dunder__`
+Hints that triple quoted strings should be raw strings (convention).
+Ignores triple quoted f-strings.
