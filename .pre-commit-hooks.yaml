@@ -1,6 +1,6 @@
 # Custom hooks for pre-commit.
 
-# pyproject.toml
+# region scripts -----------------------------------------------------------------------
 - id: pyproject-validate-version
   name: pyproject-validate-version
   entry: "./src/assorted_hooks/scripts/pyproject_validate_version.py"
@@ -23,7 +23,15 @@
   language: script
   types: [toml]
   description: "Check that listed dependencies are used in code and vice-versa."
-# pygrep
+- id: python-check-clean-interface
+  name: python-check-clean-interface
+  require_serial: true # otherwise module is loaded multiple times
+  entry: "./src/assorted_hooks/scripts/check_clean_interface.py"
+  language: script
+  types: [python]
+  description: "Check for clean interface."
+# endregion scripts --------------------------------------------------------------------
+# region pygrep ------------------------------------------------------------------------
 - id: check-separator-length
   name: check-separator-length
   entry: ^#(.{0,83}|.{85,})([-=═─—])\2{2}$
@@ -48,7 +56,8 @@
   language: pygrep
   types: [python]
   description: "Checks that triple quoted strings are raw (docstrings)."
-# ast-based
+# endregion pygrep ---------------------------------------------------------------------
+# region ast-based ---------------------------------------------------------------------
 - id: python-use-imported-attributes
   name: python-use-imported-attributes
   entry: check-imported-attributes
@@ -73,10 +82,10 @@
   language: python
   types: [python]
   description: "Check that __all__ exists."
-- id: python-check-clean-interface
-  name: python-check-clean-interface
-  require_serial: true # otherwise module is loaded multiple times
-  entry: "./src/assorted_hooks/scripts/check_clean_interface.py"
-  language: script
+- id: python-check-typing
+  name: python-check-typing
+  entry: check-typing
+  language: python
   types: [python]
-  description: "Check for clean interface."
+  description: "AST-based linting rule for type-hints."
+# endregion ast-based ------------------------------------------------------------------

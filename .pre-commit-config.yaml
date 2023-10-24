@@ -1,5 +1,5 @@
 exclude: '(\.git/|\.venv/|\.idea/|\docs/_build/)'
-minimum_pre_commit_version: 3.3.3
+minimum_pre_commit_version: 3.5.0
 default_language_version:
   python: python3.11
   node: "18.12.1"
@@ -98,9 +98,15 @@ repos:
         types: [python]
         files: ^src/
         description: "Check that __all__ exists."
+      - id: python-check-typing
+        name: python-check-typing
+        entry: check-typing
+        language: python
+        types: [python]
+        description: "AST-based linting rule for type-hints."
   - repo: https://github.com/pre-commit/pre-commit-hooks
     # https://pre-commit.com/hooks.html
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
       - id: check-added-large-files
         description: "prevents giant files from being committed."
@@ -166,7 +172,7 @@ repos:
       - id: isort
   # black
   - repo: https://github.com/psf/black
-    rev: 23.9.1
+    rev: 23.10.1
     hooks:
       - id: black
       - id: black-jupyter
@@ -179,7 +185,7 @@ repos:
         types: [python]
   # ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.0.290
+    rev: v0.1.1
     hooks:
       - id: ruff
         files: (^src/|^tests/)
@@ -220,7 +226,7 @@ repos:
         files: ^src/
   # mypy
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.5.1
+    rev: v1.6.1
     hooks:
       - id: mypy
         files: (^src/|^tests/)
@@ -228,7 +234,7 @@ repos:
   #        stages: [pre-push]
   # pyright
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.327
+    rev: v1.1.332
     hooks:
       - id: pyright
         files: (^src/|^tests/)

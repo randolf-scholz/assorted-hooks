@@ -59,6 +59,15 @@ Excluded are:
 - Generally if something is not in `__all__` it should not be used outside the module, functions, classes and constants
   that are not exported should be given a name with a single leading underscore: `_private`
 
+### `check-typing`
+
+AST based linting rules for python type hints.
+
+- `no-return-union`: checks that `Union` is not used as a return type.
+  One may want to disallow `Union` as a return type because it makes functions harder to use, as callers have to check
+  the type of the return value before using it.
+  NOTE: `Optional` is intentionally excluded from this rule, as it is a common pattern to use.
+
 ### `check_naming_convention` (not implemented yet)
 
 Checks that naming conventions are followed. Defaults:
