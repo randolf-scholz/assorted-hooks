@@ -12,16 +12,7 @@ import argparse
 import ast
 import logging
 import sys
-from ast import (
-    AST,
-    AsyncFunctionDef,
-    BinOp,
-    BitOr,
-    FunctionDef,
-    Name,
-    Return,
-    Subscript,
-)
+from ast import AST, AsyncFunctionDef, BinOp, BitOr, FunctionDef, Name, Subscript
 from collections.abc import Iterator
 from pathlib import Path
 from typing import TypeAlias
@@ -53,10 +44,10 @@ def has_union(tree: AST, /) -> bool:
     return False
 
 
-def get_return_nodes(tree: AST, /) -> Iterator[Return]:
+def get_function_defs(tree: AST, /) -> Iterator[Func]:
     """Get all return nodes."""
     for node in ast.walk(tree):
-        if isinstance(node, Return):
+        if isinstance(node, Func):
             yield node
 
 
@@ -67,11 +58,13 @@ def check_file(fname: str | Path, /, *, recursive: bool = True) -> bool:
     with open(fname, "rb") as file:
         tree = ast.parse(file.read(), filename=fname)
 
-    for node in get_return_nodes(tree):
-        if is_union(node.value):
+    for node in get_function_defs(tree):
+        if node.returns is None:
+            continue
+        if is_union(node.returns):
             passed = False
             print(f"{fname!s}:{node.lineno}:" f" Do not return union type!")
-        if recursive and has_union(node.value):
+        if recursive and has_union(node.returns):
             passed = False
             print(f"{fname!s}:{node.lineno}:" f" Do not return union type!")
 
