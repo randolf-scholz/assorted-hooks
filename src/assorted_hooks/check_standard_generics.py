@@ -16,12 +16,13 @@ import sys
 import typing
 from ast import AST, Attribute, Import, ImportFrom, Name
 from pathlib import Path
+from typing import Final
 
 from assorted_hooks.utils import get_python_files
 
 __logger__ = logging.getLogger(__name__)
 
-REPLACEMENTS = {
+REPLACEMENTS: Final[dict[str, str]] = {
     # fmt: off
     # builtins
     "typing.Dict"                : "dict",
@@ -76,31 +77,24 @@ REPLACEMENTS = {
     # fmt: on
 }
 
+KEYS: Final[frozenset[str]] = frozenset(REPLACEMENTS.keys())
+
 # validate replacements
-METHODS: set[str] = set(typing.__all__) & set(collections.abc.__all__)
+METHODS: Final[set[str]] = set(typing.__all__) & set(collections.abc.__all__)
 assert all(f"typing.{method}" in REPLACEMENTS for method in METHODS)
 
 
-def get_deprecated_aliases(node: AST, /) -> set[str]:
+def get_deprecated_aliases(node: AST, /) -> frozenset[str]:
     """Get all deprecated aliases from a node."""
     match node:
-        case Attribute() as attr:
-            if (
-                isinstance(attr.value, Name)
-                and f"{attr.value.id}.{attr.attr}" in REPLACEMENTS
-            ):
-                return {f"{attr.value.id}.{attr.attr}"}
-            return set()
-        case Import() as imports:
-            return {imp.name for imp in imports.names if imp.name in REPLACEMENTS}
-        case ImportFrom() as importfrom:
-            return {
-                f"{importfrom.module}.{imp.name}"
-                for imp in importfrom.names
-                if f"{importfrom.module}.{imp.name}" in REPLACEMENTS
-            }
+        case Attribute(attr=attr, value=Name(id=name)):
+            return KEYS & {f"{name}.{attr}"}
+        case Import(names=names):
+            return KEYS & {imp.name for imp in names}
+        case ImportFrom(module=module, names=names):
+            return KEYS & {f"{module}.{imp.name}" for imp in names}
         case _:
-            return set()
+            return frozenset()
 
 
 def check_file(fname: str | Path, /) -> bool:

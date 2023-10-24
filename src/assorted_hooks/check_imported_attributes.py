@@ -37,9 +37,11 @@ __logger__ = logging.getLogger(__name__)
 
 def is_pure_attribute(node: AST, /) -> TypeGuard[Attribute]:
     """Check whether a node is a pure attribute."""
-    return isinstance(node, Attribute) and (
-        isinstance(node.value, Name) or is_pure_attribute(node.value)
-    )
+    match node:
+        case Attribute(value=value):
+            return isinstance(value, Name) or is_pure_attribute(value)
+        case _:
+            return False
 
 
 def get_pure_attributes(tree: AST, /) -> Iterator[Attribute]:
@@ -51,18 +53,14 @@ def get_pure_attributes(tree: AST, /) -> Iterator[Attribute]:
 
 def get_full_attribute_parent(node: Attribute | Name, /) -> tuple[Name, str]:
     """Get the parent of an attribute node."""
-    if isinstance(node, Attribute):
-        if not isinstance(node.value, Attribute | Name):
-            raise ValueError(
-                f"Expected Attribute or Name, got {type(node.value)} {vars(node.value)=}"
-            )
-        parent, string = get_full_attribute_parent(node.value)
-        return parent, f"{string}.{node.attr}"
-
-    if not isinstance(node, Name):
-        raise ValueError(f"Expected ast.Name, got {type(node)=}  {vars(node.value)=}")
-
-    return node, node.id
+    match node:
+        case Attribute(value=Attribute() | Name() as value, attr=attr):
+            parent, string = get_full_attribute_parent(value)
+            return parent, f"{string}.{attr}"
+        case Name(id=name):
+            return node, name
+        case _:
+            raise TypeError(f"Expected Attribute or Name, got {type(node)=!r}")
 
 
 def get_imported_symbols(tree: AST, /) -> dict[str, str]:
@@ -70,14 +68,13 @@ def get_imported_symbols(tree: AST, /) -> dict[str, str]:
     imported_symbols = {}
 
     for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                imported_symbols[alias.asname or alias.name] = alias.name
-        elif isinstance(node, ast.ImportFrom):
-            module_name = node.module
-            if module_name is not None:
-                for alias in node.names:
-                    full_name = f"{module_name}.{alias.name}"
+        match node:
+            case ast.Import(names=names):
+                for alias in names:
+                    imported_symbols[alias.asname or alias.name] = alias.name
+            case ast.ImportFrom(module=module, names=names) if module is not None:
+                for alias in names:
+                    full_name = f"{module}.{alias.name}"
                     imported_symbols[alias.asname or alias.name] = full_name
 
     return imported_symbols

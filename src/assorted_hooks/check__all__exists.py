@@ -37,43 +37,52 @@ __logger__ = logging.getLogger(__name__)
 
 def is_main(node: AST, /) -> bool:
     """Check whether node is `if __name__ == "__main__":` check."""
-    return (
-        isinstance(node, ast.If)
-        and isinstance(node.test, ast.Compare)
-        and isinstance(node.test.left, Name)
-        and node.test.left.id == "__name__"
-        and len(node.test.ops) == 1
-        and isinstance(node.test.ops[0], ast.Eq)
-        and len(node.test.comparators) == 1
-        and isinstance(node.test.comparators[0], Constant)
-        and node.test.comparators[0].value == "__main__"
-    )
+    match node:
+        case ast.If(
+            test=ast.Compare(
+                left=Name(id="__name__"),
+                ops=[ast.Eq()],
+                comparators=[Constant(value="__main__")],
+            )
+        ):
+            return True
+        case _:
+            return False
 
 
 def is__all__node(node: AST, /) -> TypeGuard[Assign | AnnAssign | AugAssign]:
     """Check whether a node is __all__."""
-    if isinstance(node, Assign):
-        targets = [target.id for target in node.targets if isinstance(target, Name)]
-        has_all = "__all__" in targets
-        if has_all and len(targets) > 1:
-            raise ValueError("Multiple targets in __all__ assignment.")
-        return has_all
-    if isinstance(node, AnnAssign | AugAssign):
-        return isinstance(node.target, Name) and node.target.id == "__all__"
-    return False
+    match node:
+        case Assign(targets=targets):
+            names = [target.id for target in targets if isinstance(target, Name)]
+            has_all = "__all__" in names
+            if has_all and len(names) > 1:
+                raise ValueError("Multiple targets in __all__ assignment.")
+            return has_all
+        case AnnAssign(target=target):
+            return isinstance(target, Name) and target.id == "__all__"
+        case _:
+            return False
 
 
 def is_future_import(node: AST, /) -> bool:
     """Check whether a node is a future import."""
-    if isinstance(node, ImportFrom):
-        return node.module == "__future__"
-    if isinstance(node, Import):
-        return {imp.name for imp in node.names} <= {"__future__"}
-    return False
+    match node:
+        case ImportFrom(module=module):
+            return module == "__future__"
+        case Import(names=names):
+            return any(imp.name == "__future__" for imp in names)
+        case _:
+            return False
 
 
 def is_literal_list(node: AST, /) -> bool:
     """Check whether node is a literal list of strings."""
+    # match node:
+    #     case List(elts=[*Constant(value=str())]):
+    #         return True
+    #     case _:
+    #         return False
     return isinstance(node, ast.List) and all(
         isinstance(el, Constant) and isinstance(el.value, str) for el in node.elts
     )
