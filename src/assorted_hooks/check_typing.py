@@ -51,9 +51,9 @@ def get_function_defs(tree: AST, /) -> Iterator[Func]:
             yield node
 
 
-def check_file(fname: str | Path, /, *, recursive: bool = True) -> bool:
+def check_file(fname: str | Path, /, *, recursive: bool = True) -> int:
     """Check whether the file contains mixed positional and keyword arguments."""
-    passed = True
+    violations = 0
 
     with open(fname, "rb") as file:
         tree = ast.parse(file.read(), filename=fname)
@@ -62,13 +62,13 @@ def check_file(fname: str | Path, /, *, recursive: bool = True) -> bool:
         if node.returns is None:
             continue
         if is_union(node.returns):
-            passed = False
+            violations += 1
             print(f"{fname!s}:{node.lineno}:" f" Do not return union type!")
         if recursive and has_union(node.returns):
-            passed = False
+            violations += 1
             print(f"{fname!s}:{node.lineno}:" f" Do not return union type!")
 
-    return passed
+    return violations
 
 
 def main() -> None:
@@ -107,18 +107,19 @@ def main() -> None:
     files: list[Path] = get_python_files(args.files)
 
     # apply script to all files
-    passed = True
+    violations = 0
     for file in files:
         __logger__.debug('Checking "%s:0"', file)
         try:
-            passed &= check_file(
+            violations += check_file(
                 file,
                 recursive=args.recursive,
             )
         except Exception as exc:
             raise RuntimeError(f"{file!s}: Checking file failed!") from exc
 
-    if not passed:
+    if violations:
+        print(f"{'-'*79}\nFound {violations} violations.")
         sys.exit(1)
 
 

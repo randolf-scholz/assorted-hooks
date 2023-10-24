@@ -153,9 +153,9 @@ def check_file(
     ignore_overloads: bool = True,
     ignore_private: bool = False,
     ignore_wo_pos_only: bool = False,
-) -> bool:
+) -> int:
     """Check whether the file contains mixed positional and keyword arguments."""
-    passed = True
+    violations = 0
 
     def is_ignorable(func: Func, /) -> bool:
         """Checks if the func can be ignored."""
@@ -175,7 +175,7 @@ def check_file(
         if is_ignorable(node):
             continue
         if method_has_mixed_args(node, allow_one=allow_one):
-            passed = False
+            violations += 1
             try:
                 arg = node.args.args[0]
             except IndexError as exc:
@@ -191,7 +191,7 @@ def check_file(
         if is_ignorable(node):
             continue
         if func_has_mixed_args(node, allow_one=allow_one):
-            passed = False
+            violations += 1
             try:
                 arg = node.args.args[0]
             except IndexError as exc:
@@ -203,7 +203,7 @@ def check_file(
                 f" Mixed positional and keyword arguments in function."
             )
 
-    return passed
+    return violations
 
 
 def main() -> None:
@@ -284,11 +284,11 @@ def main() -> None:
     files: list[Path] = get_python_files(args.files)
 
     # apply script to all files
-    passed = True
+    violations = 0
     for file in files:
         __logger__.debug('Checking "%s:0"', file)
         try:
-            passed &= check_file(
+            violations += check_file(
                 file,
                 allow_one=args.allow_one,
                 ignore_dunder=args.ignore_dunder,
@@ -301,7 +301,8 @@ def main() -> None:
         except Exception as exc:
             raise RuntimeError(f"{file!s}: Checking file failed!") from exc
 
-    if not passed:
+    if violations:
+        print(f"{'-'*79}\nFound {violations} violations.")
         sys.exit(1)
 
 

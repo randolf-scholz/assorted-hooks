@@ -105,9 +105,9 @@ def get_imported_attributes(tree: AST, /) -> Iterator[tuple[Attribute, Name, str
                 yield node, parent, string
 
 
-def check_file(file_path: Path, /, *, debug: bool = False) -> bool:
+def check_file(file_path: Path, /, *, debug: bool = False) -> int:
     """Finds shadowed attributes in a file."""
-    passed = True
+    violations = 0
 
     # Your code here
     with open(file_path, "r", encoding="utf8") as file:
@@ -115,13 +115,13 @@ def check_file(file_path: Path, /, *, debug: bool = False) -> bool:
 
     # find all violations
     for node, _, string in get_imported_attributes(tree):
-        passed = False
+        violations += 1
         print(
             f"{file_path!s}:{node.lineno!s}"
             f" use directly imported {node.attr!r} instead of {string!r}"
         )
 
-    if not passed and debug:
+    if violations and debug:
         imported_symbols = get_imported_symbols(tree)
         pad = " " * 4
         max_key_len = max(map(len, imported_symbols), default=0)
@@ -129,7 +129,7 @@ def check_file(file_path: Path, /, *, debug: bool = False) -> bool:
         for key, value in imported_symbols.items():
             print(2 * pad, f"{key:{max_key_len}} -> {value}")
 
-    return passed
+    return violations
 
 
 def main() -> None:
@@ -161,15 +161,16 @@ def main() -> None:
     files: list[Path] = get_python_files(args.files)
 
     # apply script to all files
-    passed = True
+    violations = 0
     for file in files:
         __logger__.debug('Checking "%s:0"', file)
         try:
-            passed &= check_file(file, debug=args.debug)
+            violations += check_file(file, debug=args.debug)
         except Exception as exc:
             raise RuntimeError(f"{file!s}: Checking file failed!") from exc
 
-    if not passed:
+    if violations:
+        print(f"{'-'*79}\nFound {violations} violations.")
         sys.exit(1)
 
 

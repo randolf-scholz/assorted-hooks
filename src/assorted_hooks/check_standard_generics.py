@@ -97,20 +97,20 @@ def get_deprecated_aliases(node: AST, /) -> frozenset[str]:
             return frozenset()
 
 
-def check_file(fname: str | Path, /) -> bool:
+def check_file(fname: str | Path, /) -> int:
     """Check a single file."""
-    passed = True
+    violations = 0
 
     with open(fname, "r", encoding="utf8") as file:
         tree = ast.parse(file.read())
 
     for node in ast.walk(tree):
         for alias in get_deprecated_aliases(node):
-            passed = False
+            violations += 1
             loc = f"{fname!s}:{node.lineno}"
             print(f"{loc}: Use {REPLACEMENTS[alias]!r} instead of {alias!r}.")
 
-    return passed
+    return violations
 
 
 def main() -> None:
@@ -152,15 +152,16 @@ def main() -> None:
     files: list[Path] = get_python_files(args.files)
 
     # apply script to all files
-    passed = True
+    violations = 0
     for file in files:
         __logger__.debug('Checking "%s:0"', file)
         try:
-            passed &= check_file(file)
+            violations += check_file(file)
         except Exception as exc:
             raise RuntimeError(f"{file!s}: Checking file failed!") from exc
 
-    if not passed:
+    if violations:
+        print(f"{'-'*79}\nFound {violations} violations.")
         sys.exit(1)
 
 

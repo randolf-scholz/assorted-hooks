@@ -159,7 +159,7 @@ def check_file(
     warn_location: bool = True,
     warn_multiple_definitions: bool = True,
     warn_superfluous: bool = True,
-) -> bool:
+) -> int:
     """Check a single file."""
     with open(fname, "rb") as file:
         tree = ast.parse(file.read())
@@ -167,20 +167,20 @@ def check_file(
     if not isinstance(tree, Module):
         raise ValueError(f"Expected ast.Module, got {type(tree)}")
 
-    passed = True
+    violations = 0
     node_list: list[Assign | AnnAssign | AugAssign] = []
 
     match tree.body:
         case [] | [Expr()]:
             if allow_missing:
-                return True
+                return 0
         case _:
             node_list.extend(get__all__nodes(tree))
 
     match node_list:
         case []:
             if not is_superfluous(tree):
-                passed = False
+                violations += 1
                 print(f"{fname!s}:0: No __all__ found.")
         case [node, *nodes]:
             if not isinstance(node, Assign | AnnAssign):
@@ -188,27 +188,27 @@ def check_file(
             if node.value is None:
                 raise ValueError("Expected __all__ to have a value.")
             if warn_non_literal and not is_literal_list(node.value):
-                passed = False
+                violations += 1
                 print(f"{fname!s}:{node.lineno}: __all__ is not a literal list.")
             if warn_annotated and isinstance(node, AnnAssign):
-                passed = False
+                violations += 1
                 print(f"{fname!s}:{node.lineno}: __all__ is annotated.")
             if warn_multiple_definitions and nodes:
-                passed = False
+                violations += 1
                 print(f"{fname!s}:{node.lineno}: Multiple __all__ found.")
                 for n in nodes:
                     print(f"{fname!s}:{n.lineno}: additional __all__.")
             if warn_superfluous and is_superfluous(tree):
-                passed = False
+                violations += 1
                 print(f"{fname!s}:{node.lineno}: __all__ is superfluous.")
             if warn_location and not is_at_top(node, module=tree):
-                passed = False
+                violations += 1
                 print(f"{fname!s}:{node.lineno}: __all__ is not at the top.")
             if warn_duplicate_keys and (keys := get_duplicate_keys(node)):
-                passed = False
+                violations += 1
                 print(f"{fname!s}:{node.lineno}: __all__ has duplicate {keys=}.")
 
-    return passed
+    return violations
 
 
 def main():
@@ -289,11 +289,11 @@ def main():
     files: list[Path] = get_python_files(args.files)
 
     # apply script to all files
-    passed = True
+    violations = 0
     for file in files:
         __logger__.debug('Checking "%s:0"', file)
         try:
-            passed &= check_file(
+            violations += check_file(
                 file,
                 allow_missing=args.allow_missing,
                 warn_annotated=args.warn_annotated,
@@ -306,7 +306,8 @@ def main():
         except Exception as exc:
             raise RuntimeError(f"{file!s}: Checking file failed!") from exc
 
-    if not passed:
+    if violations:
+        print(f"{'-'*79}\nFound {violations} violations.")
         sys.exit(1)
 
 

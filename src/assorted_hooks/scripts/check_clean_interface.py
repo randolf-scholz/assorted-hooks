@@ -91,9 +91,9 @@ def check_module(
     ignore_modules: bool,
     ignore_private_attributes: bool,
     ignore_private_modules: bool,
-) -> bool:
+) -> int:
     """Check a single module."""
-    passed = True
+    violations = 0
 
     module_name = module.__name__
     assert module.__file__ is not None, f"{module_name=} has no __file__ ?!?!"
@@ -109,13 +109,13 @@ def check_module(
 
     if ignore_modules and not is_package(module):
         logger.debug("Skipped! - not a package!")
-        return True
+        return 0
     if ignore_private_modules and is_private(module_name):
         logger.debug("Skipped! - private module!")
-        return True
+        return 0
     if set(vars(module)) ^ set(dir(module)):
         print(f"{path!s}:0 module vars() does not agree with dir() ???")
-        return False
+        return 1
     if hasattr(module, "__all__"):
         exported_keys: set[str] = set(module.__all__)
     else:
@@ -146,10 +146,10 @@ def check_module(
             continue
 
         if key not in exported_keys:
-            passed = False
+            violations += 1
             print(f"{path!s}:0 {module_name!r} exports {key!r} not listed in __all__!")
 
-    return passed
+    return violations
 
 
 def check_file(
@@ -163,7 +163,7 @@ def check_file(
     ignore_private_attributes: bool,
     ignore_private_modules: bool,
     load_silent: bool = True,
-) -> bool:
+) -> int:
     """Check a single file."""
     path = Path(fname)
     module_name = path.stem
@@ -171,7 +171,7 @@ def check_file(
     # check if private
     if ignore_private_modules and is_private(module_name):
         __logger__.debug('Skipped "%s:0" - private module!', path)
-        return True
+        return 0
 
     # load module
     spec = spec_from_file_location(module_name, path)
@@ -276,11 +276,11 @@ def main() -> None:
     files: list[Path] = get_python_files(args.files)
 
     # apply script to all files
-    passed = True
+    violations = 0
     for file in files:
         __logger__.debug('Checking "%s:0"', file)
         try:
-            passed &= check_file(
+            violations += check_file(
                 file,
                 ignore_dunder_attributes=args.ignore_dunder_attributes,
                 ignore_imports_modules=args.ignore_imports_modules,
@@ -293,7 +293,8 @@ def main() -> None:
         except Exception as exc:
             raise RuntimeError(f"{file!s}: Checking file failed!") from exc
 
-    if not passed:
+    if violations:
+        print(f"{'-'*79}\nFound {violations} violations.")
         sys.exit(1)
 
 
