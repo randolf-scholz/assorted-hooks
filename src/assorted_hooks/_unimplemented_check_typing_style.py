@@ -17,6 +17,8 @@ NOTE: TypeShed defines open() as:
 # IDEA: Suggest standard generics over old type aliases.
 # IDEA: Use `str | PathLike[str]` instead of `str | Path`
 # IDEA: enable/disable checks automatically based on python version.
+# IDEA: Check @overloads: (1) var: type = ... instead of var: type = value
+# IDEA: prefer typing_extensions over typing.
 
 if __name__ == "__main__":
     raise NotImplementedError
