@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 requires-python = ">=3.11"
 name = "assorted-hooks"
-version = "0.1.41"
+version = "0.1.42"
 
 authors = [{name="Randolf Scholz", email="randolf.scholz@gmail.com"},]
 description = "Custom pre-commit hooks"
@@ -20,11 +20,11 @@ dev = [
     "pre-commit>=3.5.0",
 ]
 test = [
-    "pytest>=7.4.2",
+    "pytest>=7.4.3",
     "pytest-benchmark[histogram]>=4.0.0",
     "pytest-cov>=4.1.0",
-    "pytest-rerunfailures>=12.0",
-    "pytest-xdist>=3.3.1",
+    "pytest-rerunfailures>=13.0",
+    "pytest-xdist>=3.5.0",
 ]
 
 
@@ -360,9 +360,9 @@ addopts = [
 #    "--reruns-delay=",    # add time (seconds) delay between reruns.
 #    "--only-rerun=",      # If passed, only rerun errors matching the regex provided.
     # coverage options
-    "--cov=tsdm",  # Path or package name to measure during execution (multi-allowed).
-    "--cov-report=term:skip-covered",
-    "--cov-report=xml:reports/coverage.xml",
+#    "--cov=assorted_hooks",  # Path or package name to measure during execution (multi-allowed).
+#    "--cov-report=term:skip-covered",
+#    "--cov-report=xml:reports/coverage.xml",
 #    "--cov-report=annotate:reports/coverage",
 ]
 markers = [
@@ -381,7 +381,7 @@ required_plugins = [
 [tool.coverage]
 
 [tool.coverage.paths]
-source = ["src/tsdm"]
+source = ["src/assorted_hooks/"]
 
 [tool.coverage.report]
 exclude_lines = [

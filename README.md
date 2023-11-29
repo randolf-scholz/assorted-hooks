@@ -61,12 +61,14 @@ Excluded are:
 
 ### `check-typing`
 
-AST based linting rules for python type hints.
+AST based linting rules for python type hints. By default, all checks are disabled.
 
-- `no-return-union`: checks that `Union` is not used as a return type.
-  One may want to disallow `Union` as a return type because it makes functions harder to use, as callers have to check
-  the type of the return value before using it.
+- `--check-no-return-union`: checks that `Union` is not used as a return type. One may want to disallow `Union` as a return type because it makes functions harder to use, as callers have to check the type of the return value before using it.
   NOTE: `Optional` is intentionally excluded from this rule, as it is a common pattern to use.
+- `--check-pep604-union`: checks that [PEP604](https://www.python.org/dev/peps/pep-0604/) style unions (`X | Y`) are used instead of old style unions (`Union[X, Y]`).
+- `--check-no-optional`: checks that `None | X` is used instead of `Optional[X]`.
+- `--check-optional`: checks that `Optional[X]` is used instead of `None | X`.
+- `--check-overload-default-ellipsis`: checks that inside `@overload` default values are set to `...`.
 
 ### `check_naming_convention` (not implemented yet)
 
