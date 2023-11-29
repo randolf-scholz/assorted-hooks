@@ -20,6 +20,19 @@ def test_overload_assign_positional_only():
     tree = ast.parse(dedent(code))
     assert check_overload_default_ellipsis(tree, fname="test.py") == 2
 
+    code = r"""
+    @overload
+    def foo(x: int, display: bool = ..., /) -> int: ...
+    @overload
+    def foo(x: float, display: bool = ..., /) -> float: ...
+    def foo(x, display=True):
+        if display:
+            print(x)
+        return x
+    """
+    tree = ast.parse(dedent(code))
+    assert check_overload_default_ellipsis(tree, fname="test.py") == 0
+
 
 def test_overload_assign_positional_or_keyword():
     code = r"""
@@ -35,6 +48,19 @@ def test_overload_assign_positional_or_keyword():
     tree = ast.parse(dedent(code))
     assert check_overload_default_ellipsis(tree, fname="test.py") == 2
 
+    code = r"""
+    @overload
+    def foo(x: int, display: bool = ...) -> int: ...
+    @overload
+    def foo(x: float, display: bool = ...) -> float: ...
+    def foo(x, display=True):
+        if display:
+            print(x)
+        return x
+    """
+    tree = ast.parse(dedent(code))
+    assert check_overload_default_ellipsis(tree, fname="test.py") == 0
+
 
 def test_overload_assign_keyword_only():
     code = r"""
@@ -49,3 +75,16 @@ def test_overload_assign_keyword_only():
     """
     tree = ast.parse(dedent(code))
     assert check_overload_default_ellipsis(tree, fname="test.py") == 2
+
+    code = r"""
+    @overload
+    def foo(x: int, *, display: bool = ...) -> int: ...
+    @overload
+    def foo(x: float, *, display: bool = ...) -> float: ...
+    def foo(x, *, display=True):
+        if display:
+            print(x)
+        return x
+    """
+    tree = ast.parse(dedent(code))
+    assert check_overload_default_ellipsis(tree, fname="test.py") == 0

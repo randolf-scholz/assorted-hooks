@@ -10,9 +10,9 @@ __all__ = [
     "check_file",
     "main",
 ]
-
 import argparse
 import ast
+import builtins
 import logging
 import sys
 from ast import (
@@ -97,7 +97,7 @@ def check_overload_default_ellipsis(tree: AST, /, *, fname: str) -> int:
         pos_args = pos_args[-len(pos_defaults) :] if pos_defaults else []
         for arg, default in zip(pos_args, pos_defaults, strict=True):
             match default:
-                case None | Constant(value=None):
+                case None | Constant(value=builtins.Ellipsis):
                     continue
                 case _:
                     violations += 1
@@ -111,7 +111,7 @@ def check_overload_default_ellipsis(tree: AST, /, *, fname: str) -> int:
 
         for kwarg, kw_default in zip(kw_args, kw_defaults, strict=True):
             match kw_default:
-                case None | Constant(value=None):
+                case None | Constant(value=builtins.Ellipsis):
                     continue
                 case _:
                     violations += 1
