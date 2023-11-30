@@ -6,6 +6,7 @@ __all__ = [
     "check_no_return_union",
     "check_overload_default_ellipsis",
     "check_no_optional",
+    "check_no_future_annotations",
     "check_optional",
     "check_file",
     "main",
@@ -22,6 +23,7 @@ from ast import (
     BitOr,
     Constant,
     FunctionDef,
+    ImportFrom,
     Name,
     Subscript,
 )
@@ -85,6 +87,20 @@ def get_overloads(tree: AST, /) -> Iterator[Func]:
                 yield node
             case AsyncFunctionDef(decorator_list=[Name(id="overload"), *_]):
                 yield node
+
+
+def check_no_future_annotations(tree: AST, /, *, fname: str) -> int:
+    """Make sure PEP563 is not used."""
+    violations = 0
+    for node in ast.walk(tree):
+        match node:
+            # FIXME: https://github.com/python/cpython/issues/107497
+            case ImportFrom(module="__future__") as future_import:
+                for alias in future_import.names:
+                    if alias.name == "annotations":
+                        violations += 1
+                        print(f"{fname!s}:{node.lineno}: Do not use PEP563!")
+    return violations
 
 
 def check_overload_default_ellipsis(tree: AST, /, *, fname: str) -> int:
@@ -198,6 +214,8 @@ def check_file(file_or_path: str | Path, /, *, options: argparse.Namespace) -> i
         violations += check_pep604_union(tree, fname=fname)
     if options.check_overload_default_ellipsis:
         violations += check_overload_default_ellipsis(tree, fname=fname)
+    if options.check_no_future_annotations:
+        violations += check_no_future_annotations(tree, fname=fname)
     if options.check_no_return_union:
         violations += check_no_return_union(
             tree, recursive=options.check_no_return_union_recursive, fname=fname
@@ -260,6 +278,13 @@ def main() -> None:
         help="Recursively check for unions.",
     )
     parser.add_argument(
+        "--check-no-future-annotations",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=False,
+        help="Recursively check for unions.",
+    )
+    parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,
         type=bool,
@@ -287,7 +312,3 @@ def main() -> None:
     if violations:
         print(f"{'-'*79}\nFound {violations} violations.")
         sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()

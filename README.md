@@ -69,6 +69,7 @@ AST based linting rules for python type hints. By default, all checks are disabl
 - `--check-no-optional`: checks that `None | X` is used instead of `Optional[X]`.
 - `--check-optional`: checks that `Optional[X]` is used instead of `None | X`.
 - `--check-overload-default-ellipsis`: checks that inside `@overload` default values are set to `...`.
+- `--check-no-future-annotations`: checks that `from __future__ import annotations` is not used.
 
 ### `check_naming_convention` (not implemented yet)
 
