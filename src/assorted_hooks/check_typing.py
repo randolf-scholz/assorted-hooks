@@ -7,6 +7,7 @@ __all__ = [
     "check_overload_default_ellipsis",
     "check_no_optional",
     "check_no_future_annotations",
+    "check_no_hints_overload_implementation",
     "check_optional",
     "check_file",
     "main",
@@ -62,6 +63,17 @@ def is_union(node: AST, /) -> bool:
 def is_function_def(node: AST, /) -> TypeGuard[Func]:
     """True if the return node is a function definition."""
     return isinstance(node, Func)  # type: ignore[misc, arg-type]
+
+
+def is_overload(node: AST, /) -> bool:
+    """True if the return node is a function definition."""
+    match node:
+        case FunctionDef(decorator_list=[Name(id="overload"), *_]):
+            return True
+        case AsyncFunctionDef(decorator_list=[Name(id="overload"), *_]):
+            return True
+        case _:
+            return False
 
 
 def has_union(tree: AST, /) -> bool:
@@ -182,6 +194,31 @@ def check_no_optional(tree: AST, /, *, fname: str) -> int:
     return violations
 
 
+def check_no_hints_overload_implementation(tree: AST, /, *, fname: str) -> int:
+    """Checks that the implementation of an overloaded function has no type hints."""
+    violations = 0
+
+    # 1. collect all overloaded functions.
+    overloaded_funcs: set[str] = set()
+    for node in get_overloads(tree):
+        overloaded_funcs.add(node.name)
+
+    # 2. iterate over implementations.
+    for node in get_function_defs(tree):
+        if node.name in overloaded_funcs and not is_overload(node):
+            if (
+                any(arg.annotation is not None for arg in node.args.args)
+                or node.returns is not None
+            ):
+                violations += 1
+                print(
+                    f"{fname!s}:{node.lineno}: Overloaded function implementation"
+                    f" {node.name!r} should not have type hints."
+                )
+
+    return violations
+
+
 def check_optional(tree: AST, /, *, fname: str) -> int:
     """Check that `Optional[T]` is used instead of `None | T`."""
     violations = 0
@@ -220,6 +257,8 @@ def check_file(file_or_path: str | Path, /, *, options: argparse.Namespace) -> i
         violations += check_no_return_union(
             tree, recursive=options.check_no_return_union_recursive, fname=fname
         )
+    if options.check_no_hints_overload_implementation:
+        violations += check_no_hints_overload_implementation(tree, fname=fname)
     return violations
 
 
@@ -261,7 +300,7 @@ def main() -> None:
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=False,
-        help="Recursively check for unions.",
+        help="Check that in overloads Ellipsis is used as default value.",
     )
     parser.add_argument(
         "--check-no-return-union",
@@ -282,7 +321,14 @@ def main() -> None:
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=False,
-        help="Recursively check for unions.",
+        help="Check that `from __future__ import annotations` is not used.",
+    )
+    parser.add_argument(
+        "--check-no-hints-overload-implementation",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=False,
+        help="Check that overloaded function implementations have no type hints.",
     )
     parser.add_argument(
         "--debug",
