@@ -12,6 +12,7 @@ __all__ = [
     "check_file",
     "main",
 ]
+
 import argparse
 import ast
 import builtins
@@ -22,9 +23,11 @@ from ast import (
     AsyncFunctionDef,
     BinOp,
     BitOr,
+    ClassDef,
     Constant,
     FunctionDef,
     ImportFrom,
+    Module,
     Name,
     Subscript,
 )
@@ -38,6 +41,22 @@ __logger__ = logging.getLogger(__name__)
 
 Func: TypeAlias = FunctionDef | AsyncFunctionDef
 """Type alias for function-defs."""
+
+
+def get_namespace_and_funcs(
+    tree: AST, /, *, namespace: tuple[str, ...] = ()
+) -> Iterator[tuple[tuple[str, ...], Func]]:
+    """Yields both namespace and function node."""
+    for node in ast.iter_child_nodes(tree):
+        match node:
+            case FunctionDef(name=name) as func:
+                yield namespace, func
+                yield from get_namespace_and_funcs(func, namespace=(*namespace, name))
+            case AsyncFunctionDef(name=name) as func:
+                yield namespace, func
+                yield from get_namespace_and_funcs(func, namespace=(*namespace, name))
+            case ClassDef(name=name) as cls:
+                yield from get_namespace_and_funcs(cls, namespace=(*namespace, name))
 
 
 def is_typing_union(node: AST, /) -> bool:
@@ -194,28 +213,42 @@ def check_no_optional(tree: AST, /, *, fname: str) -> int:
     return violations
 
 
-def check_no_hints_overload_implementation(tree: AST, /, *, fname: str) -> int:
+def check_no_hints_overload_implementation(
+    tree: ClassDef | Module, /, *, fname: str
+) -> int:
     """Checks that the implementation of an overloaded function has no type hints."""
     violations = 0
+    namespace_and_funcs: list[tuple[tuple[str, ...], Func]] = list(
+        get_namespace_and_funcs(tree)
+    )
+    namespaces = {namespace for namespace, _ in namespace_and_funcs}
 
-    # 1. collect all overloaded functions.
-    overloaded_funcs: set[str] = set()
-    for node in get_overloads(tree):
-        overloaded_funcs.add(node.name)
+    # group by namespace, collect values in list
+    grouped_funcs = {
+        namespace: [func for name, func in namespace_and_funcs if name == namespace]
+        for namespace in namespaces
+    }
 
-    # 2. iterate over implementations.
-    for node in get_function_defs(tree):
-        if node.name in overloaded_funcs and not is_overload(node):
-            if (
-                any(arg.annotation is not None for arg in node.args.args)
-                or node.returns is not None
-            ):
-                violations += 1
-                print(
-                    f"{fname!s}:{node.lineno}: Overloaded function implementation"
-                    f" {node.name!r} should not have type hints."
-                )
-
+    for funcs in grouped_funcs.values():
+        # NOTE: we assume overloads are defined before implementations.
+        overloaded_funcs: set[str] = set()
+        for node in funcs:
+            match node:
+                case (
+                    FunctionDef(decorator_list=[Name(id="overload"), *_])
+                    | AsyncFunctionDef(decorator_list=[Name(id="overload"), *_])
+                ) as func:
+                    overloaded_funcs.add(func.name)
+                case func if func.name in overloaded_funcs:
+                    if (
+                        any(arg.annotation is not None for arg in func.args.args)
+                        or func.returns is not None
+                    ):
+                        violations += 1
+                        print(
+                            f"{fname!s}:{func.lineno}: Overloaded function"
+                            f" implementation {func.name!r} should not have type hints."
+                        )
     return violations
 
 
