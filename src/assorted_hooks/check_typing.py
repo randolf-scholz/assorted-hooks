@@ -2,13 +2,15 @@
 """Disallow mixed positional and keyword arguments in function-defs."""
 
 __all__ = [
-    "check_pep604_union",
-    "check_no_return_union",
-    "check_overload_default_ellipsis",
-    "check_no_optional",
     "check_no_future_annotations",
     "check_no_hints_overload_implementation",
+    "check_no_optional",
+    "check_no_return_union",
+    "check_no_tuple_isinstance",
+    "check_no_union_isinstance",
     "check_optional",
+    "check_overload_default_ellipsis",
+    "check_pep604_union",
     "check_file",
     "main",
 ]
@@ -23,6 +25,7 @@ from ast import (
     AsyncFunctionDef,
     BinOp,
     BitOr,
+    Call,
     ClassDef,
     Constant,
     FunctionDef,
@@ -30,6 +33,7 @@ from ast import (
     Module,
     Name,
     Subscript,
+    Tuple,
 )
 from collections.abc import Iterator
 from pathlib import Path
@@ -213,6 +217,58 @@ def check_no_optional(tree: AST, /, *, fname: str) -> int:
     return violations
 
 
+def check_no_union_isinstance(tree: AST, /, *, fname: str) -> int:
+    """Checks that tuples are used instead of unions in isinstance checks."""
+    violations = 0
+
+    for node in ast.walk(tree):
+        match node:
+            case Call(
+                func=Name(id="isinstance"),
+                args=[_, BinOp(op=BitOr()) | Subscript(value=Name(id="Union"))],
+            ):
+                violations += 1
+                print(
+                    f"{fname!s}:{node.lineno}: Use tuple instead of union in isinstance"
+                )
+            case Call(
+                func=Name(id="issubclass"),
+                args=[_, BinOp(op=BitOr()) | Subscript(value=Name(id="Union"))],
+            ):
+                violations += 1
+                print(
+                    f"{fname!s}:{node.lineno}: Use tuple instead of union in issubclass"
+                )
+
+    return violations
+
+
+def check_no_tuple_isinstance(tree: AST, /, *, fname: str) -> int:
+    """Checks that unions are used instead of tuples in isinstance checks."""
+    violations = 0
+
+    for node in ast.walk(tree):
+        match node:
+            case Call(
+                func=Name(id="isinstance"),
+                args=[_, Tuple() | Subscript(value=Name(id="tuple"))],
+            ):
+                violations += 1
+                print(
+                    f"{fname!s}:{node.lineno}: Use union instead of tuple in isinstance"
+                )
+            case Call(
+                func=Name(id="issubclass"),
+                args=[_, Tuple() | Subscript(value=Name(id="tuple"))],
+            ):
+                violations += 1
+                print(
+                    f"{fname!s}:{node.lineno}: Use union instead of tuple in issubclass"
+                )
+
+    return violations
+
+
 def check_no_hints_overload_implementation(
     tree: ClassDef | Module, /, *, fname: str
 ) -> int:
@@ -290,6 +346,10 @@ def check_file(file_or_path: str | Path, /, *, options: argparse.Namespace) -> i
         violations += check_no_return_union(
             tree, recursive=options.check_no_return_union_recursive, fname=fname
         )
+    if options.check_no_tuple_isinstance:
+        violations += check_no_tuple_isinstance(tree, fname=fname)
+    if options.check_no_union_isinstance:
+        violations += check_no_union_isinstance(tree, fname=fname)
     if options.check_no_hints_overload_implementation:
         violations += check_no_hints_overload_implementation(tree, fname=fname)
     return violations
@@ -362,6 +422,20 @@ def main() -> None:
         type=bool,
         default=False,
         help="Check that overloaded function implementations have no type hints.",
+    )
+    parser.add_argument(
+        "--check-no-tuple-isinstance",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=False,
+        help="Check that isinstance uses union instead of tuples.",
+    )
+    parser.add_argument(
+        "--check-no-union-isinstance",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=False,
+        help="Check that isinstance uses tuples instead of unions.",
     )
     parser.add_argument(
         "--debug",

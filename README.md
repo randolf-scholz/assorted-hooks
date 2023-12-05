@@ -71,6 +71,8 @@ AST based linting rules for python type hints. By default, all checks are disabl
 - `--check-overload-default-ellipsis`: checks that inside `@overload` default values are set to `...`.
 - `--check-no-future-annotations`: checks that `from __future__ import annotations` is not used.
 - `--check-no-hints-overload-implementation`: checks that the implementation of an overloaded function does not have type hints.
+- `--check-no-tuple-isinstance`: checks that unions are used instead of tuples in isinstance.
+- `--check-no-union-isinstance`: checks that tuples are used instead of unions in isinstance.
 
 ### `check_naming_convention` (not implemented yet)
 
