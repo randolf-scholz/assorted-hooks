@@ -58,7 +58,7 @@ repos:
         description: "Enforce that `# type: ignore` annotations always specify codes."
       - id: python-no-builtin-eval
         name: python-no-builtin-eval
-        entry: '((\b)builtins\.|(?<!\.))eval\('
+        entry: '(?<!def\s)(?<!\.)\b(builtins\.)?(eval\()'
         language: pygrep
         types: [python]
         files: (^src/|^tests/)
