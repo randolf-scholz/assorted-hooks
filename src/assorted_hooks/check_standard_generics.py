@@ -22,8 +22,7 @@ from assorted_hooks.utils import get_python_files
 
 __logger__ = logging.getLogger(__name__)
 
-REPLACEMENTS: Final[dict[str, str]] = {
-    # fmt: off
+REPLACEMENTS: dict[str, str] = {
     # builtins
     "typing.Dict"                : "dict",
     "typing.FrozenSet"           : "frozenset",
@@ -74,7 +73,12 @@ REPLACEMENTS: Final[dict[str, str]] = {
     "typing.re.Pattern"          : "re.Pattern",
     "typing.Match"               : "re.Match",
     "typing.re.Match"            : "re.Match",
-    # fmt: on
+}  # fmt: skip
+
+# add typing_extensions aliases
+REPLACEMENTS |= {
+    key.replace("typing", "typing_extensions"): value
+    for key, value in REPLACEMENTS.items()
 }
 
 KEYS: Final[frozenset[str]] = frozenset(REPLACEMENTS.keys())
