@@ -49,11 +49,11 @@ Excluded are:
 
 Verifies that the version in `pyproject.toml` adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/).
 
-Details: https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
+Details: <https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions>
 
 ### `pyproject-update-deps`
 
-**NOTE: THIS HOOK IS SET TO MANUAL BY DEFAULT. RUN VIA**
+**NOTE:** THIS HOOK IS SET TO MANUAL BY DEFAULT. RUN VIA
 
 ```bash
 pre-commit run --hook-stage manual pyproject-update-deps
@@ -75,14 +75,14 @@ depends on `numpy` but numpy should still be listed in `pyproject.toml` if it is
 
 ### `python-no-blanket-type-ignore`
 
-A modified version of the hook at https://github.com/pre-commit/pygrep-hooks.
+A modified version of the hook at <https://github.com/pre-commit/pygrep-hooks>.
 
-- allows `# type: ignore` at the top of the file to ignore the whole file (cf. https://github.com/python/mypy/issues/964)
+- allows `# type: ignore` at the top of the file to ignore the whole file (cf. <https://github.com/python/mypy/issues/964>)
 - colon after "type" non-optional.
 
 ### `python-no-builtin-eval`
 
-A modified version of the hook at https://github.com/pre-commit/pygrep-hooks.
+A modified version of the hook at <https://github.com/pre-commit/pygrep-hooks>.
 
 - allows `<obj>.eval`, e.g. `pandas.eval`.
 - only blank `eval(` and `builtins.eval(` are forbidden.

@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 """Validate version strings in pyproject.toml.
 
-References
-----------
-- https://peps.python.org/pep-0440
+References:
+    - https://peps.python.org/pep-0440
 """
 
 __all__ = [
@@ -74,8 +73,7 @@ RE_VERSION = re.compile(
             )?
         )
         (?:\+(?P<local>[a-z0-9]+(?:[-_.][a-z0-9]+)*))?        # local version
-    )"""
-)
+    )""")
 VERSION = RE_VERSION.pattern
 RE_VERSION_GROUP = re.compile(rf"""(?P<version>{VERSION})""")
 VERSION_GROUP = RE_VERSION_GROUP.pattern

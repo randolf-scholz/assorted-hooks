@@ -34,18 +34,18 @@ Func: TypeAlias = FunctionDef | AsyncFunctionDef
 
 def get_full_attribute_name(node: Call | Attribute | Name, /) -> str:
     """Get the parent of an attribute node."""
-    if isinstance(node, Call):
-        assert isinstance(node.func, (Attribute, Name))
-        return get_full_attribute_name(node.func)
-    if isinstance(node, Attribute):
-        assert isinstance(node.value, (Attribute, Name))
-        string = get_full_attribute_name(node.value)
-        return f"{string}.{node.attr}"
-
-    if not isinstance(node, Name):
-        raise ValueError(f"Expected ast.Name, got {type(node)}")
-
-    return node.id
+    match node:
+        case Call(func=func):
+            assert isinstance(func, Attribute | Name)
+            return get_full_attribute_name(func)
+        case Attribute(value=value, attr=attr):
+            assert isinstance(value, Attribute | Name)
+            string = get_full_attribute_name(value)
+            return f"{string}.{attr}"
+        case Name(id=node_id):
+            return node_id
+        case _:
+            raise TypeError(f"Expected Name/Attribute, got {type(node)=}")
 
 
 def get_functions(tree: AST, /) -> Iterator[Func]:
@@ -72,16 +72,19 @@ def get_funcs_in_classes(tree: AST, /) -> Iterator[Func]:
 
 def get_funcs_outside_classes(tree: AST, /) -> Iterator[Func]:
     """Get all functions that are nod defined inside class body."""
-    nodes_in_classes: set[AST] = set()
+    funcs_in_classes: set[AST] = set()
 
     for node in ast.walk(tree):
-        if isinstance(node, ClassDef):
-            for child in node.body:
-                if isinstance(child, Func):
-                    nodes_in_classes.add(child)
-        if isinstance(node, Func):
-            if node not in nodes_in_classes:
-                yield node
+        match node:
+            case ClassDef(body=body):
+                funcs_in_classes.update(
+                    child for child in body if isinstance(child, Func)
+                )
+            case func if isinstance(
+                node, Func
+            ):  # https://github.com/python/cpython/issues/106246
+                if func not in funcs_in_classes:
+                    yield func
 
 
 def func_has_mixed_args(node: Func, /, *, allow_one: bool = False) -> bool:
@@ -177,7 +180,7 @@ def check_file(
                 arg = node.args.args[0]
             except IndexError as exc:
                 raise RuntimeError(
-                    f'"{fname!s}:{node.lineno}" Something went wrong.' f" {vars(node)=}"
+                    f'"{fname!s}:{node.lineno}" Something went wrong. {vars(node)=}'
                 ) from exc
             print(
                 f"{fname!s}:{arg.lineno}:"
@@ -193,7 +196,7 @@ def check_file(
                 arg = node.args.args[0]
             except IndexError as exc:
                 raise RuntimeError(
-                    f'"{fname!s}:{node.lineno}" Something went wrong.' f" {vars(node)=}"
+                    f'"{fname!s}:{node.lineno}" Something went wrong. {vars(node)=}'
                 ) from exc
             print(
                 f"{fname!s}:{arg.lineno}:"

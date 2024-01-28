@@ -121,10 +121,7 @@ def is_at_top(node: Assign | AnnAssign, /, *, module: Module) -> bool:
     assert len(body) > 0, "Expected at least one node in the body."
     start = isinstance(body[0], Expr)
 
-    for n in body[start:loc]:
-        if not is_future_import(n):
-            return False
-    return True
+    return all(is_future_import(_node) for _node in body[start:loc])
 
 
 def check_file(
@@ -143,7 +140,7 @@ def check_file(
         tree = ast.parse(file.read())
 
     if not isinstance(tree, Module):
-        raise ValueError(f"Expected ast.Module, got {type(tree)}")
+        raise TypeError(f"Expected ast.Module, got {type(tree)}")
 
     passed = True
     node_list: list[Assign | AnnAssign | AugAssign] = []

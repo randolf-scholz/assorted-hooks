@@ -48,18 +48,18 @@ def get_pure_attributes(tree: AST, /) -> Iterator[Attribute]:
 
 def get_full_attribute_parent(node: Attribute | Name, /) -> tuple[Name, str]:
     """Get the parent of an attribute node."""
-    if isinstance(node, Attribute):
-        if not isinstance(node.value, Attribute | Name):
-            raise ValueError(
-                f"Expected Attribute or Name, got {type(node.value)} {vars(node.value)=}"
-            )
-        parent, string = get_full_attribute_parent(node.value)
-        return parent, f"{string}.{node.attr}"
-
-    if not isinstance(node, Name):
-        raise ValueError(f"Expected ast.Name, got {type(node)=}  {vars(node.value)=}")
-
-    return node, node.id
+    match node:
+        case Attribute(value=value, attr=attr):
+            if not isinstance(value, Attribute | Name):
+                raise TypeError(
+                    f"Expected Attribute or Name, got {type(value)} {vars(value)=}"
+                )
+            parent, string = get_full_attribute_parent(value)
+            return parent, f"{string}.{attr}"
+        case Name(id=node_id):
+            return node, node_id
+        case _:
+            raise TypeError(f"Expected Name/Attribute, got {type(node)=}")
 
 
 def get_imported_symbols(tree: AST, /) -> dict[str, str]:

@@ -13,13 +13,11 @@ References:
 __all__ = [
     "collect_dependencies",
     "get_deps_file",
-    "get_deps_import",
-    "get_deps_importfrom",
     "get_deps_module",
     "get_deps_pyproject_project",
     "get_deps_pyproject_section",
     "get_deps_pyproject_tests",
-    "get_deps_tree",
+    "get_dependencies",
     "get_name_pyproject",
     "group_dependencies",
     "main",
@@ -96,34 +94,22 @@ def normalize_dep_name(dep: str, /) -> str:
     return dep.lower().replace("-", "_")
 
 
-def get_deps_import(node: ast.Import, /) -> set[str]:
-    """Extract dependencies from an `import ...` statement."""
-    dependencies = set()
-    for alias in node.names:
-        module = alias.name.split(".")[0]
-        if not module.startswith("_"):
-            dependencies.add(module)
-    return dependencies
-
-
-def get_deps_importfrom(node: ast.ImportFrom, /) -> set[str]:
-    """Extract dependencies from an `from y import ...` statement."""
-    assert node.module is not None
-    module_name = node.module.split(".")[0]
-    if module_name.startswith("_"):  # ignore _private modules
-        return set()
-    return {module_name}
-
-
-def get_deps_tree(tree: ast.AST, /) -> set[str]:
+def get_dependencies(tree: ast.AST, /, *, ignore_private: bool = True) -> set[str]:
     """Extract the set of dependencies from `ast.AST` object."""
-    dependencies: set[str] = set()
-
+    imported_modules: list[str] = []
     for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            dependencies |= get_deps_import(node)
-        elif isinstance(node, ast.ImportFrom):
-            dependencies |= get_deps_importfrom(node)
+        match node:
+            case ast.Import(names=aliases):  #
+                imported_modules.extend(alias.name for alias in aliases)
+            case ast.ImportFrom(module=str(name)):
+                imported_modules.append(name)
+
+    dependencies: set[str] = set()
+    for name in imported_modules:
+        module_name = name.split(".")[0]
+        if ignore_private and module_name.startswith("_"):
+            continue
+        dependencies.add(module_name)
 
     return dependencies
 
@@ -138,7 +124,7 @@ def get_deps_file(file_path: str | Path, /) -> set[str]:
     with open(path, "r", encoding="utf8") as file:
         tree = ast.parse(file.read())
 
-    return get_deps_tree(tree)
+    return get_dependencies(tree)
 
 
 def get_deps_module(module: str | ModuleType, /, *, silent: bool = True) -> set[str]:
@@ -182,7 +168,7 @@ def get_name_pyproject(config: Config, /) -> str:
         poetry_name = NotImplemented
 
     match project_name, poetry_name:
-        case str() as a, str() as b:
+        case str(a), str(b):
             if a != b:
                 raise ValueError(
                     "Found inconsistent project names in [project] and [tool.poetry]."
@@ -190,9 +176,9 @@ def get_name_pyproject(config: Config, /) -> str:
                     f"\n [tool.poetry] is missing: {b}."
                 )
             return a
-        case str() as a, _:
+        case str(a), _:
             return a
-        case _, str() as b:
+        case _, str(b):
             return b
         case _:
             raise ValueError("No project name found in [project] or [tool.poetry].")
@@ -223,7 +209,7 @@ def get_deps_pyproject_section(config: Config, /, *, section: str) -> set[str]:
             return matches
         # assume format `package = "<comparator>version"`
         case dict() as dct:  # poetry
-            return set(dct.keys()) - {"python"}
+            return set(dct) - {"python"}
         case _:
             raise TypeError(f"Unexpected type: {type(config)}")
 
@@ -376,9 +362,9 @@ def collect_dependencies(
     elif not path.exists():  # assume module
         try:
             dependencies |= get_deps_module(str(fname))
-        except ModuleNotFoundError as exc:
+        except ModuleNotFoundError:
             if raise_notfound:
-                raise exc
+                raise
     elif raise_notfound:
         raise FileNotFoundError(f"Invalid path: {path}")
 

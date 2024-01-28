@@ -1,18 +1,17 @@
 #!/usr/bin/env python
 """Updates the pyproject.toml dependencies to the currently installed versions.
 
-References
-----------
-- (Final) PEP 440 – Version Identification and dependency Specification
-  https://peps.python.org/pep-0440/
-- (Final) PEP 508 – dependency specification for Python Software Packages
-  https://peps.python.org/pep-0508/
-- (Final) PEP 621 – Storing project metadata in pyproject.toml
-  https://peps.python.org/pep-0621/
-- (Superseded) PEP 631 – dependency specification in pyproject.toml based on PEP 508
-  https://peps.python.org/pep-0631/
-- (Rejected) PEP 633 – dependency specification in pyproject.toml using an exploded TOML table
-  https://peps.python.org/pep-0633/
+References:
+    - (Final) PEP 440 – Version Identification and dependency Specification
+      https://peps.python.org/pep-0440/
+    - (Final) PEP 508 – dependency specification for Python Software Packages
+      https://peps.python.org/pep-0508/
+    - (Final) PEP 621 – Storing project metadata in pyproject.toml
+      https://peps.python.org/pep-0621/
+    - (Superseded) PEP 631 – dependency specification in pyproject.toml based on PEP 508
+      https://peps.python.org/pep-0631/
+    - (Rejected) PEP 633 – dependency specification in pyproject.toml using an exploded TOML table
+      https://peps.python.org/pep-0633/
 """
 
 __all__ = [
@@ -112,8 +111,7 @@ RE_VERSION = re.compile(
             )?
         )
         (?:\+(?P<local>[a-z0-9]+(?:[-_.][a-z0-9]+)*))?        # local version
-    )"""
-)
+    )""")
 VERSION = RE_VERSION.pattern
 RE_VERSION_GROUP = re.compile(rf"""(?P<version>{VERSION})""")
 VERSION_GROUP = RE_VERSION_GROUP.pattern
@@ -155,15 +153,13 @@ assert is_dependency_pattern(
     RE_PROJECT_DEP_GROUP
 ), f"{RE_PROJECT_DEP_GROUP.groupindex=}."
 
-RE_POETRY_DEP = re.compile(
-    rf"""(?x:
+RE_POETRY_DEP = re.compile(rf"""(?x:
         {NAME_GROUP}
         (?:\s*=\s*)
         (?:{{\s*version\s*=\s*)?   # deps of the form `black = {{version = ">=23.7.0", extras = ["d"]}}`
         (?:['"]\s*>=\s*)
         {VERSION_GROUP}
-    )"""
-)
+    )""")
 POETRY_DEP = RE_POETRY_DEP.pattern
 RE_POETRY_DEP_GROUP = re.compile(rf"""(?P<dependency>{POETRY_DEP})""")
 POETRY_DEP_GROUP = RE_POETRY_DEP_GROUP.pattern

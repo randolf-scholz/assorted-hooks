@@ -27,7 +27,7 @@ class Foo:
 class Meta(type):
     """Dummy metaclass."""
 
-    def __call__(cls, x: int, /) -> None:
+    def __call__(cls, x: int, /) -> None:  # pyright: ignore
         """Dummy call."""
         ...
 
@@ -37,13 +37,11 @@ class Meta(type):
 
 
 @overload
-def foo(x, /):
-    ...
+def foo(x, /): ...
 
 
 @overload
-def foo(x, y, /):
-    ...
+def foo(x, y, /): ...
 
 
 def foo(x, y=None, /):
