@@ -104,8 +104,8 @@ repos:
         language: python
         types: [python]
         description: "AST-based linting rule for type-hints."
+  # https://pre-commit.com/hooks.html
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    # https://pre-commit.com/hooks.html
     rev: v4.5.0
     hooks:
       - id: check-added-large-files
@@ -179,21 +179,17 @@ repos:
         files: (^src/|^tests/)
       - id: ruff-format
         files: (^src/|^tests/)
-  - repo: local
+  # markdownlint
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.39.0
     hooks:
       - id: markdownlint
-        name: markdownlint
-        types: [markdown]
-        language: system
-        stages: [pre-push, manual]
-        verbose: true
-        entry: mdl
         args:
-          ["-r", "~MD007,~MD013,~MD029,~MD033"]
-          # MD007: Unordered list indentation (false positives)
-          # MD013: Line length (unused)
-        # MD029: Ordered list item prefix (false positives)
-        # MD033: Inline HTML (unused)
+            [
+                "--disable",
+                "MD013", # Line length
+                "--"  # otherwise files are interpreted as args
+            ]
   # mypy
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.8.0
