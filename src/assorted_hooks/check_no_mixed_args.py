@@ -20,6 +20,7 @@ __all__ = [
 
 import argparse
 import ast
+import logging
 import sys
 from ast import AST, AsyncFunctionDef, Attribute, Call, ClassDef, FunctionDef, Name
 from collections.abc import Collection, Iterator
@@ -28,6 +29,8 @@ from typing import TypeAlias
 
 from assorted_hooks.utils import get_python_files
 
+__logger__ = logging.getLogger(__name__)
+
 Func: TypeAlias = FunctionDef | AsyncFunctionDef
 """Type alias for function-defs."""
 
@@ -35,17 +38,15 @@ Func: TypeAlias = FunctionDef | AsyncFunctionDef
 def get_full_attribute_name(node: Call | Attribute | Name, /) -> str:
     """Get the parent of an attribute node."""
     match node:
-        case Call(func=func):
-            assert isinstance(func, Attribute | Name)
+        case Call(func=Attribute() | Name() as func):
             return get_full_attribute_name(func)
-        case Attribute(value=value, attr=attr):
-            assert isinstance(value, Attribute | Name)
+        case Attribute(value=Attribute() | Name() as value, attr=attr):
             string = get_full_attribute_name(value)
             return f"{string}.{attr}"
         case Name(id=node_id):
             return node_id
         case _:
-            raise TypeError(f"Expected Name/Attribute, got {type(node)=}")
+            raise TypeError(f"Expected Call, Attribute or Name, got {type(node)=!r}")
 
 
 def get_functions(tree: AST, /) -> Iterator[Func]:
@@ -80,11 +81,10 @@ def get_funcs_outside_classes(tree: AST, /) -> Iterator[Func]:
                 funcs_in_classes.update(
                     child for child in body if isinstance(child, Func)
                 )
-            case func if isinstance(
-                node, Func
-            ):  # https://github.com/python/cpython/issues/106246
-                if func not in funcs_in_classes:
-                    yield func
+            # FIXME: https://github.com/python/cpython/issues/106246
+            case FunctionDef() | AsyncFunctionDef():
+                if node not in funcs_in_classes:
+                    yield node
 
 
 def func_has_mixed_args(node: Func, /, *, allow_one: bool = False) -> bool:
@@ -152,8 +152,9 @@ def check_file(
     ignore_overloads: bool = True,
     ignore_private: bool = False,
     ignore_wo_pos_only: bool = False,
-) -> bool:
+) -> int:
     """Check whether the file contains mixed positional and keyword arguments."""
+    violations = 0
 
     def is_ignorable(func: Func, /) -> bool:
         """Checks if the func can be ignored."""
@@ -169,13 +170,11 @@ def check_file(
     with open(fname, "rb") as file:
         tree = ast.parse(file.read(), filename=fname)
 
-    passed = True
-
     for node in get_funcs_in_classes(tree):
         if is_ignorable(node):
             continue
         if method_has_mixed_args(node, allow_one=allow_one):
-            passed = False
+            violations += 1
             try:
                 arg = node.args.args[0]
             except IndexError as exc:
@@ -191,7 +190,7 @@ def check_file(
         if is_ignorable(node):
             continue
         if func_has_mixed_args(node, allow_one=allow_one):
-            passed = False
+            violations += 1
             try:
                 arg = node.args.args[0]
             except IndexError as exc:
@@ -203,7 +202,7 @@ def check_file(
                 f" Mixed positional and keyword arguments in function."
             )
 
-    return passed
+    return violations
 
 
 def main() -> None:
@@ -276,19 +275,19 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    if args.debug:
+        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+        __logger__.debug("args: %s", vars(args))
+
     # find all files
     files: list[Path] = get_python_files(args.files)
 
-    if args.debug:
-        print("Files:")
-        for file in files:
-            print(f"  {file!s}:0")
-
     # apply script to all files
-    passed = True
+    violations = 0
     for file in files:
+        __logger__.debug('Checking "%s:0"', file)
         try:
-            passed &= check_file(
+            violations += check_file(
                 file,
                 allow_one=args.allow_one,
                 ignore_dunder=args.ignore_dunder,
@@ -299,9 +298,10 @@ def main() -> None:
                 ignore_decorators=args.ignore_decorators,
             )
         except Exception as exc:
-            raise RuntimeError(f'Checking file "{file!s}" failed!') from exc
+            raise RuntimeError(f"{file!s}: Checking file failed!") from exc
 
-    if not passed:
+    if violations:
+        print(f"{'-'*79}\nFound {violations} violations.")
         sys.exit(1)
 
 

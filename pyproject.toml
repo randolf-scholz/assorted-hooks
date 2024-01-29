@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 requires-python = ">=3.11"
 name = "assorted-hooks"
-version = "0.1.32"
+version = "0.1.49"
 
 authors = [{name="Randolf Scholz", email="randolf.scholz@gmail.com"},]
 description = "Custom pre-commit hooks"
@@ -39,10 +39,12 @@ check-__all__-exists = "assorted_hooks.check__all__exists:main"
 check-imported-attributes = "assorted_hooks.check_imported_attributes:main"
 check-no-mixed-args = "assorted_hooks.check_no_mixed_args:main"
 check-standard-generics = "assorted_hooks.check_standard_generics:main"
+check-typing = "assorted_hooks.check_typing:main"
+# scripts
+check-clean-interface = "assorted_hooks.scripts.check_clean_interface:main"
 pyproject-check-deps = "assorted_hooks.scripts.pyproject_check_dependencies:main"
 pyproject-update-deps = "assorted_hooks.scripts.pyproject_update_dependencies:main"
 pyproject-validate-version = "assorted_hooks.scripts.pyproject_validate_version:main"
-
 
 # region flake8 configuration ----------------------------------------------------------
 [tool.flake8]
@@ -406,7 +408,6 @@ ignore_missing_imports = true
 py_version=311
 profile="black"
 src_paths=["src/", "tests/"]
-known_first_party = ["linodenet", "tsdm"]
 combine_as_imports = true
 # flake8-profiles: appnexus, cryptography, edited, google, pep8, pycharm, smarkets
 # black-compatible: black, appnexus
@@ -483,9 +484,9 @@ addopts = [
 #    "--reruns-delay=",    # add time (seconds) delay between reruns.
 #    "--only-rerun=",      # If passed, only rerun errors matching the regex provided.
     # coverage options
-    "--cov=tsdm",  # Path or package name to measure during execution (multi-allowed).
-    "--cov-report=term:skip-covered",
-    "--cov-report=xml:reports/coverage.xml",
+#    "--cov=assorted_hooks",  # Path or package name to measure during execution (multi-allowed).
+#    "--cov-report=term:skip-covered",
+#    "--cov-report=xml:reports/coverage.xml",
 #    "--cov-report=annotate:reports/coverage",
 ]
 markers = [
@@ -504,7 +505,7 @@ required_plugins = [
 [tool.coverage]
 
 [tool.coverage.paths]
-source = ["src/tsdm"]
+source = ["src/assorted_hooks/"]
 
 [tool.coverage.report]
 exclude_lines = [

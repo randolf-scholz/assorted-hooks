@@ -51,14 +51,14 @@ assert RE_NAME_GROUP.groups == 1, f"{RE_NAME_GROUP.groups=}."
 
 
 # import metadata library
-for name in (
+for __metadata_lib in (
     ["importlib.metadata", "importlib_metadata"]
     if sys.version_info >= (3, 11)
     else ["importlib_metadata"]
 ):
     # NOTE: importlib.metadata is bugged in 3.10: https://github.com/python/cpython/issues/94113
     try:
-        metadata = importlib.import_module(name)
+        metadata = importlib.import_module(__metadata_lib)
         break
     except ImportError:
         pass
@@ -69,9 +69,9 @@ else:
     )
 
 # import toml library
-for name in ("tomllib", "tomlkit", "tomli"):
+for __toml_lib in ("tomllib", "tomlkit", "tomli"):
     try:
-        tomllib = importlib.import_module(name)
+        tomllib = importlib.import_module(__toml_lib)
         break
     except ImportError:
         pass
@@ -99,7 +99,7 @@ def get_dependencies(tree: ast.AST, /, *, ignore_private: bool = True) -> set[st
     imported_modules: list[str] = []
     for node in ast.walk(tree):
         match node:
-            case ast.Import(names=aliases):  #
+            case ast.Import(names=aliases):
                 imported_modules.extend(alias.name for alias in aliases)
             case ast.ImportFrom(module=str(name)):
                 imported_modules.append(name)

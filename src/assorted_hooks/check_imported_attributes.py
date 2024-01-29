@@ -23,6 +23,7 @@ __all__ = [
 
 import argparse
 import ast
+import logging
 import sys
 from ast import AST, Attribute, Name
 from collections.abc import Iterator
@@ -31,12 +32,16 @@ from typing import TypeGuard
 
 from assorted_hooks.utils import get_python_files
 
+__logger__ = logging.getLogger(__name__)
+
 
 def is_pure_attribute(node: AST, /) -> TypeGuard[Attribute]:
     """Check whether a node is a pure attribute."""
-    return isinstance(node, Attribute) and (
-        isinstance(node.value, Name) or is_pure_attribute(node.value)
-    )
+    match node:
+        case Attribute(value=value):
+            return isinstance(value, Name) or is_pure_attribute(value)
+        case _:
+            return False
 
 
 def get_pure_attributes(tree: AST, /) -> Iterator[Attribute]:
@@ -49,17 +54,13 @@ def get_pure_attributes(tree: AST, /) -> Iterator[Attribute]:
 def get_full_attribute_parent(node: Attribute | Name, /) -> tuple[Name, str]:
     """Get the parent of an attribute node."""
     match node:
-        case Attribute(value=value, attr=attr):
-            if not isinstance(value, Attribute | Name):
-                raise TypeError(
-                    f"Expected Attribute or Name, got {type(value)} {vars(value)=}"
-                )
+        case Attribute(value=Attribute() | Name() as value, attr=attr):
             parent, string = get_full_attribute_parent(value)
             return parent, f"{string}.{attr}"
         case Name(id=node_id):
             return node, node_id
         case _:
-            raise TypeError(f"Expected Name/Attribute, got {type(node)=}")
+            raise TypeError(f"Expected Attribute or Name, got {type(node)=!r}")
 
 
 def get_imported_symbols(tree: AST, /) -> dict[str, str]:
@@ -67,14 +68,13 @@ def get_imported_symbols(tree: AST, /) -> dict[str, str]:
     imported_symbols = {}
 
     for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                imported_symbols[alias.asname or alias.name] = alias.name
-        elif isinstance(node, ast.ImportFrom):
-            module_name = node.module
-            if module_name is not None:
-                for alias in node.names:
-                    full_name = f"{module_name}.{alias.name}"
+        match node:
+            case ast.Import(names=names):
+                for alias in names:
+                    imported_symbols[alias.asname or alias.name] = alias.name
+            case ast.ImportFrom(module=module, names=names) if module is not None:
+                for alias in names:
+                    full_name = f"{module}.{alias.name}"
                     imported_symbols[alias.asname or alias.name] = full_name
 
     return imported_symbols
@@ -105,22 +105,23 @@ def get_imported_attributes(tree: AST, /) -> Iterator[tuple[Attribute, Name, str
                 yield node, parent, string
 
 
-def check_file(file_path: Path, /, *, debug: bool = False) -> bool:
+def check_file(file_path: Path, /, *, debug: bool = False) -> int:
     """Finds shadowed attributes in a file."""
+    violations = 0
+
     # Your code here
     with open(file_path, "r", encoding="utf8") as file:
         tree = ast.parse(file.read())
 
     # find all violations
-    node: Attribute = NotImplemented
     for node, _, string in get_imported_attributes(tree):
+        violations += 1
         print(
             f"{file_path!s}:{node.lineno!s}"
             f" use directly imported {node.attr!r} instead of {string!r}"
         )
-    passed = node is NotImplemented
 
-    if not passed and debug:
+    if violations and debug:
         imported_symbols = get_imported_symbols(tree)
         pad = " " * 4
         max_key_len = max(map(len, imported_symbols), default=0)
@@ -128,7 +129,7 @@ def check_file(file_path: Path, /, *, debug: bool = False) -> bool:
         for key, value in imported_symbols.items():
             print(2 * pad, f"{key:{max_key_len}} -> {value}")
 
-    return passed
+    return violations
 
 
 def main() -> None:
@@ -152,23 +153,24 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    if args.debug:
+        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+        __logger__.debug("args: %s", vars(args))
+
     # find all files
     files: list[Path] = get_python_files(args.files)
 
-    if args.debug:
-        print("Files:")
-        for file in files:
-            print(f"  {file!s}:0")
-
     # apply script to all files
-    passed = True
+    violations = 0
     for file in files:
+        __logger__.debug('Checking "%s:0"', file)
         try:
-            passed &= check_file(file, debug=args.debug)
+            violations += check_file(file, debug=args.debug)
         except Exception as exc:
-            raise RuntimeError(f'Checking file "{file!s}" failed!') from exc
+            raise RuntimeError(f"{file!s}: Checking file failed!") from exc
 
-    if not passed:
+    if violations:
+        print(f"{'-'*79}\nFound {violations} violations.")
         sys.exit(1)
 
 
