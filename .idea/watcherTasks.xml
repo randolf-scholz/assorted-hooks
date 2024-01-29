@@ -22,6 +22,8 @@
       <envs />
     </TaskOptions>
     <enabled-global>
+      <option value="ruff-format" />
+      <option value="ruff-isort" />
       <option value="isort" />
     </enabled-global>
   </component>

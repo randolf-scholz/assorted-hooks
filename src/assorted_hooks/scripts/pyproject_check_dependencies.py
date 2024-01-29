@@ -420,9 +420,9 @@ def check_file(
     error_unused_project_deps: bool = True,
     error_unused_test_deps: bool = False,
     debug: bool = False,
-) -> bool:
+) -> int:
     """Check a single file."""
-    passed = True
+    violations = 0
 
     with open(fname, "rb") as file:
         config = tomllib.load(file)
@@ -454,7 +454,7 @@ def check_file(
         imported_dependencies=imported_dependencies,
     )
     if missing_deps or unknown_deps or (unused_deps and error_unused_project_deps):
-        passed = False
+        violations += 1
         print(
             f"Found discrepancy between imported dependencies and pyproject.toml!"
             f"\nImported dependencies not listed in pyproject.toml: {missing_deps}."
@@ -484,32 +484,36 @@ def check_file(
         pyproject_dependencies=pyproject_test_dependencies,
         imported_dependencies=imported_test_dependencies,
     )
+    superfluous_test_deps = (
+        imported_test_dependencies | pyproject_test_dependencies
+    ) & pyproject_dependencies
 
-    if (
-        superfluous_test_deps := imported_dependencies & pyproject_test_dependencies
-    ) and error_superfluous_test_deps:
-        passed = False
+    if superfluous_test_deps and error_superfluous_test_deps:
+        violations += 1
         print(
-            f"Found superfluous test dependencies!"
-            f"\nSuperfluous test dependencies: {superfluous_test_deps}."
-            f"\nAre not needed since they are already listed in [project] or [tool.poetry.dependencies]."
+            f"Detected superfluous test dependencies: {superfluous_test_deps}\n"
+            "These are already listed in project dependencies and need not be"
+            " listed again in test dependency section"
         )
-    if (
-        missing_test_deps
-        or unknown_test_deps
-        or (unused_test_deps and error_unused_test_deps)
-    ):
-        passed = False
+    if missing_test_deps:
+        violations += 1
         print(
-            f"Found discrepancy between imported test dependencies and pyproject.toml!"
-            f"\nImported test dependencies not listed in pyproject.toml: {missing_test_deps}."
-            f"\nUnused test dependencies listed in pyproject.toml: {unused_test_deps}."
-            f"\nUnknown test dependencies: {unknown_test_deps}."
-            f"\n"
-            f"\nNOTE: Optional dependencies are currently not supported (PR welcome)."
-            f"\nNOTE: Workaround: use `importlib.import_module('optional_dependency')`."
+            "Detected test dependencies imported, but not listed in pyproject.toml:"
+            f" {missing_test_deps}."
         )
-    return passed
+    if unused_test_deps and error_unused_test_deps:
+        violations += 1
+        print(
+            "Detected test dependencies listed in pyproject.toml, but never imported:"
+            f" {unused_test_deps}."
+        )
+    if unknown_test_deps:
+        violations += 1
+        print(
+            "Detected dependencies that are not installed in the virtual environment:"
+            f" {unknown_test_deps}."
+        )
+    return violations
 
 
 def main() -> None:
@@ -588,7 +592,7 @@ def main() -> None:
     args = parser.parse_args()
 
     try:
-        passed = check_file(
+        violations = check_file(
             args.pyproject_file,
             modules=args.modules,
             tests=args.tests,
@@ -603,7 +607,8 @@ def main() -> None:
     except Exception as exc:
         raise RuntimeError(f'Checking file "{args.pyproject_file!s}" failed!') from exc
 
-    if not passed:
+    if violations:
+        print(f"{'-'*79}\nFound {violations} violations.")
         sys.exit(1)
 
 
