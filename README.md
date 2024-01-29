@@ -43,7 +43,7 @@ Excluded are:
 - functions of the form `def foo(self): ...` (self is excluded)
 - functions of the form `def foo(cls): ...` (cls is excluded)
 
-### `check-__all__-exists`
+### `check-dunder-all-exists`
 
 - Checks that `__all__` is defined in all modules.
 - Checks that `__all__` is defined at the top of the file.

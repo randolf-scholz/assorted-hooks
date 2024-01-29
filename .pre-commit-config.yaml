@@ -91,9 +91,9 @@ repos:
         types: [python]
         files: (^src/|^tests/)
         description: "Use standard generics (PEP-585): typing.Sequence -> abc.Sequence, typing.List -> list."
-      - id: python-check-__all__-exists
-        name: python-check-__all__-exists
-        entry: check-__all__-exists
+      - id: python-check-dunder-all-exists
+        name: python-check-dunder-all-exists
+        entry: check-dunder-all-exists
         language: python
         types: [python]
         files: ^src/
