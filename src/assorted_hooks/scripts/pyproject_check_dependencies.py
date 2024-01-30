@@ -453,30 +453,9 @@ def check_file(
         pyproject_dependencies=pyproject_dependencies,
         imported_dependencies=imported_dependencies,
     )
-    if missing_deps:
-        violations += 1
-        print(
-            f"Detected dependencies imported but not listed in pyproject.toml: {missing_deps}"
-        )
-    if unused_deps and error_unused_project_deps:
-        violations += 1
-        print(
-            f"Detected dependencies listed in pyproject.toml, but never imported: {unused_deps}"
-        )
-    if unknown_deps:
-        violations += 1
-        print(
-            f"Detected dependencies that are not installed in the virtual environment: {unknown_deps}"
-        )
+    # ----------------------------------------------------------------------------------
 
-    if violations:
-        print(
-            "\nNOTE: Optional dependencies are currently not supported (PR welcome)."
-            "\nNOTE: Workaround: use `importlib.import_module('optional_dependency')`."
-        )
-
-    # ---------------------------------------------------------------------------------------------
-
+    # region get test dependencies -----------------------------------------------------
     # compute the test dependencies from the test files
     excluded_dependencies |= imported_dependencies
     tests_given = tests is not TESTS_DEFAULT
@@ -497,7 +476,24 @@ def check_file(
     superfluous_test_deps = (
         imported_test_dependencies | pyproject_test_dependencies
     ) & pyproject_dependencies
+    # endregion get test dependencies --------------------------------------------------
 
+    # region emit violations -----------------------------------------------------------
+    if missing_deps:
+        violations += 1
+        print(
+            f"Detected dependencies imported but not listed in pyproject.toml: {missing_deps}"
+        )
+    if unused_deps and error_unused_project_deps:
+        violations += 1
+        print(
+            f"Detected dependencies listed in pyproject.toml, but never imported: {unused_deps}"
+        )
+    if unknown_deps:
+        violations += 1
+        print(
+            f"Detected dependencies that are not installed in the virtual environment: {unknown_deps}"
+        )
     if superfluous_test_deps and error_superfluous_test_deps:
         violations += 1
         print(
@@ -523,6 +519,14 @@ def check_file(
             "Detected dependencies that are not installed in the virtual environment:"
             f" {unknown_test_deps}."
         )
+    # endregion emit violations --------------------------------------------------------
+
+    if violations:
+        print(
+            "\nNOTE: Optional dependencies are currently not supported (PR welcome)."
+            "\nNOTE: Workaround: use `importlib.import_module('optional_dependency')`."
+        )
+
     return violations
 
 
