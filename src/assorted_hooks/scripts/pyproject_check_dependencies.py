@@ -453,16 +453,26 @@ def check_file(
         pyproject_dependencies=pyproject_dependencies,
         imported_dependencies=imported_dependencies,
     )
-    if missing_deps or unknown_deps or (unused_deps and error_unused_project_deps):
+    if missing_deps:
         violations += 1
         print(
-            f"Found discrepancy between imported dependencies and pyproject.toml!"
-            f"\nImported dependencies not listed in pyproject.toml: {missing_deps}."
-            f"\nUnused dependencies listed in pyproject.toml: {unused_deps}."
-            f"\nUnknown dependencies: {unknown_deps}."
-            f"\n"
-            f"\nNOTE: Optional dependencies are currently not supported (PR welcome)."
-            f"\nNOTE: Workaround: use `importlib.import_module('optional_dependency')`."
+            f"Detected dependencies imported but not listed in pyproject.toml: {missing_deps}"
+        )
+    if unused_deps and error_unused_project_deps:
+        violations += 1
+        print(
+            f"Detected dependencies listed in pyproject.toml, but never imported: {unused_deps}"
+        )
+    if unknown_deps:
+        violations += 1
+        print(
+            f"Detected dependencies that are not installed in the virtual environment: {unknown_deps}"
+        )
+
+    if violations:
+        print(
+            "\nNOTE: Optional dependencies are currently not supported (PR welcome)."
+            "\nNOTE: Workaround: use `importlib.import_module('optional_dependency')`."
         )
 
     # ---------------------------------------------------------------------------------------------
