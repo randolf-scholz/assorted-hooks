@@ -302,7 +302,7 @@ def get_deps_pyproject_tests(config: Config, /) -> set[str]:
                 f"\n {r_key:<20s} is missing, {missing_right=}."
             )
 
-    return set().union(deps)
+    return set().union(*deps.values())
 
 
 class GroupedDependencies(NamedTuple):
