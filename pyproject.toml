@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 # region project configuration ---------------------------------------------------------
 [project]
 name = "assorted-hooks"
-version = "0.1.52"
+version = "0.1.53"
 authors = [{name="Randolf Scholz", email="randolf.scholz@gmail.com"},]
 description = "Custom pre-commit hooks"
 
@@ -357,7 +357,7 @@ reportPrivateImportUsage = false
 # NOTE: currently unused https://docs.pytest.org/en/stable/reference/customize.html
 
 [tool.pytest.ini_options]
-minversion = "7.0"
+minversion = "8.0"
 testpaths = [ "src/", "tests/"]
 addopts = [
     "--doctest-modules",
