@@ -165,18 +165,16 @@ repos:
     hooks:
       - id: absolufy-imports
         files: (^src/|^tests/)
-  # isort
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        args: ["--check"]
   # ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.14
+    rev: v0.2.0
     hooks:
       - id: ruff
         files: (^src/|^tests/)
+      - id: ruff
+        name: ruff-isort
+        files: (^src/|^tests/)
+        args: ["--select", "I", "--fix"]
       - id: ruff-format
         files: (^src/|^tests/)
   # markdownlint
@@ -185,11 +183,12 @@ repos:
     hooks:
       - id: markdownlint
         args:
-            [
-                "--disable",
-                "MD013", # Line length
-                "--"  # otherwise files are interpreted as args
-            ]
+          [
+            "--disable",
+            "MD013", # Line length
+            "MD033", # Inline HTML
+            "--"  # otherwise files are interpreted as args
+          ]
   # mypy
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.8.0

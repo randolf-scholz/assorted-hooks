@@ -27,6 +27,7 @@ __all__ = [
 import argparse
 import ast
 import importlib
+import itertools
 import pkgutil
 import re
 import sys
@@ -258,68 +259,50 @@ def get_deps_pyproject_project(config: Config, /) -> set[str]:
 
 def get_deps_pyproject_tests(config: Config, /) -> set[str]:
     """Extract the test dependencies from a pyproject.toml file."""
-    dependencies = {
-        key: get_deps_pyproject_section(config, section=key)
-        for key in (
+    groups: dict[str, tuple[str, str]] = {
+        "optional-dependencies": (
             "project.optional-dependencies.test",
             "project.optional-dependencies.tests",
+        ),
+        "poetry": (
             "tool.poetry.group.test.dependencies",
             "tool.poetry.group.tests.dependencies",
-        )
+        ),
+        "pdm": (
+            "tool.pdm.dev-dependencies.test",
+            "tool.pdm.dev-dependencies.tests",
+        ),
     }
 
-    match (
-        dependencies["project.optional-dependencies.test"],
-        dependencies["project.optional-dependencies.tests"],
-    ):
-        case set(), set():
+    dependencies = {  # NOTE: NotImplemented is used to indicate missing sections.
+        section: get_deps_pyproject_section(config, section=section)
+        for group in groups.values()
+        for section in group
+    }
+
+    deps: dict[str, set[str]] = {}
+    for group_name, (test_key, tests_key) in groups.items():
+        match dependencies[test_key], dependencies[tests_key]:
+            case set(), set():
+                raise ValueError(f"Found both {test_key} and {tests_key}.")
+            case set() as left, _:
+                deps[group_name] = left
+            case _, set() as right:
+                deps[group_name] = right
+            case _:
+                pass
+
+    # make sure test dependencies are consistent
+    # iterate over all pairs:
+    for (l_key, l_val), (r_key, r_val) in itertools.combinations(deps.items(), 2):
+        if (missing_right := l_val - r_val) | (missing_left := r_val - l_val):
             raise ValueError(
-                "Found both [project.optional-dependencies.test]"
-                " and [project.optional-dependencies.tests]."
+                f"Found inconsistent test dependencies in pyproject.toml."
+                f"\n {l_key:<20s} is missing, {missing_left=}."
+                f"\n {r_key:<20s} is missing, {missing_right=}."
             )
-        case set() as a, _:
-            project_test_dependencies = a
-        case _, set() as b:
-            project_test_dependencies = b
-        case _:
-            project_test_dependencies = NotImplemented
 
-    match (
-        dependencies["tool.poetry.group.test.dependencies"],
-        dependencies["tool.poetry.group.tests.dependencies"],
-    ):
-        case set(), set():
-            raise ValueError(
-                "Found both [tool.poetry.group.test.dependencies]"
-                " and [tool.poetry.group.tests.dependencies]."
-            )
-        case set() as a, _:
-            poetry_test_dependencies = a
-        case _, set() as b:
-            poetry_test_dependencies = b
-        case _:
-            poetry_test_dependencies = NotImplemented
-
-    match (
-        project_test_dependencies,
-        poetry_test_dependencies,
-    ):
-        case set() as a, set() as b:
-            if (left := a - b) | (right := b - a):
-                raise ValueError(
-                    "Found different test dependencies in [project] and [tool.poetry]."
-                    f"\n [project]     is missing: {right}, "
-                    f"\n [tool.poetry] is missing: {left}."
-                )
-            test_dependencies = a
-        case set() as a, _:
-            test_dependencies = a
-        case _, set() as b:
-            test_dependencies = b
-        case _:
-            test_dependencies = set()
-
-    return test_dependencies
+    return set().union(deps)
 
 
 class GroupedDependencies(NamedTuple):

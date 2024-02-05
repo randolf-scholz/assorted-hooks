@@ -2,37 +2,29 @@
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
+# region project configuration ---------------------------------------------------------
 [project]
-requires-python = ">=3.11"
 name = "assorted-hooks"
-version = "0.1.51"
-
+version = "0.1.52"
 authors = [{name="Randolf Scholz", email="randolf.scholz@gmail.com"},]
 description = "Custom pre-commit hooks"
+
+# meta-information
 keywords = ["pre-commit"]
-license = {file = "LICENSE"}
+classifiers = []
+
+# package content
+license = {file="LICENSE"}
 readme = "README.md"
 
+# dependencies
+requires-python = ">=3.11"
 dependencies = []
-
-[project.optional-dependencies]
-dev = [
-    "pre-commit>=3.6.0",
-]
-test = [
-    "pytest>=8.0.0",
-    "pytest-benchmark[histogram]>=4.0.0",
-    "pytest-cov>=4.1.0",
-    "pytest-rerunfailures>=13.0",
-    "pytest-xdist>=3.5.0",
-]
-
 
 [project.urls]
 homepage = "https://github.com/randolf-scholz/assorted-hooks"
 documentation = "https://github.com/randolf-scholz/assorted-hooks"
 repository = "https://github.com/randolf-scholz/assorted-hooks"
-
 
 [project.scripts]
 check-dunder-all-exists = "assorted_hooks.check_dunder_all_exists:main"
@@ -45,101 +37,26 @@ check-clean-interface = "assorted_hooks.scripts.check_clean_interface:main"
 pyproject-check-deps = "assorted_hooks.scripts.pyproject_check_dependencies:main"
 pyproject-update-deps = "assorted_hooks.scripts.pyproject_update_dependencies:main"
 pyproject-validate-version = "assorted_hooks.scripts.pyproject_validate_version:main"
+# endregion project configuration ------------------------------------------------------
 
-# region flake8 configuration ----------------------------------------------------------
-[tool.flake8]
-max-line-length = 120
 
-# ANN: Annotations
-# A:   builtins
-# B:   bugbear
-# B9:  bugbear future proof
-# BLK: black
-# C:   mccabe / comprehensions
-# D:   docstring
-# E:   pycodestyle errors
-# F:   pyflakes warnings
-# I:   import-order
-# M:   flake8 extension for mutable default arguments
-# RST: restructured text
-# W:   pycodestyle warnings
-# Y:   type hinting in stub files
-# select = B,B9,BLK,C,D,E,F,I,S,W
 
-#filename = [
-#    "src/",
-#    "tests/",
-#    "examples/",
-#    "docs/conf.py",
-#    "run/",
-#    "dev/",
-#]
-
-ignore = [
-    "ANN10",  # ANN10 Missing type annotation for self in method
-    "ANN10",  # ANN10 Missing type annotation for cls in classmethod
-    "ANN40",  # ANN40 Dynamically typed expressions (typing.Any) are disallowed
-    "B024",   # B024 BaseDatasetMetaClass is an abstract base class, but it has no abstract methods
-    "D102",   # D102 Missing docstring in public method
-    "D105",   # D105 Missing docstring in magic method
-    "D107",   # D107 Missing docstring in __init__
-    "E202",   # E202 whitespace before ']'
-    "E203",   # E203 whitespace before ':'
-    "E241",   # E241 multiple spaces after ','
-    "E704",   # E704 multiple statements on one line (def)
-    "E741",   # E741 ambiguous variable nam
-    "W503",   # W503 line break before binary operator
+# region development dependencies ------------------------------------------------------
+[tool.pdm.dev-dependencies]
+dev = [
+    "pre-commit>=3.6.0",
+    "ruff>=0.2.0",
+    "ruff-lsp>=0.0.51",
 ]
-per-file-ignores = ["tests/*:D103"]
-
-#Google Python style is not RST until after processed by Napoleon
-#See https://github.com/peterjc/flake8-rst-docstrings/issues/17
-extend-ignore = [
-    "D407",    # Missing dashed underline after section
-    "RST201",  # Unexpected indentation.
-    "RST203",  # Definition list ends without a blank line# unexpected unindent.
-    "RST301",  # Block quote ends without a blank line# unexpected unindent.
-    # "ANN101",  # Missing type annotation for self in method
-    # "ANN201",  # Missing return type annotation for public function
-    # "RST303",  # Unknown directive type
-    # "RST304",  # Unknown interpreted text role
+test = [
+    "pytest>=8.0.0",
+    "pytest-benchmark[histogram]>=4.0.0",
+    "pytest-cov>=4.1.0",
+    "pytest-rerunfailures>=13.0",
+    "pytest-xdist>=3.5.0",
 ]
+# endregion development.dependencies ---------------------------------------------------
 
-exclude = [
-    "*.pyi",
-    "./.git",
-    "./.idea",
-    "./.venv",
-    "./bugs",
-    "./build",
-    "./dev",
-    "./scripts",
-    "./venv",
-]
-
-# Annotations plugin
-# Suppress ANN200-level errors for functions that have no return (return None)
-suppress-none-returning = true
-allow-untyped-defs = true
-
-# docstring plugin
-docstring-convention = "google"
-rst-roles = [
-    "mod",
-    "func",
-    "data",
-    "const",
-    "class",
-    "meth",
-    "attr",
-    "exc",
-    "obj",
-]
-rst-directives = [
-    "Signature",
-    "literalinclude",
-]
-# endregion flake8 configuration -------------------------------------------------------
 
 
 # region ruff configuration ------------------------------------------------------------
@@ -148,10 +65,6 @@ src = ["src/"]
 indent-width = 4
 line-length = 88
 target-version = "py311"
-
-[tool.ruff.per-file-ignores]
-"src/tsdm/linalg/*" = ["FBT001", "FBT002"]
-"src/tsdm/metrics/*" = ["PLR6301"]
 
 [tool.ruff.lint]
 select = [
@@ -267,7 +180,8 @@ docstring-code-line-length = "dynamic"
 # endregion ruff configuration ---------------------------------------------------------
 
 
-# region PyLint Configuration ----------------------------------------------------------
+
+# region pylint Configuration ----------------------------------------------------------
 [tool.pylint]
 [tool.pylint."MESSAGES CONTROL"]
 enable= [
@@ -312,7 +226,7 @@ max-line-length=120
 # List of members which are set dynamically and missed by pylint inference system, and so shouldn't
 # trigger E1101 when accessed. Python regular expressions are accepted.
 generated-members=["numpy.*", "torch.*"]
-# endregion PyLint Configuration -------------------------------------------------------
+# endregion pylint Configuration -------------------------------------------------------
 
 
 
@@ -401,47 +315,7 @@ ignore_missing_imports = true
 
 
 
-# region isort Configuration -----------------------------------------------------------
-[tool.isort]
-# isort profiles: black, django, pycharm, google, open_stack, plone, attrs, hug, wemake, appnexus
-# black-compatible: black, appnexus
-py_version=311
-profile="black"
-src_paths=["src/", "tests/"]
-combine_as_imports = true
-# flake8-profiles: appnexus, cryptography, edited, google, pep8, pycharm, smarkets
-# black-compatible: black, appnexus
-# endregion isort Configuration --------------------------------------------------------
-
-
-
-# region Black Configuration -----------------------------------------------------------
-[tool.black]
-line-length = 88
-target-version = ['py311']
-color = true
-# endregion Black Configuration --------------------------------------------------------
-
-
-
-# region Pydocstyle Configuration ------------------------------------------------------
-[tool.pydocstyle]
-convention = "google"
-#count = true
-# https://github.com/PyCQA/pydocstyle/issues/363
-#match = '.*\.py$'
-#match = '(?!test_).*\.py$'
-match_dir = '^(?!(.venv|bugs|dev|.*ipynb_checkpoints)).*'
-add-ignore = [
-    "D105",    # Missing docstring in magic method
-    "D102",    # Missing docstring in public method
-    "D107",    # Missing docstring in __init__
-]
-# endregion Pydocstyle Configuration ---------------------------------------------------
-
-
-
-# region Pyright Configuration ---------------------------------------------------------
+# region pyright Configuration ---------------------------------------------------------
 [tool.pyright]
 root = ""
 venv = ".venv"
@@ -465,7 +339,7 @@ reportMissingImports = false
 reportMissingTypeStubs = false
 reportUnsupportedDunderAll = false
 reportPrivateImportUsage = false
-# endregion Pyright Configuration ------------------------------------------------------
+# endregion pyright Configuration ------------------------------------------------------
 
 
 
