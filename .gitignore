@@ -1,6 +1,11 @@
 # region custom ########################################################################
-# jupyterlab_lsp
-.virtual_documents
+# hidden directories
+.*/
+!.idea/
+
+# pytest
+reports/
+tests/**/reports/
 # endregion custom #####################################################################
 
 
