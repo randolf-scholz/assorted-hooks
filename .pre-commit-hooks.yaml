@@ -63,26 +63,26 @@
 
 
 # region ast-based ---------------------------------------------------------------------
-- id: python-use-imported-attributes
-  name: python-use-imported-attributes
-  entry: check-imported-attributes
+- id: python-direct-imports
+  name: python-direct-imports
+  entry: check-direct-imports
   language: python
   types: [python]
   description: "Checks that Bar is used instead of foo.Bar if both foo and Bar are imported."
-- id: python-check-no-mixed-args
-  name: python-check-no-mixed-args
+- id: python-no-mixed-args
+  name: python-no-mixed-args
   entry: check-no-mixed-args
   language: python
   types: [python]
   description: "Check for disallowing positional_or_keyword arguments."
-- id: python-check-standard-generics
-  name: python-check-standard-generics
+- id: python-standard-generics
+  name: python-standard-generics
   entry: check-standard-generics
   language: python
   types: [python]
   description: "Use standard generics (PEP-585): typing.Sequence -> abc.Sequence, typing.List -> list."
-- id: python-check-dunder-all-exists
-  name: python-check-dunder-all-exists
+- id: python-dunder-all-exists
+  name: python-dunder-all-exists
   entry: check-dunder-all-exists
   language: python
   types: [python]
@@ -97,28 +97,37 @@
 # endregion ast-based ------------------------------------------------------------------
 
 
-# region bash ------------------------------------------------------------------
-- id: shellcheck
-  name: shellcheck
-  language: system
-  types: [shell]
-  description: "ShellCheck, a static analysis tool for shell scripts."
-  entry: shellcheck
-  args:
-    - "--shell=bash"
-    - "--color=always"
-    - "--format=gcc"
+# region latex -------------------------------------------------------------------------
 - id: chktex
   name: chktex
   language: system
   types: [tex]
   description: "ChkTeX, a LaTeX semantic checker."
-  entry: chktex
-  args:
-    - "--format=%f:%l:%c %m [%k %n]\n"
-    - "--quiet"
+  entry: "chktex --format='%f:%l:%c %m [%k %n]\n' --quiet"
+  args:  # default configuration
     - "--erroron=all"
-    - "--"
+    - "--nowarn=1"   # Command terminated with space.
+    - "--nowarn=3"   # Enclose previous parentheses with `{}`.
+    - "--nowarn=19"  # Use "’" (ASCII 39) instead of "’" (ASCII 180) [reason: unicode]
+    - "--nowarn=21"  # `\TeX.` instead of `\TeX\.` [reason: false positive `\},`]
+    - "--nowarn=22"  # used for displaying comments in the output
+    - "--nowarn=46"  # Use \(...\) in text mode instead of $...$.
+  # region previous configuration ------------------------------------------------------
+  #  args:
+  #    - "--format=%f:%l:%c %m [%k %n]\n"
+  #    - "--quiet"
+  #    - "--erroron=all"
+  #    - "--nowarn=1"   # Command terminated with space.
+  #    - "--nowarn=3"   # Enclose previous parentheses with `{}`.
+  #    - "--nowarn=19"  # Use "’" (ASCII 39) instead of "’" (ASCII 180) [reason: unicode]
+  #    - "--nowarn=21"  # `\TeX.` instead of `\TeX\.` [reason: false positive `\},`]
+  #    - "--nowarn=22"  # used for displaying comments in the output
+  #    - "--nowarn=30"  # tabs vs spaces
+  #    - "--nowarn=41"  # TeX primitives should not be used
+  #    - "--nowarn=44"  # vertical rules in tables are ugly.
+  #    - "--nowarn=46"  # Use \(...\) in text mode instead of $...$.
+  #    - "--"  # otherwise files are interpreted as args
+  # endregion previous configuration ---------------------------------------------------
 - id: lacheck
   name: lacheck
   description: "A consistency checker for LaTeX documents"
@@ -126,4 +135,8 @@
   types: [tex]
   files: \.tex$
   entry: bash -c '! printf "%s\n" "$@" | xargs -I _ lacheck _ | grep .' --
-# endregion bash ---------------------------------------------------------------
+  # NOTE: lacheck only takes a single file at a time, so we need to use xargs
+  # NOTE: lacheck always returns 0, so we need to grep for output
+  # NOTE: grep has exit code 1 if no matches are found, so we need to invert with `!`
+  # NOTE: We add a `--` to the end of the command to ensure that no filenames are interpreted as arguments
+# endregion latex ----------------------------------------------------------------------

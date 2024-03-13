@@ -8,27 +8,26 @@ repos:
   - repo: https://github.com/randolf-scholz/assorted-hooks
     rev: v0.1.55
     hooks:
-    # scripts
+    # script-based hooks
     - id: pyproject-validate-version
     - id: pyproject-update-deps
     - id: pyproject-check-deps
     - id: python-check-clean-interface
-    # pygrep hooks
+    # pygrep-based hooks
     - id: check-separator-length
     - id: python-no-blanket-type-ignore
     - id: python-no-builtin-eval
     - id: python-consider-using-raw-string
     # ast-based hooks
-    - id: python-use-imported-attributes
+    - id: python-direct-imports
     - id: python-check-no-mixed-args
-    - id: python-check-standard-generics
-    - id: python-check-dunder-all-exists
+    - id: python-standard-generics
+    - id: python-dunder-all
     - id: python-check-typing
       files: ^src/
     # bash
     - id: chktex
     - id: lacheck
-    - id: shellcheck
   # https://pre-commit.com/hooks.html
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
@@ -114,6 +113,12 @@ repos:
             "MD033", # Inline HTML
             "--"  # otherwise files are interpreted as args
           ]
+  # shellcheck
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.6
+    hooks:
+      - id: shellcheck
+        args: [ "--shell=bash", "--color=always", "--format=gcc" ]
   # mypy
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.9.0

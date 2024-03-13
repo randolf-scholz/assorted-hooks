@@ -2,48 +2,43 @@
 
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
-## python-based hooks (using AST — will not import your code)
+[ast-based hooks](#ast-based-hooks) | [script-based hooks](#script-based-hooks) | [pygrep-based hooks](#pygrep-based-hooks) | [latex hooks](#latex-hooks)
 
-## `check-imported-attributes`
 
-This hook checks that if both a module is imported and some class/function from that module, always the directly imported symbol is used.
+## AST-based Hooks
+
+### `python-direct-imports`
+
+This hook checks that if both a module is imported and some class/function from that module, always the directly imported symbol is used:
 
 ```python
-import collections.abc as abc
-from collections.abc import Sequence
+import collections
+from collections import defaultdict  # <- directly imported
 
-def foo(x: Sequence) -> Sequence:
-    assert isinstance(x, abc.Sequence)  # <- use Sequence instead of abc.Sequence
-    return x
+d = collections.defaultdict(int)  # <- use defaultdict directly!
 ```
 
-## `prefer-abc-typing`
+### `python-standard-generics`
 
-Checks that `collections.abc` is used instead of `typing` for Protocols (`Sequence`, `Mapping`, etc.).
+Checks that `collections.abc` is used instead of `typing`/`typing_extensions` whenever possible,
+for example for `Sequence`, `Mapping`, etc.
 
-## `python-no-mixed-args`
+### `python-no-mixed-args`
 
-Checks that all function definitions allow no `POSITIONAL_OR_KEYWORD` arguments. Only `POSITIONAL_ONLY`, `KEYWORD_ONLY`, `VAR_POSITIONAL` and `VAR_KEYWORD` are allowed.
-
+Checks that all function definitions allow no `POSITIONAL_OR_KEYWORD` arguments.
+Only `POSITIONAL_ONLY`, `KEYWORD_ONLY`, `VAR_POSITIONAL` and `VAR_KEYWORD` are allowed.
+Excludes are lambda functions, functions inside docstrings, and the arguments `self` and `cls`.
 Options:
 
-- `--allow-one` allows a single `POSITIONAL_OR_KEYWORD` argument
-  This is often ok, since there is no ambiguity of the order of arguments.
-- `--ignore-overloads`: skip function defs that are overloads of other function defs. (default: `True`)
-- `--ignore-names`: skip function defs with specific names (default: `[]`)
-- `--ignore-decorators`: skip function defs with specific decorators (default: `[]`)
+- `--allow-one` allows a single `POSITIONAL_OR_KEYWORD` argument. This is often ok, since there is no ambiguity of the order of arguments. (default: `False`)
 - `--ignore-dunder`: skip function defs that are dunder methods (default: `False`)
 - `--ignore-private`: skip function defs that are private (default: `False`)
+- `--ignore-overloads`: skip function defs that are overloads of other function defs. (default: `True`)
 - `--ignore-without-positional-only`: skip function defs that don't have any `POSITIONAL_ONLY` arguments. (default: `False`)
+- `--ignore-names *names`: skip function defs with specific names (default: `[]`)
+- `--ignore-decorators *names`: skip function defs with specific decorators (default: `[]`)
 
-Excluded are:
-
-- Lambdas
-- functions inside docstrings
-- functions of the form `def foo(self): ...` (self is excluded)
-- functions of the form `def foo(cls): ...` (cls is excluded)
-
-### `check-dunder-all-exists`
+### `python-dunder-all`
 
 - Checks that `__all__` is defined in all modules.
 - Checks that `__all__` is defined at the top of the file.
@@ -52,14 +47,7 @@ Excluded are:
 - Checks that `__all__` is not defined multiple times.
 - Checks that `__all__` is not superfluous (i.e. contains all symbols defined in the module)
 
-### `check-clean-interface`
-
-- Checks that `dir(module)` is equal to `__all__` (i.e. that `__all__` contains all symbols defined in the module).
-- By default only applies to packages (i.e.`__init__.py` files).
-- Generally if something is not in `__all__` it should not be used outside the module, functions, classes and constants
-  that are not exported should be given a name with a single leading underscore: `_private`
-
-### `check-typing`
+### `python-check-typing`
 
 AST based linting rules for python type hints. By default, all checks are disabled.
 
@@ -74,15 +62,9 @@ AST based linting rules for python type hints. By default, all checks are disabl
 - `--check-no-tuple-isinstance`: checks that unions are used instead of tuples in isinstance.
 - `--check-no-union-isinstance`: checks that tuples are used instead of unions in isinstance.
 
-### `check_naming_convention` (not implemented yet)
+## Script-based hooks
 
-Checks that naming conventions are followed. Defaults:
-
-- constants: exported: `UPPERCASE_WITH_UNDERSCORES`, internal: `_UPPERCASE_WITH_UNDERSCORES`, special: `__dunder__`
-- functions: exported: `snake_case`, internal: `_snake_case`, special: `__dunder__`
-- classes: exported: `PascalCase`, internal: `_PascalCase`, special: `__dunder__`
-
-## Script-based hooks (may import your code)
+⚠️ These hooks may import your code. ⚠️
 
 ### `pyproject-validate-version`
 
@@ -110,6 +92,14 @@ Analyzes all `import`-statements and makes sure all third-party dependencies are
 applied to test-dependencies as well. This catches missing implicit dependencies, for example package `panads`
 depends on `numpy` but numpy should still be listed in `pyproject.toml` if it is used explicitly.
 
+### `check-clean-interface`
+
+- Checks that `dir(module)` is equal to `__all__` (i.e. that `__all__` contains all symbols defined in the module).
+- By default only applies to packages (i.e.`__init__.py` files).
+- Generally if something is not in `__all__` it should not be used outside the module, functions, classes and constants
+  that are not exported should be given a name with a single leading underscore: `_private`
+
+
 ## pygrep-based hooks
 
 ### `python-no-blanket-type-ignore`
@@ -128,15 +118,52 @@ A modified version of the hook at <https://github.com/pre-commit/pygrep-hooks>.
 
 ### `check-separator-length`
 
-Tests that "line-break" comments a la
+Tests that "line-break" comments terminate at column 88.
 
 ```python
-# ------------------------------------------------------
+# region implementation -------------------- <-- should terminate at column 88
 ```
 
-are exactly 88 characters long.
+
 
 ### `python-consider-using-raw-string`
 
 Hints that triple quoted strings should be raw strings (convention).
 Ignores triple quoted f-strings.
+
+## $\LaTeX$ Hooks
+
+### `chktex` ($\LaTeX$ linter)
+
+**Default configuration:** All checks are enabled except for
+- `1`: *Command terminated with space.* (see <https://tex.stackexchange.com/q/552210>)
+- `3`: *Enclose previous parentheses with `{}`.* (see <https://tex.stackexchange.com/q/529937>)
+- `19`: *You should use "`’`" (ASCII 39) instead of "`’`" (ASCII 180).* (gets confused by unicode[^warn19])
+- `21`: *This command might not be intended.* (see <https://tex.stackexchange.com/q/473080>)
+- `22`: *Comment displayed.* (not useful in the context of `pre-commit`)
+- `30`: *Multiple spaces detected in output.*  (not useful when using spaces for indentation)
+- `46`: *Use `\(...\)` instead of `$...$`.* (see <https://tex.stackexchange.com/q/510>)
+
+**Usage Recommendations:**
+- `30`: Consider enabling when using tabs for indentation.
+- `41`: Keep enabled, but put `% chktex-file 41` inside `.sty` and `.cls` files.
+- `44`: For block-matrices, the `nicematrix` package is recommended. Otherwise, it is suggested to allow individual tables by adding a `% chktex 44` comment after `\begin{tabular}{...}`.
+
+### `lacheck` ($\LaTeX$ linter)
+
+**Note:** `lacheck` does not offer any configuration options.
+
+## WIP Hooks
+
+### `check_naming_convention` (not implemented yet)
+
+Checks that naming conventions are followed. Defaults:
+
+- constants: exported: `UPPERCASE_WITH_UNDERSCORES`, internal: `_UPPERCASE_WITH_UNDERSCORES`, special: `__dunder__`
+- functions: exported: `snake_case`, internal: `_snake_case`, special: `__dunder__`
+- classes: exported: `PascalCase`, internal: `_PascalCase`, special: `__dunder__`
+
+
+[//]: # (footnotes)
+
+[^warn19]: <https://github.com/nscaife/linter-chktex/issues/30>

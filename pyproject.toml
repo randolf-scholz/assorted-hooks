@@ -36,12 +36,13 @@ documentation = "https://github.com/randolf-scholz/assorted-hooks"
 repository = "https://github.com/randolf-scholz/assorted-hooks"
 
 [project.scripts]
-check-dunder-all-exists = "assorted_hooks.check_dunder_all_exists:main"
-check-imported-attributes = "assorted_hooks.check_imported_attributes:main"
+# ast hooks
+check-dunder-all = "assorted_hooks.check_dunder_all:main"
+check-direct-imports = "assorted_hooks.check_direct_imports:main"
 check-no-mixed-args = "assorted_hooks.check_no_mixed_args:main"
 check-standard-generics = "assorted_hooks.check_standard_generics:main"
 check-typing = "assorted_hooks.check_typing:main"
-# scripts
+# script hooks
 check-clean-interface = "assorted_hooks.scripts.check_clean_interface:main"
 pyproject-check-deps = "assorted_hooks.scripts.pyproject_check_dependencies:main"
 pyproject-update-deps = "assorted_hooks.scripts.pyproject_update_dependencies:main"
