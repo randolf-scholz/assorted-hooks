@@ -110,7 +110,7 @@
       - "--rankdir=BT"
       - "--max-bacon=1"
       - "--"
-      - 'src/$(basename "$(pwd)")'
+      - $PWD
 - id: shellcheck
   name: shellcheck
   language: system
