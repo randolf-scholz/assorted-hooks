@@ -6,7 +6,7 @@ default_language_version:
 repos:
   # test with pre-commit try-repo ../assorted-hooks --verbose --all-files
   - repo: https://github.com/randolf-scholz/assorted-hooks
-    rev: v0.1.56
+    rev: v0.1.57
     hooks:
     # script-based hooks
     - id: pyproject-validate-version
@@ -25,7 +25,7 @@ repos:
     - id: python-dunder-all
     - id: python-check-typing
       files: ^src/
-    # bash
+    # latex hooks
     - id: chktex
     - id: lacheck
   # https://pre-commit.com/hooks.html
