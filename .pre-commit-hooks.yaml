@@ -98,19 +98,6 @@
 
 
 # region bash ------------------------------------------------------------------
-- id: pydeps
-  name: pydeps
-  language: system
-  pass_filenames: false
-  stages: [manual]
-  description: "pydeps, a tool for visualizing dependencies in Python projects."
-  entry: pydeps
-  args:
-      - "--cluster"
-      - "--rankdir=BT"
-      - "--max-bacon=1"
-      - "--"
-      - $PWD
 - id: shellcheck
   name: shellcheck
   language: system

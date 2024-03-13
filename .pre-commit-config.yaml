@@ -137,3 +137,12 @@ repos:
     hooks:
       - id: pyright
         files: (^src/|^tests/)
+  # pydeps
+  - repo: https://github.com/thebjorn/pydeps
+    rev: v1.12.19
+    hooks:
+      - id: pydeps
+        args:
+        - "--cluster"
+        - "--rankdir=BT"
+        - "--max-bacon=1"
