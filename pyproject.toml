@@ -70,12 +70,17 @@ test = [
 
 # region ruff configuration ------------------------------------------------------------
 [tool.ruff]
-src = ["src/"]
+src = ["src/", "tests/"]
 indent-width = 4
 line-length = 88
 target-version = "py311"
+output-format = "concise"
 
 [tool.ruff.lint]
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
 select = [
     "A",     # builtins
     "B",     # bugbear
@@ -124,6 +129,7 @@ ignore = [
     "PLC2401",  # non-ascii-name
     "PLR0124",  # Name compared with itself
     "PLR2004",  # Magic value used in comparison
+    "PLR6301",  # no-self-use
     "PLW1641",  # Object does not implement __hash__ method
     # pylint "too-many-*" rules
     "PLR0904",  # Too many public methods
@@ -149,16 +155,13 @@ ignore = [
     "RUF012",  # Mutable class attributes should be annotated with typing.ClassVar # FIXME: PEP 603
     "RUF013",  # PEP 484 prohibits implicit Optional # FIXME: https://github.com/astral-sh/ruff/issues/9334
     "RUF022",  # __all__ not sorted
+    "RUF023",  # __slots__ not sorted
+    "RUF025",  # use dict.fromkeys instead of dict comprehension
     # tryceratops
     "TRY003",  # Avoid specifying long messages outside the exception class
     # refurb
     "FURB140", # reimplemented-starmap (less efficient than comprehension)
 ]
-
-# Allow fix for all enabled rules (when `--fix`) is provided.
-fixable = ["ALL"]
-unfixable = []
-
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -173,10 +176,6 @@ mark-parentheses = false
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
-
-
-[tool.ruff.lint.pylint]
-allow-dunder-method-names = ["__array__", "__dataframe__", "_repr_html_", "__pre_init__"]
 
 [tool.ruff.format]
 preview = true
