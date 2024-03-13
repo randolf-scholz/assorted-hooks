@@ -29,8 +29,6 @@ repos:
     - id: chktex
     - id: lacheck
     - id: mypy
-    - id: pydeps
-      args: ["src/assorted_hooks"]
     - id: shellcheck
   # https://pre-commit.com/hooks.html
   - repo: https://github.com/pre-commit/pre-commit-hooks
