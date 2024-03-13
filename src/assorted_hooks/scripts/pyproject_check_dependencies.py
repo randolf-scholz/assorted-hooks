@@ -37,20 +37,6 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any, NamedTuple, TypeAlias
 
-Config: TypeAlias = dict[str, Any]
-
-MODULES_DEFAULT = ("src/",)
-TESTS_DEFAULT = ("tests/",)
-
-# https://peps.python.org/pep-0508/#names
-# NOTE: we modify this regex a bit to allow to match inside context
-RE_NAME = re.compile(r"""\b[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?\b""")
-NAME = RE_NAME.pattern
-RE_NAME_GROUP = re.compile(rf"""(?P<name>{NAME})""")
-NAME_GROUP = RE_NAME_GROUP.pattern
-assert RE_NAME_GROUP.groups == 1, f"{RE_NAME_GROUP.groups=}."
-
-
 # import metadata library
 for __metadata_lib in (
     ["importlib.metadata", "importlib_metadata"]
@@ -81,6 +67,20 @@ else:
         "This pre-commit hook runs in the local interpreter and requires a suitable TOML-library!"
         " Please use python≥3.11 or install one of 'tomlkit' or 'tomli'."
     )
+
+
+Config: TypeAlias = dict[str, Any]
+
+MODULES_DEFAULT = ("src/",)
+TESTS_DEFAULT = ("tests/",)
+
+# https://peps.python.org/pep-0508/#names
+# NOTE: we modify this regex a bit to allow to match inside context
+RE_NAME = re.compile(r"""\b[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?\b""")
+NAME = RE_NAME.pattern
+RE_NAME_GROUP = re.compile(rf"""(?P<name>{NAME})""")
+NAME_GROUP = RE_NAME_GROUP.pattern
+assert RE_NAME_GROUP.groups == 1, f"{RE_NAME_GROUP.groups=}."
 
 PACKAGES: dict[str, list[str]] = metadata.packages_distributions()
 r"""A dictionary that maps module names to their pip-package names."""

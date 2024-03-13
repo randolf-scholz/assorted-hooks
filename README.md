@@ -65,6 +65,13 @@ AST based linting rules for python type hints. By default, all checks are disabl
 
 ⚠️ These hooks may import your code. ⚠️
 
+### `python-clean-interface`
+
+- Checks that `dir(module)` is equal to `__all__` (i.e. that `__all__` contains all symbols defined in the module).
+- By default only applies to packages (i.e.`__init__.py` files).
+- Generally if something is not in `__all__` it should not be used outside the module, functions, classes and constants
+  that are not exported should be given a name with a single leading underscore: `_private`
+
 ### `pyproject-validate-version`
 
 Verifies that the version in `pyproject.toml` adheres to [PEP 440](https://www.python.org/dev/peps/pep-0440/).
@@ -90,13 +97,6 @@ Updates dependencies in `pyproject.toml`.
 Analyzes all `import`-statements and makes sure all third-party dependencies are listed in `pyproject.toml`. Can be
 applied to test-dependencies as well. This catches missing implicit dependencies, for example package `panads`
 depends on `numpy` but numpy should still be listed in `pyproject.toml` if it is used explicitly.
-
-### `check-clean-interface`
-
-- Checks that `dir(module)` is equal to `__all__` (i.e. that `__all__` contains all symbols defined in the module).
-- By default only applies to packages (i.e.`__init__.py` files).
-- Generally if something is not in `__all__` it should not be used outside the module, functions, classes and constants
-  that are not exported should be given a name with a single leading underscore: `_private`
 
 ## pygrep-based hooks
 

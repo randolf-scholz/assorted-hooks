@@ -24,11 +24,11 @@
   language: script
   name: pyproject-check-deps
   types: [toml]
-- id: python-check-clean-interface
+- id: python-clean-interface
   description: "Check for clean interface."
   entry: "./src/assorted_hooks/scripts/check_clean_interface.py"
   language: script
-  name: python-check-clean-interface
+  name: python-clean-interface
   require_serial: true # otherwise module is loaded multiple times
   types: [python]
 # endregion scripts --------------------------------------------------------------------
@@ -36,64 +36,64 @@
 
 # region pygrep ------------------------------------------------------------------------
 - id: check-separator-length
-  name: check-separator-length
+  description: "Check that 'line-break'-comments are the right length (default: 88)."
   entry: ^#(.{0,83}|.{85,})([-=═─—])\2{2}$
   language: pygrep
+  name: check-separator-length
   types: [python]
-  description: "Check that 'line-break'-comments are the right length (default: 88)."
 - id: python-no-blanket-type-ignore
-  name: python-no-blanket-type-ignore
+  description: "Enforce that `# type: ignore` annotations always specify codes."
   entry: '.# *type: *ignore(?!\[)'
   language: pygrep
+  name: python-no-blanket-type-ignore
   types: [python]
-  description: "Enforce that `# type: ignore` annotations always specify codes."
 - id: python-no-builtin-eval
-  name: python-no-builtin-eval
+  description: "Disallows eval() but allows obj.eval()."
   entry: '(?<!def\s)(?<!\.)\b(builtins\.)?(eval\()'
   language: pygrep
+  name: python-no-builtin-eval
   types: [python]
-  description: "Disallows eval() but allows obj.eval()."
 - id: python-consider-using-raw-string
-  name: python-consider-using-raw-string
+  description: "Checks that triple quoted strings are raw (docstrings)."
   entry: '\s+"""\S'
   language: pygrep
+  name: python-consider-using-raw-string
   types: [python]
-  description: "Checks that triple quoted strings are raw (docstrings)."
 # endregion pygrep ---------------------------------------------------------------------
 
 
 # region ast-based ---------------------------------------------------------------------
 - id: python-direct-imports
-  name: python-direct-imports
+  description: "Checks that Bar is used instead of foo.Bar if both foo and Bar are imported."
   entry: check-direct-imports
   language: python
+  name: python-direct-imports
   types: [python]
-  description: "Checks that Bar is used instead of foo.Bar if both foo and Bar are imported."
 - id: python-no-mixed-args
-  name: python-no-mixed-args
+  description: "Check for disallowing positional_or_keyword arguments."
   entry: check-no-mixed-args
   language: python
+  name: python-no-mixed-args
   types: [python]
-  description: "Check for disallowing positional_or_keyword arguments."
 - id: python-standard-generics
-  name: python-standard-generics
+  description: "Use standard generics (PEP-585): typing.Sequence -> abc.Sequence, typing.List -> list."
   entry: check-standard-generics
   language: python
+  name: python-standard-generics
   types: [python]
-  description: "Use standard generics (PEP-585): typing.Sequence -> abc.Sequence, typing.List -> list."
 - id: python-dunder-all
-  name: python-dunder-all
-  entry: check-dunder-all
-  language: python
-  types: [python]
-  exclude: '^(.*\/)?test_.*\.py$'
   description: "Check that __all__ exists. `test_*.py` files are excluded by default."
+  entry: check-dunder-all
+  exclude: '^(.*\/)?test_.*\.py$'
+  language: python
+  name: python-dunder-all
+  types: [python]
 - id: python-check-typing
-  name: python-check-typing
+  description: "AST-based linting rule for type-hints."
   entry: check-typing
   language: python
+  name: python-check-typing
   types: [python]
-  description: "AST-based linting rule for type-hints."
 # endregion ast-based ------------------------------------------------------------------
 
 

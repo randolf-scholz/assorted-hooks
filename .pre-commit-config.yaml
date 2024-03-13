@@ -12,7 +12,7 @@ repos:
     - id: pyproject-validate-version
     - id: pyproject-update-deps
     - id: pyproject-check-deps
-    - id: python-check-clean-interface
+    - id: python-clean-interface
     # pygrep-based hooks
     - id: check-separator-length
     - id: python-no-blanket-type-ignore
