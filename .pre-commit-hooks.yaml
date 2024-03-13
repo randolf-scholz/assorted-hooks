@@ -81,9 +81,9 @@
   language: python
   types: [python]
   description: "Use standard generics (PEP-585): typing.Sequence -> abc.Sequence, typing.List -> list."
-- id: python-dunder-all-exists
-  name: python-dunder-all-exists
-  entry: check-dunder-all-exists
+- id: python-dunder-all
+  name: python-dunder-all
+  entry: check-dunder-all
   language: python
   types: [python]
   exclude: '^(.*\/)?test_.*\.py$'
