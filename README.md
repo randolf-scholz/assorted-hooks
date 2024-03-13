@@ -4,7 +4,6 @@
 
 [ast-based hooks](#ast-based-hooks) | [script-based hooks](#script-based-hooks) | [pygrep-based hooks](#pygrep-based-hooks) | [latex hooks](#latex-hooks)
 
-
 ## AST-based Hooks
 
 ### `python-direct-imports`
@@ -99,7 +98,6 @@ depends on `numpy` but numpy should still be listed in `pyproject.toml` if it is
 - Generally if something is not in `__all__` it should not be used outside the module, functions, classes and constants
   that are not exported should be given a name with a single leading underscore: `_private`
 
-
 ## pygrep-based hooks
 
 ### `python-no-blanket-type-ignore`
@@ -124,8 +122,6 @@ Tests that "line-break" comments terminate at column 88.
 # region implementation -------------------- <-- should terminate at column 88
 ```
 
-
-
 ### `python-consider-using-raw-string`
 
 Hints that triple quoted strings should be raw strings (convention).
@@ -136,6 +132,7 @@ Ignores triple quoted f-strings.
 ### `chktex` ($\LaTeX$ linter)
 
 **Default configuration:** All checks are enabled except for
+
 - `1`: *Command terminated with space.* (see <https://tex.stackexchange.com/q/552210>)
 - `3`: *Enclose previous parentheses with `{}`.* (see <https://tex.stackexchange.com/q/529937>)
 - `19`: *You should use "`’`" (ASCII 39) instead of "`’`" (ASCII 180).* (gets confused by unicode[^warn19])
@@ -145,6 +142,7 @@ Ignores triple quoted f-strings.
 - `46`: *Use `\(...\)` instead of `$...$`.* (see <https://tex.stackexchange.com/q/510>)
 
 **Usage Recommendations:**
+
 - `30`: Consider enabling when using tabs for indentation.
 - `41`: Keep enabled, but put `% chktex-file 41` inside `.sty` and `.cls` files.
 - `44`: For block-matrices, the `nicematrix` package is recommended. Otherwise, it is suggested to allow individual tables by adding a `% chktex 44` comment after `\begin{tabular}{...}`.
@@ -162,7 +160,6 @@ Checks that naming conventions are followed. Defaults:
 - constants: exported: `UPPERCASE_WITH_UNDERSCORES`, internal: `_UPPERCASE_WITH_UNDERSCORES`, special: `__dunder__`
 - functions: exported: `snake_case`, internal: `_snake_case`, special: `__dunder__`
 - classes: exported: `PascalCase`, internal: `_PascalCase`, special: `__dunder__`
-
 
 [//]: # (footnotes)
 

@@ -20,7 +20,7 @@ repos:
     - id: python-consider-using-raw-string
     # ast-based hooks
     - id: python-direct-imports
-    - id: python-check-no-mixed-args
+    - id: python-no-mixed-args
     - id: python-standard-generics
     - id: python-dunder-all
     - id: python-check-typing
