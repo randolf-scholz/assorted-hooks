@@ -605,7 +605,7 @@ def main() -> None:
         raise RuntimeError(f'Checking file "{args.pyproject_file!s}" failed!') from exc
 
     if violations:
-        print(f"{'-'*79}\nFound {violations} violations.")
+        print(f"{'-' * 79}\nFound {violations} violations.")
         sys.exit(1)
 
 

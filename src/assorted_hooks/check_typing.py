@@ -145,7 +145,7 @@ def check_overload_default_ellipsis(tree: AST, /, *, fname: str) -> int:
         pos_args = pos_args[-len(pos_defaults) :] if pos_defaults else []
         for arg, default in zip(pos_args, pos_defaults, strict=True):
             match default:
-                case None | Constant(value=builtins.Ellipsis):
+                case Constant(value=builtins.Ellipsis):
                     continue
                 case _:
                     violations += 1
@@ -459,5 +459,5 @@ def main() -> None:
             raise RuntimeError(f"{file!s}: Checking file failed!") from exc
 
     if violations:
-        print(f"{'-'*79}\nFound {violations} violations.")
+        print(f"{'-' * 79}\nFound {violations} violations.")
         sys.exit(1)

@@ -28,7 +28,6 @@ repos:
     # bash
     - id: chktex
     - id: lacheck
-    - id: mypy
     - id: shellcheck
   # https://pre-commit.com/hooks.html
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -121,7 +120,7 @@ repos:
     hooks:
       - id: mypy
         files: (^src/|^tests/)
-        additional_dependencies: [types-all]
+        additional_dependencies: [types-all-latest]
         args:
           [
             "--hide-error-context",
@@ -140,7 +139,12 @@ repos:
     rev: v1.12.19
     hooks:
       - id: pydeps
+        pass_filenames: false
+        stages: [manual]
+        additional_dependencies: [graphviz]
+        entry: pydeps
         args:
         - "--cluster"
         - "--rankdir=BT"
         - "--max-bacon=1"
+        - "src/assorted_hooks"

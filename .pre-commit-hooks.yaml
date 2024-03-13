@@ -108,13 +108,6 @@
     - "--shell=bash"
     - "--color=always"
     - "--format=gcc"
-- id: mypy
-  name: mypy
-  entry: mypy
-  language: system
-  types_or: [python, pyi]
-  require_serial: true
-  description: "Mypy, a static type checker for Python."
 - id: chktex
   name: chktex
   language: system
