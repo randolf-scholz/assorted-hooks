@@ -4,106 +4,128 @@ default_language_version:
   python: python3.11
   node: "20.10.0"
 repos:
-  #  - repo: meta
-  #    hooks:
-  #      - id: identity
-  - repo: local
+#  - repo: local
+#    hooks:
+#      # pyproject.toml
+#      - id: pyproject-validate-version
+#        name: pyproject-validate-version
+#        entry: "./src/assorted_hooks/scripts/pyproject_validate_version.py"
+#        files: ^pyproject\.toml$
+#        language: script
+#        types: [toml]
+#        description: "Validate python version (PEP-440)."
+#      - id: pyproject-update-deps
+#        name: pyproject-update-deps
+#        entry: "./src/assorted_hooks/scripts/pyproject_update_dependencies.py"
+#        files: ^pyproject\.toml$
+#        language: script
+#        stages: [manual]
+#        types: [toml]
+#        description: "Update dependencies to >=currently_installed. (default: manual)"
+#      - id: pyproject-check-deps
+#        name: pyproject-check-deps
+#        entry: "./src/assorted_hooks/scripts/pyproject_check_dependencies.py"
+#        files: ^pyproject\.toml$
+#        language: script
+#        types: [toml]
+#        description: "Check that listed dependencies are used in code and vice-versa."
+#      # scripts
+#      - id: python-check-clean-interface
+#        name: python-check-clean-interface
+#        entry: "./src/assorted_hooks/scripts/check_clean_interface.py"
+#        require_serial: true # otherwise module is loaded multiple times
+#        language: script
+#        types: [python]
+#        files: ^src/
+#        description: "Check for clean interface."
+#      # pygrep
+#      - id: check-separator-length
+#        name: check-separator-length
+#        entry: ^#(.{0,83}|.{85,})([-=═─—])\2{2}$
+#        language: pygrep
+#        types: [python]
+#        files: (^src/|^tests/)
+#        description: "Check that 'line-break'-comments are the right length (default: 88)."
+#      - id: python-no-blanket-type-ignore
+#        name: python-no-blanket-type-ignore
+#        entry: '.# *type: *ignore(?!\[)'
+#        language: pygrep
+#        types: [python]
+#        files: (^src/|^tests/)
+#        description: "Enforce that `# type: ignore` annotations always specify codes."
+#      - id: python-no-builtin-eval
+#        name: python-no-builtin-eval
+#        entry: '(?<!def\s)(?<!\.)\b(builtins\.)?(eval\()'
+#        language: pygrep
+#        types: [python]
+#        files: (^src/|^tests/)
+#        description: "Disallows eval() but allows obj.eval()."
+#      #      - id: python-consider-using-raw-string
+#      #        name: python-consider-using-raw-string
+#      #        entry: '\s+"""\S'
+#      #        language: pygrep
+#      #        types: [python]
+#      #        description: "Checks that triple quoted strings are raw (docstrings)."
+#      # ast-based
+#      - id: python-use-imported-attributes
+#        name: python-use-imported-attributes
+#        entry: check-imported-attributes
+#        language: python
+#        types: [python]
+#        files: (^src/|^tests/)
+#        description: "Checks that Bar is used instead of foo.Bar if both foo and Bar are imported."
+#      - id: python-check-no-mixed-args
+#        name: python-check-no-mixed-args
+#        entry: check-no-mixed-args
+#        language: python
+#        types: [python]
+#        files: (^src/|^tests/)
+#        description: "Check for disallowing positional_or_keyword arguments."
+#      - id: python-check-standard-generics
+#        name: python-check-standard-generics
+#        entry: check-standard-generics
+#        language: python
+#        types: [python]
+#        files: (^src/|^tests/)
+#        description: "Use standard generics (PEP-585): typing.Sequence -> abc.Sequence, typing.List -> list."
+#      - id: python-check-dunder-all-exists
+#        name: python-check-dunder-all-exists
+#        entry: check-dunder-all-exists
+#        language: python
+#        types: [python]
+#        files: ^src/
+#        description: "Check that __all__ exists."
+#      - id: python-check-typing
+#        name: python-check-typing
+#        entry: check-typing
+#        language: python
+#        types: [python]
+#        description: "AST-based linting rule for type-hints."
+  - repo: https://github.com/randolf-scholz/assorted-hooks
+    rev: v0.1.54
     hooks:
-      # pyproject.toml
-      - id: pyproject-validate-version
-        name: pyproject-validate-version
-        entry: "./src/assorted_hooks/scripts/pyproject_validate_version.py"
-        files: ^pyproject\.toml$
-        language: script
-        types: [toml]
-        description: "Validate python version (PEP-440)."
-      - id: pyproject-update-deps
-        name: pyproject-update-deps
-        entry: "./src/assorted_hooks/scripts/pyproject_update_dependencies.py"
-        files: ^pyproject\.toml$
-        language: script
-        stages: [manual]
-        types: [toml]
-        description: "Update dependencies to >=currently_installed. (default: manual)"
-      - id: pyproject-check-deps
-        name: pyproject-check-deps
-        entry: "./src/assorted_hooks/scripts/pyproject_check_dependencies.py"
-        files: ^pyproject\.toml$
-        language: script
-        types: [toml]
-        description: "Check that listed dependencies are used in code and vice-versa."
-      # scripts
-      - id: python-check-clean-interface
-        name: python-check-clean-interface
-        entry: "./src/assorted_hooks/scripts/check_clean_interface.py"
-        require_serial: true # otherwise module is loaded multiple times
-        language: script
-        types: [python]
-        files: ^src/
-        description: "Check for clean interface."
-      # pygrep
-      - id: check-separator-length
-        name: check-separator-length
-        entry: ^#(.{0,83}|.{85,})([-=═─—])\2{2}$
-        language: pygrep
-        types: [python]
-        files: (^src/|^tests/)
-        description: "Check that 'line-break'-comments are the right length (default: 88)."
-      - id: python-no-blanket-type-ignore
-        name: python-no-blanket-type-ignore
-        entry: '.# *type: *ignore(?!\[)'
-        language: pygrep
-        types: [python]
-        files: (^src/|^tests/)
-        description: "Enforce that `# type: ignore` annotations always specify codes."
-      - id: python-no-builtin-eval
-        name: python-no-builtin-eval
-        entry: '(?<!def\s)(?<!\.)\b(builtins\.)?(eval\()'
-        language: pygrep
-        types: [python]
-        files: (^src/|^tests/)
-        description: "Disallows eval() but allows obj.eval()."
-      #      - id: python-consider-using-raw-string
-      #        name: python-consider-using-raw-string
-      #        entry: '\s+"""\S'
-      #        language: pygrep
-      #        types: [python]
-      #        description: "Checks that triple quoted strings are raw (docstrings)."
-      # ast-based
-      - id: python-use-imported-attributes
-        name: python-use-imported-attributes
-        entry: check-imported-attributes
-        language: python
-        types: [python]
-        files: (^src/|^tests/)
-        description: "Checks that Bar is used instead of foo.Bar if both foo and Bar are imported."
-      - id: python-check-no-mixed-args
-        name: python-check-no-mixed-args
-        entry: check-no-mixed-args
-        language: python
-        types: [python]
-        files: (^src/|^tests/)
-        description: "Check for disallowing positional_or_keyword arguments."
-      - id: python-check-standard-generics
-        name: python-check-standard-generics
-        entry: check-standard-generics
-        language: python
-        types: [python]
-        files: (^src/|^tests/)
-        description: "Use standard generics (PEP-585): typing.Sequence -> abc.Sequence, typing.List -> list."
-      - id: python-check-dunder-all-exists
-        name: python-check-dunder-all-exists
-        entry: check-dunder-all-exists
-        language: python
-        types: [python]
-        files: ^src/
-        description: "Check that __all__ exists."
-      - id: python-check-typing
-        name: python-check-typing
-        entry: check-typing
-        language: python
-        types: [python]
-        description: "AST-based linting rule for type-hints."
+    # scripts
+    - id: pyproject-validate-version
+    - id: pyproject-update-deps
+    - id: pyproject-check-deps
+    - id: python-check-clean-interface
+    # pygrep hooks
+    - id: check-separator-length
+    - id: python-no-blanket-type-ignore
+    - id: python-no-builtin-eval
+    - id: python-consider-using-raw-string
+    # ast-based hooks
+    - id: python-use-imported-attributes
+    - id: python-check-no-mixed-args
+    - id: python-check-standard-generics
+    - id: python-check-dunder-all-exists
+    - id: python-check-typing
+    # bash
+    - id: chktex
+    - id: lacheck
+    - id: mypy
+    - id: pydeps
+    - id: shellcheck
   # https://pre-commit.com/hooks.html
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
@@ -167,7 +189,7 @@ repos:
         files: (^src/|^tests/)
   # ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.2.0
+    rev: v0.3.2
     hooks:
       - id: ruff
         files: (^src/|^tests/)
@@ -191,7 +213,7 @@ repos:
           ]
   # mypy
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+    rev: v1.9.0
     hooks:
       - id: mypy
         files: (^src/|^tests/)
@@ -205,7 +227,7 @@ repos:
           ]
   # pyright
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.349
+    rev: v1.1.353
     hooks:
       - id: pyright
         files: (^src/|^tests/)

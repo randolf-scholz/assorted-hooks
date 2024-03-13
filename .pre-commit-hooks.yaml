@@ -1,36 +1,39 @@
 # Custom hooks for pre-commit.
 
+
 # region scripts -----------------------------------------------------------------------
 - id: pyproject-validate-version
-  name: pyproject-validate-version
+  description: "Validate python version (PEP-440)."
   entry: "./src/assorted_hooks/scripts/pyproject_validate_version.py"
   files: ^pyproject\.toml$
   language: script
+  name: pyproject-validate-version
   types: [toml]
-  description: "Validate python version (PEP-440)."
 - id: pyproject-update-deps
-  name: pyproject-update-deps
+  description: "Update dependencies to >=currently_installed. (default: manual)"
   entry: "./src/assorted_hooks/scripts/pyproject_update_dependencies.py"
   files: ^pyproject\.toml$
   language: script
+  name: pyproject-update-deps
   stages: [manual]
   types: [toml]
-  description: "Update dependencies to >=currently_installed. (default: manual)"
 - id: pyproject-check-deps
-  name: pyproject-check-deps
+  description: "Check that listed dependencies are used in code and vice-versa."
   entry: "./src/assorted_hooks/scripts/pyproject_check_dependencies.py"
   files: ^pyproject\.toml$
   language: script
+  name: pyproject-check-deps
   types: [toml]
-  description: "Check that listed dependencies are used in code and vice-versa."
 - id: python-check-clean-interface
-  name: python-check-clean-interface
-  require_serial: true # otherwise module is loaded multiple times
+  description: "Check for clean interface."
   entry: "./src/assorted_hooks/scripts/check_clean_interface.py"
   language: script
+  name: python-check-clean-interface
+  require_serial: true # otherwise module is loaded multiple times
   types: [python]
-  description: "Check for clean interface."
 # endregion scripts --------------------------------------------------------------------
+
+
 # region pygrep ------------------------------------------------------------------------
 - id: check-separator-length
   name: check-separator-length
@@ -57,6 +60,8 @@
   types: [python]
   description: "Checks that triple quoted strings are raw (docstrings)."
 # endregion pygrep ---------------------------------------------------------------------
+
+
 # region ast-based ---------------------------------------------------------------------
 - id: python-use-imported-attributes
   name: python-use-imported-attributes
@@ -89,3 +94,55 @@
   types: [python]
   description: "AST-based linting rule for type-hints."
 # endregion ast-based ------------------------------------------------------------------
+
+
+# region bash ------------------------------------------------------------------
+- id: pydeps
+  name: pydeps
+  language: system
+  pass_filenames: false
+  stages: [manual]
+  description: "pydeps, a tool for visualizing dependencies in Python projects."
+  entry: pydeps
+  args:
+      - "--cluster"
+      - "--rankdir=BT"
+      - "--max-bacon=1"
+      - "--"
+      - 'src/$(basename "$(pwd)")'
+- id: shellcheck
+  name: shellcheck
+  language: system
+  types: [shell]
+  description: "ShellCheck, a static analysis tool for shell scripts."
+  entry: shellcheck
+  args:
+    - "--shell=bash"
+    - "--color=always"
+    - "--format=gcc"
+- id: mypy
+  name: mypy
+  entry: mypy
+  language: system
+  types_or: [python, pyi]
+  require_serial: true
+  description: "Mypy, a static type checker for Python."
+- id: chktex
+  name: chktex
+  language: system
+  types: [tex]
+  description: "ChkTeX, a LaTeX semantic checker."
+  entry: chktex
+  args:
+    - "--format=%f:%l:%c %m [%k %n]\n"
+    - "--quiet"
+    - "--erroron=all"
+    - "--"
+- id: lacheck
+  name: lacheck
+  description: "A consistency checker for LaTeX documents"
+  language: system
+  types: [tex]
+  files: \.tex$
+  entry: bash -c '! printf "%s\n" "$@" | xargs -I _ lacheck _ | grep .' --
+# endregion bash ---------------------------------------------------------------
