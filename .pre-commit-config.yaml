@@ -6,7 +6,7 @@ default_language_version:
 repos:
   # test with pre-commit try-repo ../assorted-hooks --verbose --all-files
   - repo: https://github.com/randolf-scholz/assorted-hooks
-    rev: v0.1.57
+    rev: v0.1.58
     hooks:
     # script-based hooks
     - id: pyproject-validate-version
@@ -135,7 +135,7 @@ repos:
           ]
   # pyright
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.353
+    rev: v1.1.354
     hooks:
       - id: pyright
         files: (^src/|^tests/)
