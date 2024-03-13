@@ -36,7 +36,7 @@ __logger__ = logging.getLogger(__name__)
 
 
 def is_pure_attribute(node: AST, /) -> TypeGuard[Attribute]:
-    """Check whether a node is a pure attribute."""
+    r"""Check whether a node is a pure attribute."""
     match node:
         case Attribute(value=value):
             return isinstance(value, Name) or is_pure_attribute(value)
@@ -45,14 +45,14 @@ def is_pure_attribute(node: AST, /) -> TypeGuard[Attribute]:
 
 
 def get_pure_attributes(tree: AST, /) -> Iterator[Attribute]:
-    """Get all nodes that consist only of attributes."""
+    r"""Get all nodes that consist only of attributes."""
     for node in ast.walk(tree):
         if is_pure_attribute(node):
             yield node
 
 
 def get_full_attribute_parent(node: Attribute | Name, /) -> tuple[Name, str]:
-    """Get the parent of an attribute node."""
+    r"""Get the parent of an attribute node."""
     match node:
         case Attribute(value=Attribute() | Name() as value, attr=attr):
             parent, string = get_full_attribute_parent(value)
@@ -64,7 +64,7 @@ def get_full_attribute_parent(node: Attribute | Name, /) -> tuple[Name, str]:
 
 
 def get_imported_symbols(tree: AST, /) -> dict[str, str]:
-    """Get all imported symbols."""
+    r"""Get all imported symbols."""
     imported_symbols = {}
 
     for node in ast.walk(tree):
@@ -81,7 +81,7 @@ def get_imported_symbols(tree: AST, /) -> dict[str, str]:
 
 
 def get_imported_attributes(tree: AST, /) -> Iterator[tuple[Attribute, Name, str]]:
-    """Finds attributes that can be replaced by directly imported symbols."""
+    r"""Finds attributes that can be replaced by directly imported symbols."""
     imported_symbols = get_imported_symbols(tree)
 
     for node in get_pure_attributes(tree):
@@ -106,7 +106,7 @@ def get_imported_attributes(tree: AST, /) -> Iterator[tuple[Attribute, Name, str
 
 
 def check_file(file_path: Path, /, *, debug: bool = False) -> int:
-    """Finds shadowed attributes in a file."""
+    r"""Finds shadowed attributes in a file."""
     violations = 0
 
     # Your code here
@@ -133,7 +133,7 @@ def check_file(file_path: Path, /, *, debug: bool = False) -> int:
 
 
 def main() -> None:
-    """Main function."""
+    r"""Main function."""
     parser = argparse.ArgumentParser(
         description="Checks that Bar is used instead of foo.Bar if both foo and Bar are imported.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,

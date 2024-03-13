@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Validate version strings in pyproject.toml.
+r"""Validate version strings in pyproject.toml.
 
 References:
     - https://peps.python.org/pep-0440
@@ -38,7 +38,7 @@ else:
 
 
 def ignore_subgroups(pattern: str | re.Pattern, /) -> str:
-    """Ignore all named groups in the given pattern."""
+    r"""Ignore all named groups in the given pattern."""
     pattern = pattern if isinstance(pattern, str) else pattern.pattern
     return re.sub(r"\(\?P<[^>]+>", r"(?:", pattern)
 
@@ -82,7 +82,7 @@ assert "version" in RE_VERSION_GROUP.groupindex, f"{RE_VERSION_GROUP.groupindex=
 
 
 def get_version(pyproject: dict, /) -> str:
-    """Get the version from pyproject.toml."""
+    r"""Get the version from pyproject.toml."""
     try:
         project_version = pyproject["project"]["version"]
     except KeyError:
@@ -113,7 +113,7 @@ def get_version(pyproject: dict, /) -> str:
 
 
 def validate_version(version: str, /, *, debug: bool = False) -> bool:
-    """Validate a version string."""
+    r"""Validate a version string."""
     passed = True
     match = RE_VERSION_GROUP.match(version)
 
@@ -134,7 +134,7 @@ def validate_version(version: str, /, *, debug: bool = False) -> bool:
 
 
 def check_file(fname: str, /, *, debug: bool = False) -> bool:
-    """Get the version from pyproject.toml."""
+    r"""Get the version from pyproject.toml."""
     with open(fname, "rb") as file:
         toml = tomllib.load(file)
 
@@ -145,7 +145,7 @@ def check_file(fname: str, /, *, debug: bool = False) -> bool:
 
 
 def main() -> None:
-    """Main program."""
+    r"""Main program."""
     parser = argparse.ArgumentParser(
         description="Validate version strings in pyproject.toml.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,

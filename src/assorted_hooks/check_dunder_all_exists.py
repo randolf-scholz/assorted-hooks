@@ -36,7 +36,7 @@ __logger__ = logging.getLogger(__name__)
 
 
 def is_main(node: AST, /) -> bool:
-    """Check whether node is `if __name__ == "__main__":` check."""
+    r"""Check whether node is `if __name__ == "__main__":` check."""
     match node:
         case ast.If(
             test=ast.Compare(
@@ -51,7 +51,7 @@ def is_main(node: AST, /) -> bool:
 
 
 def is__all__node(node: AST, /) -> TypeGuard[Assign | AnnAssign | AugAssign]:
-    """Check whether a node is __all__."""
+    r"""Check whether a node is __all__."""
     match node:
         case Assign(targets=targets):
             names = [target.id for target in targets if isinstance(target, Name)]
@@ -66,7 +66,7 @@ def is__all__node(node: AST, /) -> TypeGuard[Assign | AnnAssign | AugAssign]:
 
 
 def is_future_import(node: AST, /) -> bool:
-    """Check whether a node is a future import."""
+    r"""Check whether a node is a future import."""
     match node:
         case ImportFrom(module=module):
             return module == "__future__"
@@ -77,7 +77,7 @@ def is_future_import(node: AST, /) -> bool:
 
 
 def is_literal_list(node: AST, /) -> bool:
-    """Check whether node is a literal list of strings."""
+    r"""Check whether node is a literal list of strings."""
     # match node:
     #     case List(elts=[*Constant(value=str())]):
     #         return True
@@ -89,7 +89,7 @@ def is_literal_list(node: AST, /) -> bool:
 
 
 def is_superfluous(tree: Module, /) -> bool:
-    """Check whether __all__ is superfluous."""
+    r"""Check whether __all__ is superfluous."""
     # Basically, superfluous is the case if the file
     # only contains statements and expressions that do not produce locals.
     # currently this function just checks if there is only a single assignment
@@ -113,7 +113,7 @@ def is_superfluous(tree: Module, /) -> bool:
 
 
 def is_at_top(node: Assign | AnnAssign, /, *, module: Module) -> bool:
-    """Check whether node is at the top of the module.
+    r"""Check whether node is at the top of the module.
 
     The only things allowed before __all__ are:
         - module docstring
@@ -130,7 +130,7 @@ def is_at_top(node: Assign | AnnAssign, /, *, module: Module) -> bool:
 
 
 def get_duplicate_keys(node: Assign | AnnAssign | AugAssign, /) -> set[str]:
-    """Check if __all__ node has duplicate keys."""
+    r"""Check if __all__ node has duplicate keys."""
     assert node.value is not None, "Expected __all__ to have a value."
     assert is_literal_list(node.value), "Expected literal list."
     elements = Counter(el.value for el in node.value.elts)  # type: ignore[attr-defined]
@@ -138,7 +138,7 @@ def get_duplicate_keys(node: Assign | AnnAssign | AugAssign, /) -> set[str]:
 
 
 def get__all__nodes(tree: Module, /) -> Iterator[Assign | AnnAssign | AugAssign]:
-    """Get the __all__ node from the tree."""
+    r"""Get the __all__ node from the tree."""
     # NOTE: we are only interested in the module body.
     for node in tree.body:
         if is__all__node(node):
@@ -157,7 +157,7 @@ def check_file(
     warn_multiple_definitions: bool = True,
     warn_superfluous: bool = True,
 ) -> int:
-    """Check a single file."""
+    r"""Check a single file."""
     with open(fname, "rb") as file:
         tree = ast.parse(file.read())
 
@@ -209,7 +209,7 @@ def check_file(
 
 
 def main():
-    """Main program."""
+    r"""Main program."""
     parser = argparse.ArgumentParser(
         description="Check that __all__ exists.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,

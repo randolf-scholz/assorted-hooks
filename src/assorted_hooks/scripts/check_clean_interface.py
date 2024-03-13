@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Check for clean interface."""
+r"""Check for clean interface."""
 
 __all__ = [
     "check_file",
@@ -32,7 +32,7 @@ def get_python_files(
     raise_notfound: bool = True,
     relative_to_root: bool = True,
 ) -> list[Path]:
-    """Get all python files from the given list of files or patterns."""
+    r"""Get all python files from the given list of files or patterns."""
     root = (Path.cwd() if root is None else root).absolute()
     files: list[Path] = []
 
@@ -60,13 +60,13 @@ def get_python_files(
 
 
 def is_private(s: str, /) -> bool:
-    """True if starts exactly a single underscore."""
+    r"""True if starts exactly a single underscore."""
     assert s.isidentifier(), f"{s=} is not an identifier!"
     return s.startswith("_") and not s.startswith("__")
 
 
 def is_dunder(s: str, /) -> bool:
-    """True if starts and ends with two underscores."""
+    r"""True if starts and ends with two underscores."""
     assert s.isidentifier(), f"{s=} is not an identifier!"
     return (
         s.startswith("__")
@@ -77,7 +77,7 @@ def is_dunder(s: str, /) -> bool:
 
 
 def is_package(module: ModuleType, /) -> bool:
-    """True if module is a package."""
+    r"""True if module is a package."""
     return module.__name__ in {module.__package__, "__init__"}
 
 
@@ -92,7 +92,7 @@ def check_module(
     ignore_private_attributes: bool,
     ignore_private_modules: bool,
 ) -> int:
-    """Check a single module."""
+    r"""Check a single module."""
     violations = 0
 
     module_name = module.__name__
@@ -164,7 +164,7 @@ def check_file(
     ignore_private_modules: bool,
     load_silent: bool = True,
 ) -> int:
-    """Check a single file."""
+    r"""Check a single file."""
     path = Path(fname)
     module_name = path.stem
 
@@ -198,7 +198,7 @@ def check_file(
 
 
 def main() -> None:
-    """Main program."""
+    r"""Main program."""
     parser = argparse.ArgumentParser(
         description="Use standard generics (PEP-585): typing.Sequence -> abc.Sequence, typing.List -> list.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,

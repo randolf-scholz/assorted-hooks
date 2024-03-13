@@ -25,7 +25,7 @@ def get_python_files(
     raise_notfound: bool = True,
     relative_to_root: bool = True,
 ) -> list[Path]:
-    """Get all python files from the given list of files or patterns."""
+    r"""Get all python files from the given list of files or patterns."""
     root = (Path.cwd() if root is None else root).absolute()
     files: list[Path] = []
 
@@ -61,11 +61,11 @@ KEYWORDS: list[str] = [
     "assert"    , "del",        "global",     "not",        "with",
     "async"     , "elif",       "if",         "or",         "yield",
 ]  # fmt: skip
-"""Python builtin keywords, cf. https://docs.python.org/3/reference/lexical_analysis.html#keywords."""
+r"""Python builtin keywords, cf. https://docs.python.org/3/reference/lexical_analysis.html#keywords."""
 
 
 SOFT_KEYWORDS: list[str] = ["match", "case", "_"]
-"""Python soft keywords, cf. https://docs.python.org/3/reference/lexical_analysis.html#soft-keywords."""
+r"""Python soft keywords, cf. https://docs.python.org/3/reference/lexical_analysis.html#soft-keywords."""
 
 BUILTIN_FUNCTIONS: list[str] = [
     # A
@@ -109,7 +109,7 @@ BUILTIN_FUNCTIONS: list[str] = [
     # _
     "__import__",
 ]  # fmt: skip
-"""Builtin functions, cf. https://docs.python.org/3/library/functions.html."""
+r"""Builtin functions, cf. https://docs.python.org/3/library/functions.html."""
 
 BUILTIN_CONSTANTS: list[str] = [
     "False",
@@ -119,10 +119,10 @@ BUILTIN_CONSTANTS: list[str] = [
     "Ellipsis",
     "__debug__",
 ]
-"""Builtin constants, cf. https://docs.python.org/3/library/constants.html."""
+r"""Builtin constants, cf. https://docs.python.org/3/library/constants.html."""
 
 BUILTIN_SITE_CONSTANTS: list[str] = ["copyright", "credits", "license", "exit", "quit"]
-"""cf. https://docs.python.org/3/library/constants.html#constants-added-by-the-site-module"""
+r"""cf. https://docs.python.org/3/library/constants.html#constants-added-by-the-site-module"""
 
 BUILTIN_EXCEPTIONS: list[str] = [
     # A
@@ -173,4 +173,4 @@ BUILTIN_EXCEPTIONS: list[str] = [
     # Z
     "ZeroDivisionError",
 ]  # fmt: skip
-"""Builtin exceptions, cf. https://docs.python.org/3/library/exceptions.html."""
+r"""Builtin exceptions, cf. https://docs.python.org/3/library/exceptions.html."""

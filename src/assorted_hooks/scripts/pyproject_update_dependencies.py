@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Updates the pyproject.toml dependencies to the currently installed versions.
+r"""Updates the pyproject.toml dependencies to the currently installed versions.
 
 References:
     - (Final) PEP 440 – Version Identification and dependency Specification
@@ -68,13 +68,13 @@ from re import Pattern
 
 
 def ignore_subgroups(pattern: str | Pattern, /) -> str:
-    """Ignore all named groups in the given pattern."""
+    r"""Ignore all named groups in the given pattern."""
     pattern = pattern if isinstance(pattern, str) else pattern.pattern
     return re.sub(r"\(\?P<[^>]+>", r"(?:", pattern)
 
 
 def is_dependency_pattern(pattern: str | Pattern, /) -> bool:
-    """Check whether the pattern includes the 3 named groups {'dependency', 'name', 'version'}."""
+    r"""Check whether the pattern includes the 3 named groups {'dependency', 'name', 'version'}."""
     if not isinstance(pattern, Pattern):
         pattern = re.compile(pattern)
     return {"dependency", "name", "version"} <= pattern.groupindex.keys()
@@ -215,14 +215,14 @@ REGEXPS: dict[str, Pattern] = {
 
 @cache
 def get_pip_package_dict() -> dict[str, str]:
-    """Construct dictionary package -> version."""
+    r"""Construct dictionary package -> version."""
     output = subprocess.check_output(["pip", "list", "--format=json"])
     pip_list: list[dict[str, str]] = json.loads(output)
     return {pkg["name"].lower(): pkg["version"] for pkg in pip_list}
 
 
 def strip_version(version: str, /) -> str:
-    """Strip the version string to the first three parts."""
+    r"""Strip the version string to the first three parts."""
     # get numeric part of version
     numeric_version = re.search(RE_VERSION_NUMERIC_GROUP, version)
     assert numeric_version is not None
@@ -249,7 +249,7 @@ def strip_version(version: str, /) -> str:
 def update_versions(
     raw_pyproject_file: str, /, *, dependency_pattern: str | Pattern
 ) -> str:
-    """Update the dependencies in pyproject.toml according to version_pattern."""
+    r"""Update the dependencies in pyproject.toml according to version_pattern."""
     if not isinstance(dependency_pattern, Pattern):
         dependency_pattern = re.compile(dependency_pattern)
 
@@ -301,7 +301,7 @@ def update_versions(
 
 
 def check_file(fname: str, /, *, autofix: bool = True, debug: bool = False) -> bool:
-    """Update the dependencies in pyproject.toml."""
+    r"""Update the dependencies in pyproject.toml."""
     passed = True
 
     with open(fname, "r", encoding="utf8") as file:
@@ -331,7 +331,7 @@ def check_file(fname: str, /, *, autofix: bool = True, debug: bool = False) -> b
 
 
 def main() -> None:
-    """Run the script."""
+    r"""Run the script."""
     parser = argparse.ArgumentParser(
         description="Updates the pyproject.toml dependencies to the currently installed versions.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,

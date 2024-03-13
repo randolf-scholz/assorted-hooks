@@ -89,7 +89,7 @@ assert all(f"typing.{method}" in REPLACEMENTS for method in METHODS)
 
 
 def get_deprecated_aliases(node: AST, /) -> frozenset[str]:
-    """Get all deprecated aliases from a node."""
+    r"""Get all deprecated aliases from a node."""
     match node:
         case Attribute(attr=attr, value=Name(id=name)):
             return KEYS & {f"{name}.{attr}"}
@@ -102,7 +102,7 @@ def get_deprecated_aliases(node: AST, /) -> frozenset[str]:
 
 
 def check_file(fname: str | Path, /) -> int:
-    """Check a single file."""
+    r"""Check a single file."""
     violations = 0
 
     with open(fname, "r", encoding="utf8") as file:
@@ -118,7 +118,7 @@ def check_file(fname: str | Path, /) -> int:
 
 
 def main() -> None:
-    """Main program."""
+    r"""Main program."""
     parser = argparse.ArgumentParser(
         description="Use standard generics (PEP-585): typing.Sequence -> abc.Sequence, typing.List -> list.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,

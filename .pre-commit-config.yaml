@@ -120,6 +120,7 @@ repos:
     - id: python-check-standard-generics
     - id: python-check-dunder-all-exists
     - id: python-check-typing
+      files: ^src/
     # bash
     - id: chktex
     - id: lacheck

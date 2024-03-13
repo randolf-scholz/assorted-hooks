@@ -25,7 +25,7 @@ Actions: TypeAlias = Literal[
 
 @dataclass
 class argument:
-    """Wraps add_argument, similar to `dataclasses.field`."""
+    r"""Wraps add_argument, similar to `dataclasses.field`."""
 
     action: Actions = NotImplemented  # pyright: ignore
     choices: Container = NotImplemented
@@ -40,7 +40,7 @@ class argument:
 
 @dataclass
 class argparser:
-    """Argument parser."""
+    r"""Argument parser."""
 
     prog: str = NotImplemented
     usage: str = NotImplemented
@@ -58,12 +58,12 @@ class argparser:
 
 
 def parse_args() -> None:
-    """Parse the args."""
+    r"""Parse the args."""
 
 
 @dataclass_transform()
 def make_parser(cls: type[T], /) -> type[T]:
-    """Perform dataclass transform to create an argparser instance.
+    r"""Perform dataclass transform to create an argparser instance.
 
     This will do the following:
         - ClassVar Fields: description

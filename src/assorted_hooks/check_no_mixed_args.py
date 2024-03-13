@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # type: ignore
 # FIXME: https://github.com/python/mypy/issues/11673
-"""Disallow mixed positional and keyword arguments in function-defs."""
+r"""Disallow mixed positional and keyword arguments in function-defs."""
 
 __all__ = [
     "check_file",
@@ -32,11 +32,11 @@ from assorted_hooks.utils import get_python_files
 __logger__ = logging.getLogger(__name__)
 
 Func: TypeAlias = FunctionDef | AsyncFunctionDef
-"""Type alias for function-defs."""
+r"""Type alias for function-defs."""
 
 
 def get_full_attribute_name(node: Call | Attribute | Name, /) -> str:
-    """Get the parent of an attribute node."""
+    r"""Get the parent of an attribute node."""
     match node:
         case Call(func=Attribute() | Name() as func):
             return get_full_attribute_name(func)
@@ -50,21 +50,21 @@ def get_full_attribute_name(node: Call | Attribute | Name, /) -> str:
 
 
 def get_functions(tree: AST, /) -> Iterator[Func]:
-    """Get all function-defs from the tree."""
+    r"""Get all function-defs from the tree."""
     for node in ast.walk(tree):
         if isinstance(node, Func):
             yield node
 
 
 def get_classes(tree: AST, /) -> Iterator[ClassDef]:
-    """Get all class-defs from the tree."""
+    r"""Get all class-defs from the tree."""
     for node in ast.walk(tree):
         if isinstance(node, ClassDef):
             yield node
 
 
 def get_funcs_in_classes(tree: AST, /) -> Iterator[Func]:
-    """Get all function that are defined directly inside class bodies."""
+    r"""Get all function that are defined directly inside class bodies."""
     for cls in get_classes(tree):
         for node in cls.body:
             if isinstance(node, Func):
@@ -72,7 +72,7 @@ def get_funcs_in_classes(tree: AST, /) -> Iterator[Func]:
 
 
 def get_funcs_outside_classes(tree: AST, /) -> Iterator[Func]:
-    """Get all functions that are nod defined inside class body."""
+    r"""Get all functions that are nod defined inside class body."""
     funcs_in_classes: set[AST] = set()
 
     for node in ast.walk(tree):
@@ -88,41 +88,41 @@ def get_funcs_outside_classes(tree: AST, /) -> Iterator[Func]:
 
 
 def func_has_mixed_args(node: Func, /, *, allow_one: bool = False) -> bool:
-    """Checks if the func allows mixed po/kwargs."""
+    r"""Checks if the func allows mixed po/kwargs."""
     return len(node.args.args) > allow_one
 
 
 def is_overload(node: Func, /) -> bool:
-    """Checks if the func is an overload."""
+    r"""Checks if the func is an overload."""
     decorators = (d for d in node.decorator_list if isinstance(d, Name))
     return "overload" in [d.id for d in decorators]
 
 
 def is_staticmethod(node: Func, /) -> bool:
-    """Checks if the func is a staticmethod."""
+    r"""Checks if the func is a staticmethod."""
     decorators = (d for d in node.decorator_list if isinstance(d, Name))
     return "staticmethod" in [d.id for d in decorators]
 
 
 def is_dunder(node: Func, /) -> bool:
-    """Checks if the name is a dunder name."""
+    r"""Checks if the name is a dunder name."""
     name = node.name
     return name.startswith("__") and name.endswith("__") and name.isidentifier()
 
 
 def is_private(node: Func, /) -> bool:
-    """Checks if the name is a private name."""
+    r"""Checks if the name is a private name."""
     name = node.name
     return name.startswith("_") and not name.startswith("__") and name.isidentifier()
 
 
 def is_decorated_with(node: Func, name: str, /) -> bool:
-    """Checks if the function is decorated with a certain decorator."""
+    r"""Checks if the function is decorated with a certain decorator."""
     return name in [get_full_attribute_name(d) for d in node.decorator_list]
 
 
 def method_has_mixed_args(node: Func, /, *, allow_one: bool = False) -> bool:
-    """Checks if the method allows mixed po/kwargs."""
+    r"""Checks if the method allows mixed po/kwargs."""
     if is_staticmethod(node):
         return func_has_mixed_args(node, allow_one=allow_one)
 
@@ -153,11 +153,11 @@ def check_file(
     ignore_private: bool = False,
     ignore_wo_pos_only: bool = False,
 ) -> int:
-    """Check whether the file contains mixed positional and keyword arguments."""
+    r"""Check whether the file contains mixed positional and keyword arguments."""
     violations = 0
 
     def is_ignorable(func: Func, /) -> bool:
-        """Checks if the func can be ignored."""
+        r"""Checks if the func can be ignored."""
         return (
             (ignore_wo_pos_only and not func.args.posonlyargs)
             or (ignore_dunder and is_dunder(func))
@@ -206,7 +206,7 @@ def check_file(
 
 
 def main() -> None:
-    """Main program."""
+    r"""Main program."""
     parser = argparse.ArgumentParser(
         description="Check for disallowing positional_or_keyword arguments.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,

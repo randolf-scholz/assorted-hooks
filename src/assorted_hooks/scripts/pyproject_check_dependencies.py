@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Prints the direct dependencies of a module line by line.
+r"""Prints the direct dependencies of a module line by line.
 
 References:
     - https://peps.python.org/pep-0508/
@@ -83,7 +83,7 @@ else:
     )
 
 PACKAGES: dict[str, list[str]] = metadata.packages_distributions()
-"""A dictionary that maps module names to their pip-package names."""
+r"""A dictionary that maps module names to their pip-package names."""
 
 # NOTE: illogical type hint in stdlib, maybe open issue.
 # https://github.com/python/cpython/blob/608927b01447b110de5094271fbc4d49c60130b0/Lib/importlib/metadata/__init__.py#L933-L947C29
@@ -91,12 +91,12 @@ PACKAGES: dict[str, list[str]] = metadata.packages_distributions()
 
 
 def normalize_dep_name(dep: str, /) -> str:
-    """Normalize a dependency name."""
+    r"""Normalize a dependency name."""
     return dep.lower().replace("-", "_")
 
 
 def get_dependencies(tree: ast.AST, /, *, ignore_private: bool = True) -> set[str]:
-    """Extract the set of dependencies from `ast.AST` object."""
+    r"""Extract the set of dependencies from `ast.AST` object."""
     imported_modules: list[str] = []
     for node in ast.walk(tree):
         match node:
@@ -116,7 +116,7 @@ def get_dependencies(tree: ast.AST, /, *, ignore_private: bool = True) -> set[st
 
 
 def get_deps_file(file_path: str | Path, /) -> set[str]:
-    """Extract set of dependencies imported by a script."""
+    r"""Extract set of dependencies imported by a script."""
     path = Path(file_path)
 
     if path.suffix != ".py":
@@ -129,7 +129,7 @@ def get_deps_file(file_path: str | Path, /) -> set[str]:
 
 
 def get_deps_module(module: str | ModuleType, /, *, silent: bool = True) -> set[str]:
-    """Extract set of dependencies imported by a module."""
+    r"""Extract set of dependencies imported by a module."""
     # NOTE: Generally there is no correct way to do it without importing the module.
     # This is because modules can be imported dynamically.
 
@@ -158,7 +158,7 @@ def get_deps_module(module: str | ModuleType, /, *, silent: bool = True) -> set[
 
 
 def get_name_pyproject(config: Config, /) -> str:
-    """Get the name of the project from pyproject.toml."""
+    r"""Get the name of the project from pyproject.toml."""
     try:
         project_name = config["project"]["name"]
     except KeyError:
@@ -186,7 +186,7 @@ def get_name_pyproject(config: Config, /) -> str:
 
 
 def get_deps_pyproject_section(config: Config, /, *, section: str) -> set[str]:
-    """Get the dependencies from a section of pyproject.toml.
+    r"""Get the dependencies from a section of pyproject.toml.
 
     Looking up the section must either result in a list of strings or a dict.
     """
@@ -216,7 +216,7 @@ def get_deps_pyproject_section(config: Config, /, *, section: str) -> set[str]:
 
 
 def get_deps_pyproject_project(config: Config, /) -> set[str]:
-    """Extract the dependencies from a pyproject.toml file.
+    r"""Extract the dependencies from a pyproject.toml file.
 
     There are 6 sections we check:
     - pyproject.dependencies
@@ -258,7 +258,7 @@ def get_deps_pyproject_project(config: Config, /) -> set[str]:
 
 
 def get_deps_pyproject_tests(config: Config, /) -> set[str]:
-    """Extract the test dependencies from a pyproject.toml file."""
+    r"""Extract the test dependencies from a pyproject.toml file."""
     groups: dict[str, tuple[str, str]] = {
         "optional-dependencies": (
             "project.optional-dependencies.test",
@@ -306,14 +306,14 @@ def get_deps_pyproject_tests(config: Config, /) -> set[str]:
 
 
 class GroupedDependencies(NamedTuple):
-    """A named tuple containing the dependencies grouped by type."""
+    r"""A named tuple containing the dependencies grouped by type."""
 
     imported_dependencies: set[str]
     stdlib_dependencies: set[str]
 
 
 def group_dependencies(dependencies: set[str], /) -> GroupedDependencies:
-    """Splits the dependencies into first-party and third-party."""
+    r"""Splits the dependencies into first-party and third-party."""
     imported_dependencies = set()
     stdlib_dependencies = set()
 
@@ -332,7 +332,7 @@ def group_dependencies(dependencies: set[str], /) -> GroupedDependencies:
 def collect_dependencies(
     fname: str | Path, /, *, raise_notfound: bool = True
 ) -> set[str]:
-    """Collect the third-party dependencies from files in the given path."""
+    r"""Collect the third-party dependencies from files in the given path."""
     path = Path(fname)
     dependencies = set()
 
@@ -359,7 +359,7 @@ def validate_dependencies(
     pyproject_dependencies: set[str],
     imported_dependencies: set[str],
 ) -> tuple[set[str], set[str], set[str]]:
-    """Validate the dependencies."""
+    r"""Validate the dependencies."""
     # extract 3rd party dependencies.
     imported_dependencies = group_dependencies(
         imported_dependencies
@@ -404,7 +404,7 @@ def check_file(
     error_unused_test_deps: bool = False,
     debug: bool = False,
 ) -> int:
-    """Check a single file."""
+    r"""Check a single file."""
     violations = 0
 
     with open(fname, "rb") as file:
@@ -514,7 +514,7 @@ def check_file(
 
 
 def main() -> None:
-    """Print the third-party dependencies of a module."""
+    r"""Print the third-party dependencies of a module."""
     parser = argparse.ArgumentParser(
         description="Print the third-party dependencies of a module.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,

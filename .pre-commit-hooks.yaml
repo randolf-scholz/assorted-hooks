@@ -86,7 +86,8 @@
   entry: check-dunder-all-exists
   language: python
   types: [python]
-  description: "Check that __all__ exists."
+  exclude: '^(.*\/)?test_.*\.py$'
+  description: "Check that __all__ exists. `test_*.py` files are excluded by default."
 - id: python-check-typing
   name: python-check-typing
   entry: check-typing

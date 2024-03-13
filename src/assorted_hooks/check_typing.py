@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Disallow mixed positional and keyword arguments in function-defs."""
+r"""Disallow mixed positional and keyword arguments in function-defs."""
 
 __all__ = [
     "check_no_future_annotations",
@@ -44,13 +44,13 @@ from assorted_hooks.utils import get_python_files
 __logger__ = logging.getLogger(__name__)
 
 Func: TypeAlias = FunctionDef | AsyncFunctionDef
-"""Type alias for function-defs."""
+r"""Type alias for function-defs."""
 
 
 def get_namespace_and_funcs(
     tree: AST, /, *, namespace: tuple[str, ...] = ()
 ) -> Iterator[tuple[tuple[str, ...], Func]]:
-    """Yields both namespace and function node."""
+    r"""Yields both namespace and function node."""
     for node in ast.iter_child_nodes(tree):
         match node:
             case FunctionDef(name=name) as func:
@@ -64,7 +64,7 @@ def get_namespace_and_funcs(
 
 
 def is_typing_union(node: AST, /) -> bool:
-    """True if the return node is a union."""
+    r"""True if the return node is a union."""
     match node:
         case Subscript(value=Name(id="Union")):
             return True
@@ -73,7 +73,7 @@ def is_typing_union(node: AST, /) -> bool:
 
 
 def is_union(node: AST, /) -> bool:
-    """True if the return node is a union."""
+    r"""True if the return node is a union."""
     match node:
         case Subscript(value=Name(id="Union")):
             return True
@@ -84,12 +84,12 @@ def is_union(node: AST, /) -> bool:
 
 
 def is_function_def(node: AST, /) -> TypeGuard[Func]:
-    """True if the return node is a function definition."""
+    r"""True if the return node is a function definition."""
     return isinstance(node, Func)  # type: ignore[misc, arg-type]
 
 
 def is_overload(node: AST, /) -> bool:
-    """True if the return node is a function definition."""
+    r"""True if the return node is a function definition."""
     match node:
         case FunctionDef(decorator_list=[Name(id="overload"), *_]):
             return True
@@ -100,19 +100,19 @@ def is_overload(node: AST, /) -> bool:
 
 
 def has_union(tree: AST, /) -> bool:
-    """True if the return node is a union."""
+    r"""True if the return node is a union."""
     return any(is_union(node) for node in ast.walk(tree))
 
 
 def get_function_defs(tree: AST, /) -> Iterator[Func]:
-    """Get all return nodes."""
+    r"""Get all return nodes."""
     for node in ast.walk(tree):
         if is_function_def(node):
             yield node
 
 
 def get_overloads(tree: AST, /) -> Iterator[Func]:
-    """Get all function definitions that are decorated with `@overload`."""
+    r"""Get all function definitions that are decorated with `@overload`."""
     for node in ast.walk(tree):
         match node:
             case FunctionDef(decorator_list=[Name(id="overload"), *_]):
@@ -122,7 +122,7 @@ def get_overloads(tree: AST, /) -> Iterator[Func]:
 
 
 def check_no_future_annotations(tree: AST, /, *, fname: str) -> int:
-    """Make sure PEP563 is not used."""
+    r"""Make sure PEP563 is not used."""
     violations = 0
     for node in ast.walk(tree):
         match node:
@@ -136,7 +136,7 @@ def check_no_future_annotations(tree: AST, /, *, fname: str) -> int:
 
 
 def check_overload_default_ellipsis(tree: AST, /, *, fname: str) -> int:
-    """Check that keyword arguments in overloads assign Ellipsis instead of a value."""
+    r"""Check that keyword arguments in overloads assign Ellipsis instead of a value."""
     violations = 0
 
     for node in get_overloads(tree):
@@ -171,7 +171,7 @@ def check_overload_default_ellipsis(tree: AST, /, *, fname: str) -> int:
 
 
 def check_pep604_union(tree: AST, /, *, fname: str) -> int:
-    """Check that X | Y is used instead of Union[X, Y]."""
+    r"""Check that X | Y is used instead of Union[X, Y]."""
     # FIXME: https://github.com/python/mypy/issues/11673
     violations = 0
 
@@ -184,7 +184,7 @@ def check_pep604_union(tree: AST, /, *, fname: str) -> int:
 
 
 def check_no_return_union(tree: AST, /, *, recursive: bool, fname: str) -> int:
-    """Check if function returns a union type."""
+    r"""Check if function returns a union type."""
     # FIXME: https://github.com/python/mypy/issues/11673
     violations = 0
 
@@ -199,7 +199,7 @@ def check_no_return_union(tree: AST, /, *, recursive: bool, fname: str) -> int:
 
 
 def check_no_optional(tree: AST, /, *, fname: str) -> int:
-    """Check that `None | T` is used instead of `Optional[T]`."""
+    r"""Check that `None | T` is used instead of `Optional[T]`."""
     violations = 0
 
     for node in ast.walk(tree):
@@ -212,7 +212,7 @@ def check_no_optional(tree: AST, /, *, fname: str) -> int:
 
 
 def check_no_union_isinstance(tree: AST, /, *, fname: str) -> int:
-    """Checks that tuples are used instead of unions in isinstance checks."""
+    r"""Checks that tuples are used instead of unions in isinstance checks."""
     violations = 0
 
     for node in ast.walk(tree):
@@ -238,7 +238,7 @@ def check_no_union_isinstance(tree: AST, /, *, fname: str) -> int:
 
 
 def check_no_tuple_isinstance(tree: AST, /, *, fname: str) -> int:
-    """Checks that unions are used instead of tuples in isinstance checks."""
+    r"""Checks that unions are used instead of tuples in isinstance checks."""
     violations = 0
 
     for node in ast.walk(tree):
@@ -266,7 +266,7 @@ def check_no_tuple_isinstance(tree: AST, /, *, fname: str) -> int:
 def check_no_hints_overload_implementation(
     tree: ClassDef | Module, /, *, fname: str
 ) -> int:
-    """Checks that the implementation of an overloaded function has no type hints."""
+    r"""Checks that the implementation of an overloaded function has no type hints."""
     violations = 0
     namespace_and_funcs: list[tuple[tuple[str, ...], Func]] = list(
         get_namespace_and_funcs(tree)
@@ -305,7 +305,7 @@ def check_no_hints_overload_implementation(
 
 
 def check_optional(tree: AST, /, *, fname: str) -> int:
-    """Check that `Optional[T]` is used instead of `None | T`."""
+    r"""Check that `Optional[T]` is used instead of `None | T`."""
     violations = 0
 
     for node in ast.walk(tree):
@@ -321,7 +321,7 @@ def check_optional(tree: AST, /, *, fname: str) -> int:
 
 
 def check_file(file_or_path: str | Path, /, *, options: argparse.Namespace) -> int:
-    """Check whether the file contains mixed positional and keyword arguments."""
+    r"""Check whether the file contains mixed positional and keyword arguments."""
     fname = str(file_or_path)
     with open(file_or_path, "rb") as file:
         tree = ast.parse(file.read(), filename=fname)
@@ -352,7 +352,7 @@ def check_file(file_or_path: str | Path, /, *, options: argparse.Namespace) -> i
 
 
 def main() -> None:
-    """Main program."""
+    r"""Main program."""
     parser = argparse.ArgumentParser(
         description="Check for disallowing positional_or_keyword arguments.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
