@@ -38,9 +38,21 @@
 - id: check-separator-length
   name: check-separator-length
   description: "Check that 'line-break'-comments are the right length (default: 88)."
-  entry: ^#(.{0,83}|.{85,})([-=═─—])\2{2}$
+  entry: ^(\#.|\%.|\/\/)(.{0,82}|.{84,})([-=—─═])\2{2}$
   language: pygrep
-  types_or: [python, yaml, bash, makefile, cmake, perl, julia]
+  types: [text]
+  # NOTE: This regex checks comments begin with a `#`, `%`, `//` (padded to length 2)
+  #   The first group is 0-82 or 84-unlimited characters
+  #   The construction `([-=—─═])\2{2}` checks for a separator character repeated 3 times
+  #   If the first group matches ≥84 characters, then the line is overlong (2+84+3=89 characters)
+  #   If it matches ≤82 characters, then the line is too short, given that it is detected as a separator.
+  #   (2 + 83 characters + separator + separator + separator = 88 characters)
+  # NOTE: The second group is a separator character, we consider the characters:
+  # `-` (U+002D: Hyphen-Minus)
+  # `=` (U+003D: Equals Sign)
+  # `—` (U+2014: Em Dash)
+  # `═` (U+2550: Box Drawings Double Horizontal)
+  # `─` (U+2500: Box Drawings Light Horizontal)
 - id: python-no-blanket-type-ignore
   name: python-no-blanket-type-ignore
   description: "Enforce that `# type: ignore` annotations always specify codes."
