@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# type: ignore
 # FIXME: https://github.com/python/mypy/issues/11673
 r"""Disallow mixed positional and keyword arguments in function-defs."""
 
@@ -40,7 +39,7 @@ Func: TypeAlias = FunctionDef | AsyncFunctionDef
 r"""Type alias for function-defs."""
 
 
-def get_full_attribute_name(node: Call | Attribute | Name, /) -> str:
+def get_full_attribute_name(node: AST, /) -> str:
     r"""Get the parent of an attribute node."""
     match node:
         case Call(func=Attribute() | Name() as func):
@@ -57,8 +56,8 @@ def get_full_attribute_name(node: Call | Attribute | Name, /) -> str:
 def get_functions(tree: AST, /) -> Iterator[Func]:
     r"""Get all function-defs from the tree."""
     for node in ast.walk(tree):
-        if isinstance(node, Func):
-            yield node
+        if isinstance(node, Func):  # type: ignore[misc, arg-type]
+            yield node  # type: ignore[misc]
 
 
 def get_classes(tree: AST, /) -> Iterator[ClassDef]:
@@ -72,8 +71,8 @@ def get_funcs_in_classes(tree: AST, /) -> Iterator[Func]:
     r"""Get all function that are defined directly inside class bodies."""
     for cls in get_classes(tree):
         for node in cls.body:
-            if isinstance(node, Func):
-                yield node
+            if isinstance(node, Func):  # type: ignore[misc, arg-type]
+                yield node  # type: ignore[misc]
 
 
 def get_funcs_outside_classes(tree: AST, /) -> Iterator[Func]:
@@ -84,7 +83,9 @@ def get_funcs_outside_classes(tree: AST, /) -> Iterator[Func]:
         match node:
             case ClassDef(body=body):
                 funcs_in_classes.update(
-                    child for child in body if isinstance(child, Func)
+                    child
+                    for child in body
+                    if isinstance(child, Func)  # type: ignore[misc, arg-type]
                 )
             # FIXME: https://github.com/python/cpython/issues/106246
             case FunctionDef() | AsyncFunctionDef():

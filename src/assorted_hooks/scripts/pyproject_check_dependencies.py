@@ -54,7 +54,7 @@ from types import ModuleType
 from typing import Any, NamedTuple, TypeAlias
 
 # import metadata library
-if sys.version_info >= (3, 11):
+if sys.version_info >= (3, 11):  # noqa: UP036
     from importlib import metadata
 else:
     # NOTE: importlib.metadata is bugged in 3.10: https://github.com/python/cpython/issues/94113
@@ -78,7 +78,7 @@ RE_NAME_GROUP = re.compile(rf"""(?P<name>{NAME})""")
 NAME_GROUP = RE_NAME_GROUP.pattern
 assert RE_NAME_GROUP.groups == 1, f"{RE_NAME_GROUP.groups=}."
 
-PACKAGES: dict[str, list[str]] = metadata.packages_distributions()
+PACKAGES: dict[str, list[str]] = dict(metadata.packages_distributions())
 r"""A dictionary that maps module names to their pip-package names."""
 
 Config: TypeAlias = dict[str, Any]

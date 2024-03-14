@@ -62,9 +62,7 @@ def get_imported_names(tree: AST, /) -> set[str]:
     for node in ast.walk(tree):
         match node:
             case Import(names=imports) | ImportFrom(names=imports):
-                imported_symbols.update(
-                    (alias.asname or alias.name for alias in imports)
-                )
+                imported_symbols.update(alias.asname or alias.name for alias in imports)
 
     return imported_symbols
 
