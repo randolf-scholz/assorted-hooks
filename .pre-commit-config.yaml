@@ -6,13 +6,13 @@ default_language_version:
 repos:
   # test with pre-commit try-repo ../assorted-hooks --verbose --all-files
   - repo: https://github.com/randolf-scholz/assorted-hooks
-    rev: v0.1.58
+    rev: v0.1.59
     hooks:
     # script-based hooks
     - id: pyproject-validate-version
     - id: pyproject-update-deps
     - id: pyproject-check-deps
-    - id: python-clean-interface
+    - id: python-check-clean-interface
     # pygrep-based hooks
     - id: check-separator-length
     - id: python-no-blanket-type-ignore
