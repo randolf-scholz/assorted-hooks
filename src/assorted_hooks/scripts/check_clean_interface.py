@@ -68,7 +68,7 @@ def get_imported_names(tree: AST, /) -> set[str]:
 
 
 def get_type_variables(tree: AST, /) -> set[str]:
-    r"""Get all type variables from AST.
+    r"""Get all type variables from AST (also included `ParamSpec` and `TypeVarTuple`).
 
     Example: If `U = TypeVar("U", **options)`, then `U` is a type variable.
     """
@@ -76,7 +76,10 @@ def get_type_variables(tree: AST, /) -> set[str]:
 
     for node in ast.walk(tree):
         match node:
-            case Assign(targets=[Name(id=name)], value=Call(func=Name(id="TypeVar"))):
+            case Assign(
+                targets=[Name(id=name)],
+                value=Call(func=Name(id="TypeVar" | "ParamSpec" | "TypeVarTuple")),
+            ):
                 type_variables.add(name)
 
     return type_variables
