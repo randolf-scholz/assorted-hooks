@@ -4,12 +4,17 @@
 r"""Disallow mixed positional and keyword arguments in function-defs."""
 
 __all__ = [
+    # Types
+    "Func",
+    # Functions
     "check_file",
     "func_has_mixed_args",
     "get_classes",
+    "get_full_attribute_name",
     "get_funcs_in_classes",
     "get_funcs_outside_classes",
     "get_functions",
+    "is_decorated_with",
     "is_dunder",
     "is_overload",
     "is_private",

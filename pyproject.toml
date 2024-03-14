@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 # region project configuration ---------------------------------------------------------
 [project]
 name = "assorted-hooks"
-version = "0.1.58"
+version = "0.1.59"
 authors = [{name="Randolf Scholz", email="randolf.scholz@gmail.com"},]
 description = "Custom pre-commit hooks"
 
@@ -43,7 +43,7 @@ check-no-mixed-args = "assorted_hooks.check_no_mixed_args:main"
 check-standard-generics = "assorted_hooks.check_standard_generics:main"
 check-typing = "assorted_hooks.check_typing:main"
 # script hooks
-python-clean-interface = "assorted_hooks.scripts.check_clean_interface:main"
+python-check-clean-interface = "assorted_hooks.scripts.check_clean_interface:main"
 pyproject-check-deps = "assorted_hooks.scripts.pyproject_check_dependencies:main"
 pyproject-update-deps = "assorted_hooks.scripts.pyproject_update_dependencies:main"
 pyproject-validate-version = "assorted_hooks.scripts.pyproject_validate_version:main"

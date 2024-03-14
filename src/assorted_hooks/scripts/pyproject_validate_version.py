@@ -12,29 +12,17 @@ __all__ = [
     "RE_VERSION_GROUP",
     "RE_VERSION",
     # Functions
-    "get_version",
-    "validate_version",
     "check_file",
+    "get_version",
+    "ignore_subgroups",
     "main",
+    "validate_version",
 ]
 
 import argparse
-import importlib
 import re
 import sys
-
-# import toml library
-for name in ("tomllib", "tomlkit", "tomli"):
-    try:
-        tomllib = importlib.import_module(name)
-        break
-    except ImportError:
-        pass
-else:
-    raise ImportError(
-        "This pre-commit hook runs in the local interpreter and requires a suitable TOML-library!"
-        " Please use python≥3.11 or install one of 'tomlkit' or 'tomli'."
-    )
+import tomllib
 
 
 def ignore_subgroups(pattern: str | re.Pattern, /) -> str:

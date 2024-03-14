@@ -2,6 +2,10 @@
 r"""Disallow mixed positional and keyword arguments in function-defs."""
 
 __all__ = [
+    # Types
+    "Func",
+    # Functions
+    "check_file",
     "check_no_future_annotations",
     "check_no_hints_overload_implementation",
     "check_no_optional",
@@ -11,7 +15,15 @@ __all__ = [
     "check_optional",
     "check_overload_default_ellipsis",
     "check_pep604_union",
-    "check_file",
+    "get_function_defs",
+    "get_namespace_and_funcs",
+    "get_overloads",
+    "get_python_files",
+    "has_union",
+    "is_function_def",
+    "is_overload",
+    "is_typing_union",
+    "is_union",
     "main",
 ]
 

@@ -3,7 +3,15 @@
 Based on plain argparse, powered by dataclass_transform.
 """
 
-__all__ = ["argument", "argparser", "make_parser", "parse_args"]
+__all__ = [
+    # Types
+    "Actions",
+    # Functions
+    "argument",
+    "argparser",
+    "make_parser",
+    "parse_args",
+]
 
 from collections.abc import Container
 from dataclasses import dataclass

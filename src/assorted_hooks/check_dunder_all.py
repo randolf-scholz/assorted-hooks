@@ -3,8 +3,12 @@
 __all__ = [
     "check_file",
     "get__all__nodes",
+    "get_duplicate_keys",
     "is__all__node",
+    "is_at_top",
+    "is_future_import",
     "is_literal_list",
+    "is_main_node",
     "is_superfluous",
     "main",
 ]
@@ -35,7 +39,7 @@ from assorted_hooks.utils import get_python_files
 __logger__ = logging.getLogger(__name__)
 
 
-def is_main(node: AST, /) -> bool:
+def is_main_node(node: AST, /) -> bool:
     r"""Check whether node is `if __name__ == "__main__":` check."""
     match node:
         case ast.If(
@@ -98,7 +102,7 @@ def is_superfluous(tree: Module, /) -> bool:
 
     # ignore __main__ code if present
     for node in tree.body:
-        if is_main(node):
+        if is_main_node(node):
             # remove from copy
             body.remove(node)
 

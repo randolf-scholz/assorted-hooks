@@ -2,7 +2,11 @@
 """Check to ensure collections.abc is used instead of typing."""
 
 __all__ = [
+    # Constants
     "REPLACEMENTS",
+    "METHODS",
+    "KEYS",
+    # Functions
     "check_file",
     "get_deprecated_aliases",
     "main",
@@ -10,11 +14,11 @@ __all__ = [
 
 import argparse
 import ast
-import collections.abc
 import logging
 import sys
 import typing
 from ast import AST, Attribute, Import, ImportFrom, Name
+from collections import abc
 from pathlib import Path
 from typing import Final
 
@@ -84,7 +88,7 @@ REPLACEMENTS |= {
 KEYS: Final[frozenset[str]] = frozenset(REPLACEMENTS.keys())
 
 # validate replacements
-METHODS: Final[set[str]] = set(typing.__all__) & set(collections.abc.__all__)
+METHODS: Final[set[str]] = set(typing.__all__) & set(abc.__all__)
 assert all(f"typing.{method}" in REPLACEMENTS for method in METHODS)
 
 

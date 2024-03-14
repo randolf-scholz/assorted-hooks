@@ -12,6 +12,7 @@ Example:
 """
 
 __all__ = [
+    "is_pure_attribute",
     "get_pure_attributes",
     "get_full_attribute_parent",
     "get_imported_symbols",
@@ -64,7 +65,10 @@ def get_full_attribute_parent(node: Attribute | Name, /) -> tuple[Name, str]:
 
 
 def get_imported_symbols(tree: AST, /) -> dict[str, str]:
-    r"""Get all imported symbols."""
+    r"""Get all imported symbols as a dictionary alias -> fullname.
+
+    For example, `import pandas as pd` would yield `{"pd": "pandas"}`.
+    """
     imported_symbols = {}
 
     for node in ast.walk(tree):

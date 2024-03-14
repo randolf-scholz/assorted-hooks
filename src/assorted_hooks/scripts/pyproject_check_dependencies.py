@@ -11,17 +11,32 @@ References:
 # TODO: add support for extras.
 
 __all__ = [
+    # Type Aliases
+    "Config",
+    # Constants
+    "MODULES_DEFAULT",
+    "NAME",
+    "NAME_GROUP",
+    "PACKAGES",
+    "RE_NAME",
+    "RE_NAME_GROUP",
+    "TESTS_DEFAULT",
+    # Classes
+    "GroupedDependencies",
+    # Functions
+    "check_file",
     "collect_dependencies",
+    "get_dependencies",
     "get_deps_file",
     "get_deps_module",
     "get_deps_pyproject_project",
     "get_deps_pyproject_section",
     "get_deps_pyproject_tests",
-    "get_dependencies",
     "get_name_pyproject",
     "group_dependencies",
     "main",
     "normalize_dep_name",
+    "validate_dependencies",
 ]
 
 import argparse
@@ -31,6 +46,7 @@ import itertools
 import pkgutil
 import re
 import sys
+import tomllib
 from collections.abc import Sequence
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
@@ -38,38 +54,18 @@ from types import ModuleType
 from typing import Any, NamedTuple, TypeAlias
 
 # import metadata library
-for __metadata_lib in (
-    ["importlib.metadata", "importlib_metadata"]
-    if sys.version_info >= (3, 11)
-    else ["importlib_metadata"]
-):
+if sys.version_info >= (3, 11):
+    from importlib import metadata
+else:
     # NOTE: importlib.metadata is bugged in 3.10: https://github.com/python/cpython/issues/94113
     try:
-        metadata = importlib.import_module(__metadata_lib)
-        break
-    except ImportError:
-        pass
-else:
-    raise ImportError(
-        "This pre-commit hook runs in the local interpreter and requires importlib.metadata!"
-        " Please use python≥3.11 or install 'importlib_metadata'."
-    )
+        metadata = importlib.import_module("importlib_metadata")
+    except ImportError as exc:
+        raise ImportError(
+            "This pre-commit hook runs in the local interpreter and requires importlib.metadata!"
+            " Please use python≥3.11 or install 'importlib_metadata'."
+        ) from exc
 
-# import toml library
-for __toml_lib in ("tomllib", "tomlkit", "tomli"):
-    try:
-        tomllib = importlib.import_module(__toml_lib)
-        break
-    except ImportError:
-        pass
-else:
-    raise ImportError(
-        "This pre-commit hook runs in the local interpreter and requires a suitable TOML-library!"
-        " Please use python≥3.11 or install one of 'tomlkit' or 'tomli'."
-    )
-
-
-Config: TypeAlias = dict[str, Any]
 
 MODULES_DEFAULT = ("src/",)
 TESTS_DEFAULT = ("tests/",)
@@ -84,6 +80,8 @@ assert RE_NAME_GROUP.groups == 1, f"{RE_NAME_GROUP.groups=}."
 
 PACKAGES: dict[str, list[str]] = metadata.packages_distributions()
 r"""A dictionary that maps module names to their pip-package names."""
+
+Config: TypeAlias = dict[str, Any]
 
 # NOTE: illogical type hint in stdlib, maybe open issue.
 # https://github.com/python/cpython/blob/608927b01447b110de5094271fbc4d49c60130b0/Lib/importlib/metadata/__init__.py#L933-L947C29

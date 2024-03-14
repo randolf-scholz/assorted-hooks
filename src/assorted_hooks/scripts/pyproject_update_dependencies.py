@@ -19,10 +19,10 @@ __all__ = [
     "PATTERNS",
     "REGEXPS",
     # PATTERNS
-    "NAME",
-    "NAME_GROUP",
     "EXTRAS",
     "EXTRAS_GROUP",
+    "NAME",
+    "NAME_GROUP",
     "POETRY_DEP",
     "POETRY_DEP_GROUP",
     "PROJECT_DEP",
@@ -33,6 +33,8 @@ __all__ = [
     "URL_GROUP",
     "VERSION",
     "VERSION_GROUP",
+    "VERSION_NUMERIC",
+    "VERSION_NUMERIC_GROUP",
     # REGEXPS
     "RE_EXTRAS",
     "RE_EXTRAS_GROUP",
@@ -48,6 +50,8 @@ __all__ = [
     "RE_URL_GROUP",
     "RE_VERSION",
     "RE_VERSION_GROUP",
+    "RE_VERSION_NUMERIC",
+    "RE_VERSION_NUMERIC_GROUP",
     # Functions
     "get_pip_package_dict",
     "ignore_subgroups",
