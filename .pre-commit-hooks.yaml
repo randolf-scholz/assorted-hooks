@@ -71,6 +71,12 @@
   entry: '\s+"""\S'
   language: pygrep
   types: [python]
+- id: python-rename-axes-axis
+  name: python-rename-axes-axis
+  description: "Rename 'axes=' to 'axis=' (numpy convention)."
+  entry: "\b(axes=)"
+  language: pygrep
+  types: [python]
 # endregion pygrep ---------------------------------------------------------------------
 
 
