@@ -127,6 +127,10 @@ Tests that "line-break" comments terminate at column 88.
 Hints that triple quoted strings should be raw strings (convention).
 Ignores triple quoted f-strings.
 
+### `python-rename-axes-axis`
+
+Makes sure function signatures use `axis=` instead of `axes=` (numpy convention).
+
 ## $\LaTeX$ Hooks
 
 ### `chktex` ($\LaTeX$ linter)

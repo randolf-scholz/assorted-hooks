@@ -6,7 +6,7 @@ default_language_version:
 repos:
   # test with pre-commit try-repo ../assorted-hooks --verbose --all-files
   - repo: https://github.com/randolf-scholz/assorted-hooks
-    rev: v0.1.62
+    rev: v0.1.63
     hooks:
     # script-based hooks
     - id: pyproject-validate-version
@@ -18,6 +18,7 @@ repos:
     - id: python-no-blanket-type-ignore
     - id: python-no-builtin-eval
     - id: python-consider-using-raw-string
+    - id: python-rename-axes-axis
     # ast-based hooks
     - id: python-direct-imports
     - id: python-no-mixed-args
@@ -38,6 +39,8 @@ repos:
         description: "simply checks whether the files parse as valid python."
       - id: check-builtin-literals
         description: "requires literal syntax when initializing empty or zero python builtin types."
+      - id: check-byte-order-marker
+        description: "forbids files which have a utf-8 byte-order marker."
       - id: check-case-conflict
         description: "checks for files with names that would conflict on a case-insensitive filesystem."
       - id: check-json
@@ -58,9 +61,8 @@ repos:
         description: "checks for debugger imports and py37+ `breakpoint()` calls in python source."
       - id: end-of-file-fixer
         description: "ensures that a file is either empty, or ends with one newline."
-      - id: fix-byte-order-marker
-        description: "removes utf-8 byte order marker."
       - id: pretty-format-json
+        exclude_types: [jupyter]
         args: ["--autofix"]
         description: "sets a standard for formatting json files."
       - id: requirements-txt-fixer
@@ -91,7 +93,7 @@ repos:
         files: (^src/|^tests/)
   # ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.2
+    rev: v0.3.4
     hooks:
       - id: ruff
         files: (^src/|^tests/)
@@ -107,18 +109,16 @@ repos:
     hooks:
       - id: markdownlint
         args:
-          [
-            "--disable",
-            "MD013", # Line length
-            "MD033", # Inline HTML
-            "--"  # otherwise files are interpreted as args
-          ]
+          - "--disable" # disable rules
+          - "MD013"     # Line length
+          - "MD033"     # Inline HTML
+          - "--"        # otherwise files are interpreted as args
   # shellcheck
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.9.0.6
+    rev: v0.10.0.1
     hooks:
-      - id: shellcheck
-        args: [ "--shell=bash", "--color=always", "--format=gcc" ]
+    - id: shellcheck
+      args: ["-x", "--shell=bash", "--color=always", "--format=gcc", "--"]
   # mypy
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.9.0
@@ -127,21 +127,21 @@ repos:
         files: (^src/|^tests/)
         additional_dependencies: [types-all-latest]
         args:
-          [
-            "--hide-error-context",
-            "--hide-error-end",
-            "--no-pretty",
-            "--no-error-summary",
-          ]
+        - "--scripts-are-modules"
+        - "--hide-error-context"
+        - "--hide-error-end"
+        - "--no-pretty"
+        # - "--no-error-summary"
+        - "--"
   # pyright
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.354
+    rev: v1.1.356
     hooks:
       - id: pyright
         files: (^src/|^tests/)
   # pydeps
   - repo: https://github.com/thebjorn/pydeps
-    rev: v1.12.19
+    rev: v1.12.20
     hooks:
       - id: pydeps
         pass_filenames: false
