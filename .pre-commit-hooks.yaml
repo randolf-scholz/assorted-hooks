@@ -74,7 +74,7 @@
 - id: python-rename-axes-axis
   name: python-rename-axes-axis
   description: "Rename 'axes=' to 'axis=' (numpy convention)."
-  entry: "\b(axes=)"
+  entry: '\b(axes=)'
   language: pygrep
   types: [python]
 # endregion pygrep ---------------------------------------------------------------------
