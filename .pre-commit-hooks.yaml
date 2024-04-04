@@ -122,31 +122,18 @@
   types: [tex]
   description: "ChkTeX, a LaTeX semantic checker."
   entry: "chktex --format='%f:%l:%c %m [%k %n]\n' --quiet"
+  require_serial: true  # Otherwise, we get lot's of warning about failed regex compilations
   args:  # default configuration
     - "--erroron=all"
     - "--nowarn=1"   # Command terminated with space.
     - "--nowarn=3"   # Enclose previous parentheses with `{}`.
+    - "--nowarn=9"   # ‘%s’ expected, found ‘%s’.
+    - "--nowarn=17"  # Number of ‘character’ doesn’t match the number of ‘character’.
     - "--nowarn=19"  # You should use "`’`" (ASCII 39) instead of "`’`" (ASCII 180).
     - "--nowarn=21"  # This command might not be intended.
     - "--nowarn=22"  # Comment displayed.
     - "--nowarn=30"  # Multiple spaces detected in output.
     - "--nowarn=46"  # Use `\(...\)` instead of `$...$`.
-  # region previous configuration ------------------------------------------------------
-  #  args:
-  #    - "--format=%f:%l:%c %m [%k %n]\n"
-  #    - "--quiet"
-  #    - "--erroron=all"
-  #    - "--nowarn=1"   # Command terminated with space.
-  #    - "--nowarn=3"   # Enclose previous parentheses with `{}`.
-  #    - "--nowarn=19"  # Use "’" (ASCII 39) instead of "’" (ASCII 180) [reason: unicode]
-  #    - "--nowarn=21"  # `\TeX.` instead of `\TeX\.` [reason: false positive `\},`]
-  #    - "--nowarn=22"  # used for displaying comments in the output
-  #    - "--nowarn=30"  # tabs vs spaces
-  #    - "--nowarn=41"  # TeX primitives should not be used
-  #    - "--nowarn=44"  # vertical rules in tables are ugly.
-  #    - "--nowarn=46"  # Use \(...\) in text mode instead of $...$.
-  #    - "--"  # otherwise files are interpreted as args
-  # endregion previous configuration ---------------------------------------------------
 - id: lacheck
   name: lacheck
   description: "A consistency checker for LaTeX documents"

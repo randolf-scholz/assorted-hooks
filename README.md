@@ -2,7 +2,7 @@
 
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
-[ast-based hooks](#ast-based-hooks) | [script-based hooks](#script-based-hooks) | [pygrep-based hooks](#pygrep-based-hooks) | [latex hooks](#latex-hooks) | [Changelog](CHANGELOG.md)
+[ast-based hooks](#ast-based-hooks) | [script-based hooks](#script-based-hooks) | [pygrep-based hooks](#pygrep-based-hooks) | [latex hooks](#latex-hooks) | [changelog](CHANGELOG.md)
 
 ## AST-based Hooks
 
@@ -137,13 +137,17 @@ Makes sure function signatures use `axis=` instead of `axes=` (numpy convention)
 
 **Default configuration:** All checks are enabled except for
 
-- `1`: *Command terminated with space.* (see <https://tex.stackexchange.com/q/552210>)
-- `3`: *Enclose previous parentheses with `{}`.* (see <https://tex.stackexchange.com/q/529937>)
+- `1`: *Command terminated with space.* (wrong advice[^warn1])
+- `3`: *Enclose previous parentheses with `{}`.* (wrong advice[^warn3])
+- `9`: *‘%s’ expected, found ‘%s’.* (interferes with half-open intervals[^warn9])
+- `17`: *Number of ‘character’ doesn’t match the number of ‘character’.* (interferes with half-open intervals[^warn17])
 - `19`: *You should use "`’`" (ASCII 39) instead of "`’`" (ASCII 180).* (gets confused by unicode[^warn19])
-- `21`: *This command might not be intended.* (see <https://tex.stackexchange.com/q/473080>)
+- `21`: *This command might not be intended.* (too many false positives[^warn21])
 - `22`: *Comment displayed.* (not useful in the context of `pre-commit`)
 - `30`: *Multiple spaces detected in output.*  (not useful when using spaces for indentation)
-- `46`: *Use `\(...\)` instead of `$...$`.* (see <https://tex.stackexchange.com/q/510>)
+- `46`: *Use `\(...\)` instead of `$...$`.* (wrong advice[^warn21])
+
+To manually select which checks to enable, add `args`-section to the hook configuration in `.pre-commit-config.yaml`.
 
 **Usage Recommendations:**
 
@@ -166,5 +170,9 @@ Checks that naming conventions are followed. Defaults:
 - classes: exported: `PascalCase`, internal: `_PascalCase`, special: `__dunder__`
 
 [//]: # (footnotes)
-
+[^warn1]: <https://tex.stackexchange.com/q/552210>
+[^warn3]: <https://tex.stackexchange.com/q/529937>
+[^warn9]: <https://tex.stackexchange.com/q/405583>
+[^warn17]: <https://tex.stackexchange.com/q/405583>
 [^warn19]: <https://github.com/nscaife/linter-chktex/issues/30>
+[^warn21]: <https://tex.stackexchange.com/q/473080>
