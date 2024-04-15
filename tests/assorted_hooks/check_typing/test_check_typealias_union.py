@@ -20,3 +20,19 @@ def test_typealias_union_false():
     """
     tree = ast.parse(dedent(code))
     assert check_typealias_union(tree, fname="test.py") == 0
+
+
+def test_typealias_union_large():
+    code = r"""
+    LazySpec: TypeAlias = (
+        LazyValue[T]  # lazy value
+        | Callable[[], T]  # no args
+        | Callable[[Any], T]  # single arg
+        | tuple[Callable[..., T], tuple]  # args
+        | tuple[Callable[..., T], dict]  # kwargs
+        | tuple[Callable[..., T], tuple, dict]  # args, kwargs
+        | T  # direct value
+    )
+    """
+    tree = ast.parse(dedent(code))
+    assert check_typealias_union(tree, fname="test.py") == 1

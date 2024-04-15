@@ -375,6 +375,8 @@ def check_file(file_or_path: str | Path, /, *, options: argparse.Namespace) -> i
         violations += check_no_union_isinstance(tree, fname=fname)
     if options.check_no_hints_overload_implementation:
         violations += check_no_hints_overload_implementation(tree, fname=fname)
+    if options.check_typealias_union:
+        violations += check_typealias_union(tree, fname=fname)
     return violations
 
 

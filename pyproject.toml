@@ -54,15 +54,15 @@ pyproject-validate-version = "assorted_hooks.scripts.pyproject_validate_version:
 # region development dependencies ------------------------------------------------------
 [tool.pdm.dev-dependencies]
 dev = [
-    "pre-commit>=3.6.0",
-    "ruff>=0.1.14",
-    "ruff-lsp>=0.0.51",
+    "pre-commit>=3.7.0",
+    "ruff>=0.3.7",
+    "ruff-lsp>=0.0.53",
 ]
 test = [
-    "pytest>=8.0.0",
+    "pytest>=8.1.1",
     "pytest-benchmark[histogram]>=4.0.0",
-    "pytest-cov>=4.1.0",
-    "pytest-rerunfailures>=13.0",
+    "pytest-cov>=5.0.0",
+    "pytest-rerunfailures>=14.0",
     "pytest-xdist>=3.5.0",
 ]
 # endregion development.dependencies ---------------------------------------------------
