@@ -12,7 +12,6 @@ __all__ = [
     "check_no_return_union",
     "check_no_tuple_isinstance",
     "check_no_union_isinstance",
-    "check_typealias_union",
     "check_optional",
     "check_overload_default_ellipsis",
     "check_pep604_union",
@@ -35,7 +34,6 @@ import logging
 import sys
 from ast import (
     AST,
-    AnnAssign,
     AsyncFunctionDef,
     BinOp,
     BitOr,
@@ -334,19 +332,6 @@ def check_optional(tree: AST, /, *, fname: str) -> int:
     return violations
 
 
-def check_typealias_union(tree: AST, /, *, fname: str) -> int:
-    r"""Check that `UnionType` is used instead of `TypeAlias`."""
-    violations = 0
-
-    for node in ast.walk(tree):
-        match node:
-            case AnnAssign(annotation=Name(id="TypeAlias"), value=BinOp(op=BitOr())):
-                violations += 1
-                print(f"{fname!s}:{node.lineno}: Use UnionType instead of TypeAlias")
-
-    return violations
-
-
 def check_file(file_or_path: str | Path, /, *, options: argparse.Namespace) -> int:
     r"""Check whether the file contains mixed positional and keyword arguments."""
     fname = str(file_or_path)
@@ -375,8 +360,6 @@ def check_file(file_or_path: str | Path, /, *, options: argparse.Namespace) -> i
         violations += check_no_union_isinstance(tree, fname=fname)
     if options.check_no_hints_overload_implementation:
         violations += check_no_hints_overload_implementation(tree, fname=fname)
-    if options.check_typealias_union:
-        violations += check_typealias_union(tree, fname=fname)
     return violations
 
 
@@ -391,13 +374,6 @@ def main() -> None:
         nargs="+",
         type=str,
         help="One or multiple files, folders or file patterns.",
-    )
-    parser.add_argument(
-        "--check-typealias-union",
-        action=argparse.BooleanOptionalAction,
-        type=bool,
-        default=True,
-        help="Check that `UnionType` is used instead of `TypeAlias`.",
     )
     parser.add_argument(
         "--check-overload-default-ellipsis",
