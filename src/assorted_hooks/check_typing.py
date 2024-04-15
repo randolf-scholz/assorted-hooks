@@ -12,6 +12,7 @@ __all__ = [
     "check_no_return_union",
     "check_no_tuple_isinstance",
     "check_no_union_isinstance",
+    "check_typealias_union",
     "check_optional",
     "check_overload_default_ellipsis",
     "check_pep604_union",
@@ -34,6 +35,7 @@ import logging
 import sys
 from ast import (
     AST,
+    AnnAssign,
     AsyncFunctionDef,
     BinOp,
     BitOr,
@@ -332,6 +334,19 @@ def check_optional(tree: AST, /, *, fname: str) -> int:
     return violations
 
 
+def check_typealias_union(tree: AST, /, *, fname: str) -> int:
+    r"""Check that `UnionType` is used instead of `TypeAlias`."""
+    violations = 0
+
+    for node in ast.walk(tree):
+        match node:
+            case AnnAssign(annotation=Name(id="TypeAlias"), value=BinOp(op=BitOr())):
+                violations += 1
+                print(f"{fname!s}:{node.lineno}: Use UnionType instead of TypeAlias")
+
+    return violations
+
+
 def check_file(file_or_path: str | Path, /, *, options: argparse.Namespace) -> int:
     r"""Check whether the file contains mixed positional and keyword arguments."""
     fname = str(file_or_path)
@@ -376,53 +391,61 @@ def main() -> None:
         help="One or multiple files, folders or file patterns.",
     )
     parser.add_argument(
+        "--check-typealias-union",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=True,
+        help="Check that `UnionType` is used instead of `TypeAlias`.",
+    )
+    parser.add_argument(
+        "--check-overload-default-ellipsis",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=True,
+        help="Check that in overloads Ellipsis is used as default value.",
+    )
+    parser.add_argument(
+        "--check-pep604-union",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=True,
+        help="Check that `X | Y` is used instead of `Union[X, Y]`.",
+    )
+    parser.add_argument(
+        "--check-no-future-annotations",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=True,
+        help="Check that `from __future__ import annotations` is not used.",
+    )
+    # region default enabled checks ----------------------------------------------------
+    parser.add_argument(
         "--check-no-optional",
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=False,
-        help="Check that Optional is not used.",
+        help="Check that `T | None` is not used instead of `Optional[T]`.",
     )
     parser.add_argument(
         "--check-optional",
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=False,
-        help="Check that Optional is used.",
-    )
-    parser.add_argument(
-        "--check-pep604-union",
-        action=argparse.BooleanOptionalAction,
-        type=bool,
-        default=False,
-        help="Check that PEP604 unions are used.",
-    )
-    parser.add_argument(
-        "--check-overload-default-ellipsis",
-        action=argparse.BooleanOptionalAction,
-        type=bool,
-        default=False,
-        help="Check that in overloads Ellipsis is used as default value.",
+        help="Check that `Optional[T]` is used instead of `T | None`.",
     )
     parser.add_argument(
         "--check-no-return-union",
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=False,
-        help="Check that function does not return Union.",
+        help="Check that functions do not return Unions.",
     )
     parser.add_argument(
         "--check-no-return-union-recursive",
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=False,
-        help="Recursively check for unions.",
-    )
-    parser.add_argument(
-        "--check-no-future-annotations",
-        action=argparse.BooleanOptionalAction,
-        type=bool,
-        default=False,
-        help="Check that `from __future__ import annotations` is not used.",
+        help="Recursively check that functions do not return Unions.",
     )
     parser.add_argument(
         "--check-no-hints-overload-implementation",
@@ -445,6 +468,7 @@ def main() -> None:
         default=False,
         help="Check that isinstance uses tuples instead of unions.",
     )
+    # endregion default disabled checks ------------------------------------------------
     parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,
