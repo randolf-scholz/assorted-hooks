@@ -3,7 +3,7 @@
 import ast
 from textwrap import dedent
 
-from assorted_hooks.check_typing import (
+from assorted_hooks.ast.check_typing import (
     check_no_tuple_isinstance,
     check_no_union_isinstance,
 )

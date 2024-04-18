@@ -324,6 +324,7 @@ module = [
     "scipy.*",
     "sklearn.*",
     "tqdm.*",
+    "github.*",
 ]
 ignore_missing_imports = true
 # endregion mypy configuration ---------------------------------------------------------

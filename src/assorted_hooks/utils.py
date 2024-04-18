@@ -33,14 +33,19 @@ def get_python_files(
     *,
     root: Optional[Path] = None,
     raise_notfound: bool = True,
-    relative_to_root: bool = True,
+    relative_to_root: bool = False,
 ) -> list[Path]:
     r"""Get all python files from the given list of files or patterns."""
-    root = (Path.cwd() if root is None else root).absolute()
-    files: list[Path] = []
+    paths: list[Path] = [Path(item).absolute() for item in files_or_pattern]
 
-    for file_or_pattern in files_or_pattern:
-        path = Path(file_or_pattern).absolute()
+    # determine the root directory
+    if root is None:
+        root = (
+            paths[0] if len(paths) == 1 and paths[0].is_dir() else Path.cwd().absolute()
+        )
+
+    files: list[Path] = []
+    for path in paths:
         if path.exists():
             if path.is_file():
                 files.append(path)
@@ -49,11 +54,9 @@ def get_python_files(
             continue
 
         # else: path does not exist
-        matches = list(root.glob(file_or_pattern))
+        matches = list(root.glob(path.name))
         if not matches and raise_notfound:
-            raise FileNotFoundError(
-                f"Pattern {file_or_pattern!r} did not match any files."
-            )
+            raise FileNotFoundError(f"Pattern {path!r} did not match any files.")
         files.extend(matches)
 
     if relative_to_root:

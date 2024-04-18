@@ -3,7 +3,7 @@
 import ast
 from textwrap import dedent
 
-from assorted_hooks.check_typing import check_no_hints_overload_implementation
+from assorted_hooks.ast.check_typing import check_no_hints_overload_implementation
 
 
 def test_no_hints_overload_implementation_true_negative():

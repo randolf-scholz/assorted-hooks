@@ -3,7 +3,7 @@
 import ast
 from textwrap import dedent
 
-from assorted_hooks.check_typing import check_overload_default_ellipsis
+from assorted_hooks.ast.check_typing import check_overload_default_ellipsis
 
 
 def test_overload_assign_positional_only():

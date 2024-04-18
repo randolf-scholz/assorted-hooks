@@ -4,7 +4,6 @@ __all__ = [
     # Constants
     "ISSUE_PATTERN",
     "ISSUE_REGEX",
-    "GITHUB",
     # classes
     "IssueMatch",
     # Functions
@@ -23,7 +22,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
-import github
+from github import Auth, Github
 
 from assorted_hooks.utils import get_python_files
 
@@ -45,7 +44,6 @@ class IssueMatch:
         return f"https://github.com/{self.org}/{self.repo}/issues/{self.number}"
 
 
-GITHUB = github.Github()
 ISSUE_PATTERN = (
     r"https:\/\/github\.com\/(?P<org>[\w-]+)\/(?P<repo>[\w-]+)\/issues\/(?P<number>\d+)"
 )
@@ -81,14 +79,14 @@ def find_issues_in_file(path: Path, /) -> Iterator[IssueMatch]:
                 )
 
 
-def is_closed(match: IssueMatch, /) -> bool:
+def is_closed(match: IssueMatch, /, *, git: Github) -> bool:
     r"""Check if the issue is closed."""
-    repo = GITHUB.get_repo(f"{match.org}/{match.repo}")
+    repo = git.get_repo(f"{match.org}/{match.repo}")
     issue = repo.get_issue(number=match.number)
     return issue.state == "closed"
 
 
-def check_file(filepath: str | Path, /) -> int:
+def check_file(filepath: str | Path, /, *, git: Github) -> int:
     r"""Check if issues are closed."""
     # Get the AST
     violations = 0
@@ -97,7 +95,7 @@ def check_file(filepath: str | Path, /) -> int:
     text = path.read_text(encoding="utf8")
 
     for issue in find_issues(text):
-        if is_closed(issue):
+        if is_closed(issue, git=git):
             violations += 1
             print(f"{fname}:{issue.line}:{issue.col}: Issue {issue.url} is resolved.")
 
@@ -117,6 +115,12 @@ def main() -> None:
         help="One or multiple files, folders or file patterns.",
     )
     parser.add_argument(
+        "--auth",
+        type=str,
+        default=None,
+        help="GitHub authentication token.",
+    )
+    parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,
         type=bool,
@@ -128,6 +132,15 @@ def main() -> None:
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
         __logger__.debug("args: %s", vars(args))
 
+    if args.auth is None:
+        raise NotImplementedError(
+            "GitHub authentication token is required."
+            "Please call with hook manually with additional args `--auth <token>`."
+        )
+
+    # authenticate
+    git = Github(auth=Auth.Token(args.auth))
+
     # find all files
     files: list[Path] = get_python_files(args.files)
 
@@ -136,13 +149,9 @@ def main() -> None:
     for file in files:
         __logger__.debug('Checking "%s:0"', file)
         try:
-            violations += check_file(file)
+            violations += check_file(file, git=git)
         except Exception as exc:
             raise RuntimeError(f"{file!s}: Checking file failed!") from exc
-
-    violations = 0
-    for file in Path("src").rglob("*.py"):
-        violations += check_file(file)
 
     if violations:
         raise SystemExit(1)

@@ -14,6 +14,7 @@ __all__ = [
     # Type Aliases
     "Config",
     # Constants
+    "STDLIB_MODULES",
     "NAME",
     "NAME_GROUP",
     "PACKAGES",
@@ -22,6 +23,7 @@ __all__ = [
     # Classes
     "GroupedDependencies",
     # Functions
+    "calculate_dependencies",
     "check_file",
     "detect_dependencies",
     "get_dependencies",
@@ -314,7 +316,6 @@ def group_dependencies(
     dependencies: set[str], /, *, first_party: Collection[str] = ()
 ) -> GroupedDependencies:
     r"""Splits the dependencies into first-party and third-party."""
-
     first_party_deps: set[str] = set()
     stdlib_deps: set[str] = set()
     third_party_deps: set[str] = set()
@@ -350,7 +351,7 @@ def detect_dependencies(fname: str | Path, /) -> GroupedDependencies:
     else:
         raise FileNotFoundError(f"Invalid path: {path}")
 
-    return group_dependencies(dependencies)
+    return group_dependencies(dependencies, first_party=first_party)
 
 
 def calculate_dependencies(

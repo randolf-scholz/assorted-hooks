@@ -3,7 +3,7 @@
 import ast
 from textwrap import dedent
 
-from assorted_hooks.check_typing import check_no_return_union
+from assorted_hooks.ast.check_typing import check_no_return_union
 
 
 def test_no_return_union_pep604():

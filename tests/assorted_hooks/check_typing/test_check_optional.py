@@ -3,7 +3,7 @@
 import ast
 from textwrap import dedent
 
-from assorted_hooks.check_typing import check_no_optional, check_optional
+from assorted_hooks.ast.check_typing import check_no_optional, check_optional
 
 
 def test_optional():
