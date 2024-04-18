@@ -21,7 +21,6 @@ __all__ = [
 
 import argparse
 import re
-import sys
 import tomllib
 
 
@@ -162,7 +161,7 @@ def main() -> None:
         raise RuntimeError(f'Checking file "{args.pyproject_file!s}" failed!') from exc
 
     if not passed:
-        sys.exit(1)
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

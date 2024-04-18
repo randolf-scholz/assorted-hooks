@@ -8,13 +8,23 @@ __all__ = [
     "BUILTIN_CONSTANTS",
     "BUILTIN_SITE_CONSTANTS",
     "BUILTIN_EXCEPTIONS",
+    # Protocols
+    "FileCheck",
     # Functions
     "get_python_files",
+    "check_all_files",
 ]
 
+import argparse
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Protocol
+
+
+class FileCheck(Protocol):
+    r"""Protocol for file checks."""
+
+    def __call__(self, file: Path, /, *, options: argparse.Namespace) -> int: ...
 
 
 def get_python_files(
@@ -50,6 +60,28 @@ def get_python_files(
         files = [file.relative_to(root) for file in files]
 
     return files
+
+
+def check_all_files(*checks: FileCheck, options: argparse.Namespace) -> None:
+    # find all files
+    files: list[Path] = get_python_files(options.files)
+
+    violations = 0
+
+    # apply script to all files
+    for file in files:
+        print(f"Checking {file!s}")
+        for check in checks:
+            try:
+                violations += check(file, options=options)
+            except Exception as exc:
+                raise RuntimeError(
+                    f"{file!s}: Performing check {check!r} failed!"
+                ) from exc
+
+    if violations:
+        print(f"{'-' * 79}\nFound {violations} violations.")
+        raise SystemExit(1)
 
 
 KEYWORDS: list[str] = [

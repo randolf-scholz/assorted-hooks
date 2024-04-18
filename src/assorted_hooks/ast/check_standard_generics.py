@@ -105,18 +105,20 @@ def get_deprecated_aliases(node: AST, /) -> frozenset[str]:
             return frozenset()
 
 
-def check_file(fname: str | Path, /) -> int:
+def check_file(filepath: str | Path, /) -> int:
     r"""Check a single file."""
+    # Get the AST
     violations = 0
-
-    with open(fname, "r", encoding="utf8") as file:
-        tree = ast.parse(file.read())
+    path = Path(filepath)
+    fname = str(path)
+    text = path.read_text(encoding="utf8")
+    tree = ast.parse(text, filename=fname)
 
     for node in ast.walk(tree):
         for alias in get_deprecated_aliases(node):
             violations += 1
-            loc = f"{fname!s}:{node.lineno}"
-            print(f"{loc}: Use {REPLACEMENTS[alias]!r} instead of {alias!r}.")
+            replacement = REPLACEMENTS[alias]
+            print(f"{fname}:{node.lineno}: Use {replacement!r} instead of {alias!r}.")
 
     return violations
 
@@ -170,7 +172,7 @@ def main() -> None:
 
     if violations:
         print(f"{'-' * 79}\nFound {violations} violations.")
-        sys.exit(1)
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

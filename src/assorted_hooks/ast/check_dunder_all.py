@@ -22,12 +22,17 @@ from ast import (
     AnnAssign,
     Assign,
     AugAssign,
+    Compare,
     Constant,
+    Eq,
     Expr,
+    If,
     Import,
     ImportFrom,
+    List,
     Module,
     Name,
+    Pass,
 )
 from collections import Counter
 from collections.abc import Iterator
@@ -42,10 +47,10 @@ __logger__ = logging.getLogger(__name__)
 def is_main_node(node: AST, /) -> bool:
     r"""Check whether node is `if __name__ == "__main__":` check."""
     match node:
-        case ast.If(
-            test=ast.Compare(
+        case If(
+            test=Compare(
                 left=Name(id="__name__"),
-                ops=[ast.Eq()],
+                ops=[Eq()],
                 comparators=[Constant(value="__main__")],
             )
         ):
@@ -87,7 +92,7 @@ def is_literal_list(node: AST, /) -> bool:
     #         return True
     #     case _:
     #         return False
-    return isinstance(node, ast.List) and all(
+    return isinstance(node, List) and all(
         isinstance(el, Constant) and isinstance(el.value, str) for el in node.elts
     )
 
@@ -113,7 +118,7 @@ def is_superfluous(tree: Module, /) -> bool:
             break  # only remove the first occurrence
 
     node_types = Counter(type(node) for node in body)
-    return set(node_types) <= {Expr, ast.Pass}
+    return set(node_types) <= {Expr, Pass}
 
 
 def is_at_top(node: Assign | AnnAssign, /, *, module: Module) -> bool:
@@ -150,7 +155,7 @@ def get__all__nodes(tree: Module, /) -> Iterator[Assign | AnnAssign | AugAssign]
 
 
 def check_file(
-    fname: str | Path,
+    filepath: str | Path,
     /,
     *,
     allow_missing: bool = True,
@@ -162,13 +167,16 @@ def check_file(
     warn_superfluous: bool = True,
 ) -> int:
     r"""Check a single file."""
-    with open(fname, "rb") as file:
-        tree = ast.parse(file.read())
+    # Get the AST
+    violations = 0
+    path = Path(filepath)
+    fname = str(path)
+    text = path.read_text(encoding="utf8")
+    tree = ast.parse(text, filename=fname)
 
     if not isinstance(tree, Module):
         raise TypeError(f"Expected ast.Module, got {type(tree)}")
 
-    violations = 0
     node_list: list[Assign | AnnAssign | AugAssign] = []
 
     match tree.body:
@@ -182,7 +190,7 @@ def check_file(
         case []:
             if not is_superfluous(tree):
                 violations += 1
-                print(f"{fname!s}:0: No __all__ found.")
+                print(f"{fname}:0: No __all__ found.")
         case [node, *nodes]:
             if not isinstance(node, Assign | AnnAssign):
                 raise TypeError("Expected __all__ to be an assignment.")
@@ -190,24 +198,24 @@ def check_file(
                 raise ValueError("Expected __all__ to have a value.")
             if warn_non_literal and not is_literal_list(node.value):
                 violations += 1
-                print(f"{fname!s}:{node.lineno}: __all__ is not a literal list.")
+                print(f"{fname}:{node.lineno}: __all__ is not a literal list.")
             if warn_annotated and isinstance(node, AnnAssign):
                 violations += 1
-                print(f"{fname!s}:{node.lineno}: __all__ is annotated.")
+                print(f"{fname}:{node.lineno}: __all__ is annotated.")
             if warn_multiple_definitions and nodes:
                 violations += 1
-                print(f"{fname!s}:{node.lineno}: Multiple __all__ found.")
+                print(f"{fname}:{node.lineno}: Multiple __all__ found.")
                 for n in nodes:
-                    print(f"{fname!s}:{n.lineno}: additional __all__.")
+                    print(f"{fname}:{n.lineno}: additional __all__.")
             if warn_superfluous and is_superfluous(tree):
                 violations += 1
-                print(f"{fname!s}:{node.lineno}: __all__ is superfluous.")
+                print(f"{fname}:{node.lineno}: __all__ is superfluous.")
             if warn_location and not is_at_top(node, module=tree):
                 violations += 1
-                print(f"{fname!s}:{node.lineno}: __all__ is not at the top.")
+                print(f"{fname}:{node.lineno}: __all__ is not at the top.")
             if warn_duplicate_keys and (keys := get_duplicate_keys(node)):
                 violations += 1
-                print(f"{fname!s}:{node.lineno}: __all__ has duplicate {keys=}.")
+                print(f"{fname}:{node.lineno}: __all__ has duplicate {keys=}.")
 
     return violations
 
@@ -309,7 +317,7 @@ def main():
 
     if violations:
         print(f"{'-' * 79}\nFound {violations} violations.")
-        sys.exit(1)
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

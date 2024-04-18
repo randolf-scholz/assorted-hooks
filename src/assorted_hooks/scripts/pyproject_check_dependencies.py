@@ -14,18 +14,16 @@ __all__ = [
     # Type Aliases
     "Config",
     # Constants
-    "MODULES_DEFAULT",
     "NAME",
     "NAME_GROUP",
     "PACKAGES",
     "RE_NAME",
     "RE_NAME_GROUP",
-    "TESTS_DEFAULT",
     # Classes
     "GroupedDependencies",
     # Functions
     "check_file",
-    "collect_dependencies",
+    "detect_dependencies",
     "get_dependencies",
     "get_deps_file",
     "get_deps_module",
@@ -35,8 +33,7 @@ __all__ = [
     "get_name_pyproject",
     "group_dependencies",
     "main",
-    "normalize_dep_name",
-    "validate_dependencies",
+    "normalize",
 ]
 
 import argparse
@@ -47,11 +44,12 @@ import pkgutil
 import re
 import sys
 import tomllib
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from contextlib import redirect_stderr, redirect_stdout
+from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
-from typing import Any, NamedTuple, TypeAlias
+from typing import Any, Optional, TypeAlias
 
 # import metadata library
 if sys.version_info >= (3, 11):  # noqa: UP036
@@ -66,9 +64,8 @@ else:
             " Please use python≥3.11 or install 'importlib_metadata'."
         ) from exc
 
-
-MODULES_DEFAULT = ("src/",)
-TESTS_DEFAULT = ("tests/",)
+STDLIB_MODULES = sys.stdlib_module_names
+r"""A set of all standard library modules."""
 
 # https://peps.python.org/pep-0508/#names
 # NOTE: we modify this regex a bit to allow to match inside context
@@ -88,7 +85,7 @@ Config: TypeAlias = dict[str, Any]
 # https://github.com/python/typeshed/blob/d82a8325faf35aa0c9d03d9e9d4a39b7fcb78f8e/stdlib/importlib/metadata/__init__.pyi#L32
 
 
-def normalize_dep_name(dep: str, /) -> str:
+def normalize(dep: str, /) -> str:
     r"""Normalize a dependency name."""
     return dep.lower().replace("-", "_")
 
@@ -103,6 +100,7 @@ def get_dependencies(tree: ast.AST, /, *, ignore_private: bool = True) -> set[st
             case ast.ImportFrom(module=str(name)):
                 imported_modules.append(name)
 
+    # only keep the top-level module name
     dependencies: set[str] = set()
     for name in imported_modules:
         module_name = name.split(".")[0]
@@ -120,8 +118,8 @@ def get_deps_file(file_path: str | Path, /) -> set[str]:
     if path.suffix != ".py":
         raise ValueError(f"Invalid file extension: {path.suffix}")
 
-    with open(path, "r", encoding="utf8") as file:
-        tree = ast.parse(file.read())
+    text = path.read_text(encoding="utf8")
+    tree = ast.parse(text, filename=str(path))
 
     return get_dependencies(tree)
 
@@ -303,103 +301,127 @@ def get_deps_pyproject_tests(config: Config, /) -> set[str]:
     return set().union(*deps.values())
 
 
-class GroupedDependencies(NamedTuple):
+@dataclass
+class GroupedDependencies:
     r"""A named tuple containing the dependencies grouped by type."""
 
-    imported_dependencies: set[str]
-    stdlib_dependencies: set[str]
+    first_party: set[str]
+    third_party: set[str]
+    stdlib: set[str]
 
 
-def group_dependencies(dependencies: set[str], /) -> GroupedDependencies:
+def group_dependencies(
+    dependencies: set[str], /, *, first_party: Collection[str] = ()
+) -> GroupedDependencies:
     r"""Splits the dependencies into first-party and third-party."""
-    imported_dependencies = set()
-    stdlib_dependencies = set()
+
+    first_party_deps: set[str] = set()
+    stdlib_deps: set[str] = set()
+    third_party_deps: set[str] = set()
 
     for dependency in dependencies:
-        if dependency in sys.stdlib_module_names:
-            stdlib_dependencies.add(dependency)
+        if dependency in STDLIB_MODULES:
+            stdlib_deps.add(dependency)
+        elif dependency in first_party:
+            first_party_deps.add(dependency)
         else:
-            imported_dependencies.add(dependency)
+            third_party_deps.add(dependency)
 
     return GroupedDependencies(
-        imported_dependencies=imported_dependencies,
-        stdlib_dependencies=stdlib_dependencies,
+        first_party=first_party_deps,
+        third_party=third_party_deps,
+        stdlib=stdlib_deps,
     )
 
 
-def collect_dependencies(
-    fname: str | Path, /, *, raise_notfound: bool = True
-) -> set[str]:
+def detect_dependencies(fname: str | Path, /) -> GroupedDependencies:
     r"""Collect the third-party dependencies from files in the given path."""
     path = Path(fname)
-    dependencies = set()
+    dependencies: set[str] = set()
+    first_party: set[str] = set()
 
     if path.is_file():  # Single file
         dependencies |= get_deps_file(path)
     elif path.is_dir():  # Directory
         for file_path in path.rglob("*.py"):
-            if file_path.is_file():
-                dependencies |= get_deps_file(file_path)
+            dependencies |= get_deps_file(file_path)
     elif not path.exists():  # assume module
-        try:
-            dependencies |= get_deps_module(str(fname))
-        except ModuleNotFoundError:
-            if raise_notfound:
-                raise
-    elif raise_notfound:
+        dependencies |= get_deps_module(str(fname))
+    else:
         raise FileNotFoundError(f"Invalid path: {path}")
 
-    return dependencies
+    return group_dependencies(dependencies)
 
 
-def validate_dependencies(
+def calculate_dependencies(
     *,
-    pyproject_dependencies: set[str],
-    imported_dependencies: set[str],
+    imported_deps: set[str],
+    declared_deps: set[str],
+    excluded_deps: set[str],
+    excluded_declared_deps: set[str],
+    excluded_imported_deps: set[str],
 ) -> tuple[set[str], set[str], set[str]]:
-    r"""Validate the dependencies."""
-    # extract 3rd party dependencies.
-    imported_dependencies = group_dependencies(
-        imported_dependencies
-    ).imported_dependencies
+    r"""Check the dependencies of a module.
 
-    # map the dependencies to their pip-package names
-    imported_deps: set[str] = set()
-    unknown_deps: set[str] = set()
-    for dep in imported_dependencies:
+    Args:
+        imported_deps: The imported dependencies.
+        declared_deps: The declared dependencies.
+        excluded_deps: Dependencies to exclude, no matter what.
+        excluded_declared_deps: Dependencies to exclude from the declared dependencies.
+        excluded_imported_deps: Dependencies to exclude from the imported dependencies.
+    """
+    # map the imported dependencies to their pip-package names
+    actual_deps: set[str] = set()
+    missing_deps: set[str] = set()
+    for dep in imported_deps:
         if dep not in PACKAGES:
-            unknown_deps.add(dep)
+            missing_deps.add(dep)
             continue
 
         # get the pypi-package name
-        values: list[str] = PACKAGES[dep]
-        if len(values) > 1:
-            raise ValueError(f"Found multiple pip-packages for {dep!r}: {values}.")
-        imported_deps.add(values[0])
+        match PACKAGES[dep]:
+            case [value]:
+                actual_deps.add(value)
+            case [*values]:
+                raise ValueError(f"Found multiple pip-packages for {dep!r}: {values}.")
 
     # normalize the dependencies
-    pyproject_deps = {normalize_dep_name(dep) for dep in pyproject_dependencies}
-    imported_deps = {normalize_dep_name(dep) for dep in imported_deps}
+    excluded_deps = set(map(normalize, excluded_deps))
+    excluded_imported_deps = set(map(normalize, excluded_imported_deps))
+    excluded_declared_deps = set(map(normalize, excluded_declared_deps))
+    declared_deps = set(map(normalize, declared_deps)) - (
+        excluded_declared_deps | excluded_deps
+    )
+    actual_deps = set(map(normalize, actual_deps)) - (
+        excluded_imported_deps | excluded_deps
+    )
+    missing_deps = set(map(normalize, missing_deps)) - excluded_deps
 
     # check if all imported dependencies are listed in pyproject.toml
-    missing_deps = imported_deps - pyproject_deps
-    unused_deps = pyproject_deps - imported_deps
+    undeclared_deps = actual_deps - declared_deps
+    unused_deps = declared_deps - actual_deps
 
-    return missing_deps, unused_deps, unknown_deps
+    return undeclared_deps, unused_deps, missing_deps
 
 
 def check_file(
     fname: str | Path,
     /,
     *,
-    modules: Sequence[str] = MODULES_DEFAULT,
-    tests: Sequence[str] = TESTS_DEFAULT,
-    ignore_imported_deps: Sequence[str] = (),
-    ignore_project_deps: Sequence[str] = (),
-    ignore_test_deps: Sequence[str] = (),
-    error_superfluous_test_deps: bool = True,
-    error_unused_project_deps: bool = True,
-    error_unused_test_deps: bool = False,
+    module_dir: str = "src/",
+    tests_dir: Optional[str] = "tests/",
+    exclude: Sequence[str] = (),
+    known_unused_deps: Sequence[str] = (),
+    known_unused_test_deps: Sequence[str] = (),
+    known_undeclared_deps: Sequence[str] = (),
+    known_undeclared_test_deps: Sequence[str] = (),
+    error_on_missing_deps: bool = True,
+    error_on_missing_test_deps: bool = True,
+    error_on_superfluous_test_deps: bool = True,
+    error_on_undeclared_deps: bool = True,
+    error_on_undeclared_test_deps: bool = True,
+    error_on_unused_deps: bool = True,
+    error_on_unused_test_deps: bool = False,
     debug: bool = False,
 ) -> int:
     r"""Check a single file."""
@@ -409,106 +431,74 @@ def check_file(
         config = tomllib.load(file)
 
     # get the normalized project name
-    project_name = normalize_dep_name(get_name_pyproject(config))
-
-    if debug:
-        print(f"{project_name=}")
-
-    excluded_dependencies = {project_name} | set(ignore_imported_deps)
-    # compute the dependencies from the source files
-    modules_given = modules is not MODULES_DEFAULT
-    imported_dependencies = set().union(
-        *(
-            collect_dependencies(fname, raise_notfound=modules_given)
-            for fname in modules
-        )
-    )
-    # ignore the excluded dependencies
-    imported_dependencies -= excluded_dependencies
+    project_name = normalize(get_name_pyproject(config))
     # get dependencies from pyproject.toml
-    pyproject_dependencies = get_deps_pyproject_project(config)
-    # remove ignored dependencies
-    pyproject_dependencies -= set(ignore_project_deps)
-    # validate the dependencies
-    missing_deps, unused_deps, unknown_deps = validate_dependencies(
-        pyproject_dependencies=pyproject_dependencies,
-        imported_dependencies=imported_dependencies,
-    )
-    # ----------------------------------------------------------------------------------
+    declared_deps = get_deps_pyproject_project(config) | {project_name}
+    # get test dependencies from pyproject.toml
+    declared_test_deps = get_deps_pyproject_tests(config) | {project_name}
+    # get superfluous test dependencies
+    superfluous_test_deps = (declared_deps & declared_test_deps) - {project_name}
+    # setup ignored dependencies
+    excluded_deps = set(exclude)
 
-    # region get test dependencies -----------------------------------------------------
-    # compute the test dependencies from the test files
-    excluded_dependencies |= imported_dependencies
-    tests_given = tests is not TESTS_DEFAULT
-    imported_test_dependencies = set().union(
-        *(collect_dependencies(fname, raise_notfound=tests_given) for fname in tests)
+    # region check project dependencies ------------------------------------------------
+    # detect the imported dependencies from the source files
+    detected_deps = detect_dependencies(module_dir)
+    imported_deps = detected_deps.third_party
+    # get the normalized project name
+    undeclared_deps, unused_deps, missing_deps = calculate_dependencies(
+        imported_deps=imported_deps,
+        declared_deps=declared_deps,
+        excluded_deps=excluded_deps,
+        excluded_declared_deps=set(known_unused_deps),
+        excluded_imported_deps=set(known_undeclared_deps),
     )
-    # ignore the excluded dependencies
-    imported_test_dependencies -= excluded_dependencies
-    # get dependencies from pyproject.toml
-    pyproject_test_dependencies = get_deps_pyproject_tests(config)
-    # remove ignored dependencies
-    pyproject_test_dependencies -= set(ignore_test_deps)
-    # validate the dependencies
-    missing_test_deps, unused_test_deps, unknown_test_deps = validate_dependencies(
-        pyproject_dependencies=pyproject_test_dependencies,
-        imported_dependencies=imported_test_dependencies,
+
+    if undeclared_deps and error_on_undeclared_deps:
+        violations += 1
+        print(f"Detected undeclared dependencies: {undeclared_deps}")
+    if unused_deps and error_on_unused_deps:
+        violations += 1
+        print(f"Detected unused dependencies: {unused_deps}")
+    if missing_deps and error_on_missing_deps:
+        violations += 1
+        print(f"Detected missing dependencies: {missing_deps}")
+    # endregion check project dependencies ----------------------------------------------
+
+    # region check test dependencies ---------------------------------------------------
+    if tests_dir is None:
+        return violations
+
+    detected_test_deps = detect_dependencies(tests_dir)
+    imported_test_deps = detected_test_deps.third_party
+
+    # we can safely ignore any undeclared dependencies, if they are part of the declared
+    # project dependencies.
+
+    undeclared_test_deps, unused_test_deps, missing_test_deps = calculate_dependencies(
+        imported_deps=imported_test_deps,
+        declared_deps=declared_test_deps,
+        excluded_deps=excluded_deps,
+        excluded_declared_deps=set(known_unused_test_deps),
+        excluded_imported_deps=declared_deps | set(known_undeclared_test_deps),
     )
-    superfluous_test_deps = (
-        imported_test_dependencies | pyproject_test_dependencies
-    ) & pyproject_dependencies
-    # endregion get test dependencies --------------------------------------------------
 
-    # region emit violations -----------------------------------------------------------
-    if missing_deps:
+    if undeclared_test_deps and error_on_undeclared_test_deps:
         violations += 1
-        print(
-            f"Detected dependencies imported but not listed in pyproject.toml: {missing_deps}"
-        )
-    if unused_deps and error_unused_project_deps:
+        print(f"Detected undeclared test dependencies: {undeclared_test_deps}.")
+    if unused_test_deps and error_on_unused_test_deps:
         violations += 1
-        print(
-            f"Detected dependencies listed in pyproject.toml, but never imported: {unused_deps}"
-        )
-    if unknown_deps:
+        print(f"Detected unused test dependencies: {unused_test_deps}.")
+    if missing_test_deps and error_on_missing_test_deps:
         violations += 1
-        print(
-            f"Detected dependencies that are not installed in the virtual environment: {unknown_deps}"
-        )
-    if superfluous_test_deps and error_superfluous_test_deps:
+        print(f"Detected missing test dependencies: {missing_test_deps}.")
+    if superfluous_test_deps and error_on_superfluous_test_deps:
         violations += 1
-        print(
-            f"Detected superfluous test dependencies: {superfluous_test_deps}\n"
-            "These are already listed in project dependencies and need not be"
-            " listed again in test dependency section"
-        )
-    if missing_test_deps:
-        violations += 1
-        print(
-            "Detected test dependencies imported, but not listed in pyproject.toml:"
-            f" {missing_test_deps}."
-        )
-    if unused_test_deps and error_unused_test_deps:
-        violations += 1
-        print(
-            "Detected test dependencies listed in pyproject.toml, but never imported:"
-            f" {unused_test_deps}."
-        )
-    if unknown_test_deps:
-        violations += 1
-        print(
-            "Detected dependencies that are not installed in the virtual environment:"
-            f" {unknown_test_deps}."
-        )
-    # endregion emit violations --------------------------------------------------------
-
-    if violations:
-        print(
-            "\nNOTE: Optional dependencies are currently not supported (PR welcome)."
-            "\nNOTE: Workaround: use `importlib.import_module('optional_dependency')`."
-        )
+        print(f"Detected superfluous test dependencies: {superfluous_test_deps}\n")
+        print("These are redundant, as they are already project dependencies")
 
     return violations
+    # endregion emit violations --------------------------------------------------------
 
 
 def main() -> None:
@@ -525,57 +515,99 @@ def main() -> None:
         help="The path to the pyproject.toml file.",
     )
     parser.add_argument(
-        "--modules",
-        nargs="*",
-        default=MODULES_DEFAULT,
+        "--module-dir",
+        default="src/",
         type=str,
         help="The folder of the module to check.",
     )
     parser.add_argument(
-        "--tests",
-        nargs="*",
-        default=TESTS_DEFAULT,
+        "--tests-dir",
+        default="tests/",
         type=str,
         help="The path to the test directories.",
     )
     parser.add_argument(
-        "--ignore-imported-deps",
+        "--exclude",
+        nargs="*",
+        default=[],
+        type=str,
+        help="List of dependencies to exclude no matter what.",
+    )
+    parser.add_argument(
+        "--known-unused-deps",
         default=[],
         nargs="*",
         type=str,
-        help="list of import dependencies to ignore",
+        help="List of used dependencies to ignore.",
     )
     parser.add_argument(
-        "--ignore-project-deps",
+        "--known-unused-test-deps",
         default=[],
         nargs="*",
         type=str,
-        help="list of pyproject dependencies to ignore.",
+        help="List of used dependencies to ignore.",
     )
     parser.add_argument(
-        "--ignore-test-deps",
+        "--known-undeclared-deps",
         default=[],
         nargs="*",
         type=str,
-        help="list of pyproject test dependencies to ignore",
+        help="List of undeclared project dependencies to ignore.",
     )
     parser.add_argument(
-        "--error-superfluous-test-deps",
+        "--known-undeclared-test-deps",
+        default=[],
+        nargs="*",
+        type=str,
+        help="List of undeclared test dependencies to ignore.",
+    )
+    # parser.add_argument(
+    #     "--error-on-superfluous-deps",
+    #     action=argparse.BooleanOptionalAction,
+    #     default=True,
+    #     help="Raise error if dependency is superfluous.",
+    # )
+    parser.add_argument(
+        "--error-on-undeclared-deps",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Raise error if dependency is undeclared.",
+    )
+    parser.add_argument(
+        "--error-on-unused-deps",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Raise error if dependency is unused.",
+    )
+    parser.add_argument(
+        "--error-on-missing-deps",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Raise error if dependency is missing (not installed).",
+    )
+    parser.add_argument(
+        "--error-on-undeclared-test-deps",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Raise error if test dependency is undeclared.",
+    )
+    parser.add_argument(
+        "--error-on-superfluous-test-deps",
         action=argparse.BooleanOptionalAction,
         default=True,
         help="Raise error if test dependency is superfluous.",
     )
     parser.add_argument(
-        "--error_unused_project_deps",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Raise error if pyproject.toml lists unused project dependencies",
-    )
-    parser.add_argument(
-        "--error_unused_test_deps",
+        "--error-on-unused-test-deps",
         action=argparse.BooleanOptionalAction,
         default=False,
-        help="Raise error if pyproject.toml lists unused test dependencies",
+        help="Raise error if test dependency is unused.",
+    )
+    parser.add_argument(
+        "--error-on-missing-test-deps",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Raise error if dependency is not missing (not installed).",
     )
     parser.add_argument(
         "--debug",
@@ -589,14 +621,21 @@ def main() -> None:
     try:
         violations = check_file(
             args.pyproject_file,
-            modules=args.modules,
-            tests=args.tests,
-            ignore_imported_deps=args.ignore_imported_deps,
-            ignore_project_deps=args.ignore_project_deps,
-            ignore_test_deps=args.ignore_test_deps,
-            error_superfluous_test_deps=args.error_superfluous_test_deps,
-            error_unused_project_deps=args.error_unused_project_deps,
-            error_unused_test_deps=args.error_unused_test_deps,
+            module_dir=args.module_dir,
+            tests_dir=args.tests_dir,
+            exclude=args.exclude,
+            known_unused_deps=args.known_unused_deps,
+            known_unused_test_deps=args.known_unused_test_deps,
+            known_undeclared_deps=args.known_undeclared_deps,
+            known_undeclared_test_deps=args.known_undeclared_test_deps,
+            # error selection
+            error_on_unused_deps=args.error_unused_deps,
+            error_on_missing_deps=args.error_missing_deps,
+            error_on_superfluous_test_deps=args.error_superfluous_test_deps,
+            error_on_unused_test_deps=args.error_unused_test_deps,
+            error_on_undeclared_deps=args.error_on_undeclared_deps,
+            error_on_undeclared_test_deps=args.error_on_undeclared_test_deps,
+            error_on_missing_test_deps=args.error_missing_test_deps,
             debug=args.debug,
         )
     except Exception as exc:
@@ -604,7 +643,11 @@ def main() -> None:
 
     if violations:
         print(f"{'-' * 79}\nFound {violations} violations.")
-        sys.exit(1)
+        print(
+            "\nNOTE: Optional dependencies are currently not supported (PR welcome)."
+            "\nNOTE: Workaround: use `importlib.import_module('optional_dependency')`."
+        )
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

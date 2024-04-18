@@ -77,6 +77,12 @@
   entry: '\b(axes=)'
   language: pygrep
   types: [python]
+- id: python-system-exit
+  name: python-system-exit
+  description: "Consider using `raise SystemExit(1)` instead of `sys.exit(1)`."
+  entry: '\bsys\.exit\(1\)'
+  language: pygrep
+  types: [python]
 # endregion pygrep ---------------------------------------------------------------------
 
 
@@ -114,6 +120,15 @@
   types: [python]
 # endregion ast-based ------------------------------------------------------------------
 
+
+# region misc --------------------------------------------------------------------------
+- id: expired-github-issues
+  name: expired-github-issues
+  description: "Check for expired GitHub issues."
+  entry: check-github-issues
+  language: python
+  types: [text]
+# endregion misc -----------------------------------------------------------------------
 
 # region latex -------------------------------------------------------------------------
 - id: chktex

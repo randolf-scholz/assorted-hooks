@@ -109,19 +109,20 @@ def get_imported_attributes(tree: AST, /) -> Iterator[tuple[Attribute, Name, str
                 yield node, parent, string
 
 
-def check_file(file_path: Path, /, *, debug: bool = False) -> int:
+def check_file(filepath: str | Path, /, *, debug: bool = False) -> int:
     r"""Finds shadowed attributes in a file."""
+    # Get the AST
     violations = 0
-
-    # Your code here
-    with open(file_path, "r", encoding="utf8") as file:
-        tree = ast.parse(file.read())
+    path = Path(filepath)
+    fname = str(path)
+    text = path.read_text(encoding="utf8")
+    tree = ast.parse(text, filename=fname)
 
     # find all violations
     for node, _, string in get_imported_attributes(tree):
         violations += 1
         print(
-            f"{file_path!s}:{node.lineno!s}"
+            f"{fname}:{node.lineno}"
             f" use directly imported {node.attr!r} instead of {string!r}"
         )
 
@@ -175,7 +176,7 @@ def main() -> None:
 
     if violations:
         print(f"{'-' * 79}\nFound {violations} violations.")
-        sys.exit(1)
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

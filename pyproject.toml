@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 # region project configuration ---------------------------------------------------------
 [project]
 name = "assorted-hooks"
-version = "0.1.68"
+version = "0.2.0"
 authors = [{name="Randolf Scholz", email="randolf.scholz@gmail.com"},]
 description = "Custom pre-commit hooks"
 
@@ -28,7 +28,9 @@ readme = "README.md"
 
 # dependencies
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "pygithub>=2.3.0",
+]
 
 [project.urls]
 homepage = "https://github.com/randolf-scholz/assorted-hooks"
@@ -36,12 +38,14 @@ documentation = "https://github.com/randolf-scholz/assorted-hooks"
 repository = "https://github.com/randolf-scholz/assorted-hooks"
 
 [project.scripts]
+# regex hooks
+check-github-issues = "assorted_hooks.check_github_issues:main"
 # ast hooks
-check-dunder-all = "assorted_hooks.check_dunder_all:main"
-check-direct-imports = "assorted_hooks.check_direct_imports:main"
-check-no-mixed-args = "assorted_hooks.check_no_mixed_args:main"
-check-standard-generics = "assorted_hooks.check_standard_generics:main"
-check-typing = "assorted_hooks.check_typing:main"
+check-dunder-all = "assorted_hooks.ast.check_dunder_all:main"
+check-direct-imports = "assorted_hooks.ast.check_direct_imports:main"
+check-no-mixed-args = "assorted_hooks.ast.check_no_mixed_args:main"
+check-standard-generics = "assorted_hooks.ast.check_standard_generics:main"
+check-typing = "assorted_hooks.ast.check_typing:main"
 # script hooks
 python-check-clean-interface = "assorted_hooks.scripts.check_clean_interface:main"
 pyproject-check-deps = "assorted_hooks.scripts.pyproject_check_dependencies:main"
@@ -57,7 +61,7 @@ dev = [
     "pre-commit>=3.7.0",
     "ruff>=0.3.7",
     "ruff-lsp>=0.0.53",
-    "pyright>=1.1.358",
+    "pyright>=1.1.359",
     "mypy>=1.9.0",
 ]
 test = [
@@ -105,7 +109,7 @@ select = [
     "RUF",   # ruff specific
     "ISC",   # implicit-str-concat
     "TRY",   # tryceratops
-    # "FURB",  # refurb
+     "FURB",  # refurb
 ]
 ignore = [
     # pydocstyle

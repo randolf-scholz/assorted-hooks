@@ -143,7 +143,7 @@ def check_no_future_annotations(tree: AST, /, *, fname: str) -> int:
                 for alias in future_import.names:
                     if alias.name == "annotations":
                         violations += 1
-                        print(f"{fname!s}:{node.lineno}: Do not use PEP563!")
+                        print(f"{fname}:{node.lineno}: Do not use PEP563!")
     return violations
 
 
@@ -162,7 +162,7 @@ def check_overload_default_ellipsis(tree: AST, /, *, fname: str) -> int:
                 case _:
                     violations += 1
                     print(
-                        f"{fname!s}:{node.lineno}: Default value for"
+                        f"{fname}:{node.lineno}: Default value for"
                         f" {arg.arg!r} inside @overload should be '...'"
                     )
 
@@ -176,7 +176,7 @@ def check_overload_default_ellipsis(tree: AST, /, *, fname: str) -> int:
                 case _:
                     violations += 1
                     print(
-                        f"{fname!s}:{node.lineno}: Default value for"
+                        f"{fname}:{node.lineno}: Default value for"
                         f" {kwarg.arg!r} inside @overload should be '...'"
                     )
     return violations
@@ -190,7 +190,7 @@ def check_pep604_union(tree: AST, /, *, fname: str) -> int:
     for node in ast.walk(tree):
         if is_typing_union(node):
             violations += 1
-            print(f"{fname!s}:{node.lineno}: Use X | Y instead of Union[X, Y]!")
+            print(f"{fname}:{node.lineno}: Use X | Y instead of Union[X, Y]!")
 
     return violations
 
@@ -205,7 +205,7 @@ def check_no_return_union(tree: AST, /, *, recursive: bool, fname: str) -> int:
             continue
         if is_union(node.returns) or (recursive and has_union(node.returns)):
             violations += 1
-            print(f"{fname!s}:{node.lineno}: Do not return union type!")
+            print(f"{fname}:{node.lineno}: Do not return union type!")
 
     return violations
 
@@ -218,7 +218,7 @@ def check_no_optional(tree: AST, /, *, fname: str) -> int:
         match node:
             case Subscript(value=Name(id="Optional")):
                 violations += 1
-                print(f"{fname!s}:{node.lineno}: Use None | X instead of Optional[X]")
+                print(f"{fname}:{node.lineno}: Use None | X instead of Optional[X]")
 
     return violations
 
@@ -235,7 +235,7 @@ def check_no_union_isinstance(tree: AST, /, *, fname: str) -> int:
             ):
                 violations += 1
                 print(
-                    f"{fname!s}:{node.lineno}: Use tuple instead of union in isinstance"
+                    f"{fname}:{node.lineno}: Use tuple instead of union in isinstance"
                 )
             case Call(
                 func=Name(id="issubclass"),
@@ -243,7 +243,7 @@ def check_no_union_isinstance(tree: AST, /, *, fname: str) -> int:
             ):
                 violations += 1
                 print(
-                    f"{fname!s}:{node.lineno}: Use tuple instead of union in issubclass"
+                    f"{fname}:{node.lineno}: Use tuple instead of union in issubclass"
                 )
 
     return violations
@@ -261,7 +261,7 @@ def check_no_tuple_isinstance(tree: AST, /, *, fname: str) -> int:
             ):
                 violations += 1
                 print(
-                    f"{fname!s}:{node.lineno}: Use union instead of tuple in isinstance"
+                    f"{fname}:{node.lineno}: Use union instead of tuple in isinstance"
                 )
             case Call(
                 func=Name(id="issubclass"),
@@ -269,7 +269,7 @@ def check_no_tuple_isinstance(tree: AST, /, *, fname: str) -> int:
             ):
                 violations += 1
                 print(
-                    f"{fname!s}:{node.lineno}: Use union instead of tuple in issubclass"
+                    f"{fname}:{node.lineno}: Use union instead of tuple in issubclass"
                 )
 
     return violations
@@ -310,7 +310,7 @@ def check_no_hints_overload_implementation(
                     ):
                         violations += 1
                         print(
-                            f"{fname!s}:{func.lineno}: Overloaded function"
+                            f"{fname}:{func.lineno}: Overloaded function"
                             f" implementation {func.name!r} should not have type hints."
                         )
     return violations
@@ -324,21 +324,22 @@ def check_optional(tree: AST, /, *, fname: str) -> int:
         match node:
             case BinOp(op=BitOr(), left=Constant(value=None)):
                 violations += 1
-                print(f"{fname!s}:{node.lineno}: Use Optional[X] instead of None | X")
+                print(f"{fname}:{node.lineno}: Use Optional[X] instead of None | X")
             case BinOp(op=BitOr(), right=Constant(value=None)):
                 violations += 1
-                print(f"{fname!s}:{node.lineno}: Use Optional[X] instead of X | None")
+                print(f"{fname}:{node.lineno}: Use Optional[X] instead of X | None")
 
     return violations
 
 
-def check_file(file_or_path: str | Path, /, *, options: argparse.Namespace) -> int:
+def check_file(filepath: str | Path, /, *, options: argparse.Namespace) -> int:
     r"""Check whether the file contains mixed positional and keyword arguments."""
-    fname = str(file_or_path)
-    with open(file_or_path, "rb") as file:
-        tree = ast.parse(file.read(), filename=fname)
-
+    # Get the AST
     violations = 0
+    path = Path(filepath)
+    fname = str(path)
+    text = path.read_text(encoding="utf8")
+    tree = ast.parse(text, filename=fname)
 
     if options.check_optional:
         violations += check_optional(tree, fname=fname)
@@ -474,4 +475,4 @@ def main() -> None:
 
     if violations:
         print(f"{'-' * 79}\nFound {violations} violations.")
-        sys.exit(1)
+        raise SystemExit(1)

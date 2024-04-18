@@ -148,7 +148,7 @@ def method_has_mixed_args(node: Func, /, *, allow_one: bool = False) -> bool:
 
 
 def check_file(
-    fname: str | Path,
+    filepath: str | Path,
     /,
     *,
     allow_one: bool = False,
@@ -160,7 +160,12 @@ def check_file(
     ignore_wo_pos_only: bool = False,
 ) -> int:
     r"""Check whether the file contains mixed positional and keyword arguments."""
+    # Get the AST
     violations = 0
+    path = Path(filepath)
+    fname = str(path)
+    text = path.read_text(encoding="utf8")
+    tree = ast.parse(text, filename=fname)
 
     def is_ignorable(func: Func, /) -> bool:
         r"""Checks if the func can be ignored."""
@@ -173,9 +178,6 @@ def check_file(
             or any(is_decorated_with(func, name) for name in ignore_decorators)
         )
 
-    with open(fname, "rb") as file:
-        tree = ast.parse(file.read(), filename=fname)
-
     for node in get_funcs_in_classes(tree):
         if is_ignorable(node):
             continue
@@ -185,10 +187,10 @@ def check_file(
                 arg = node.args.args[0]
             except IndexError as exc:
                 raise RuntimeError(
-                    f'"{fname!s}:{node.lineno}" Something went wrong. {vars(node)=}'
+                    f'"{fname}:{node.lineno}" Something went wrong. {vars(node)=}'
                 ) from exc
             print(
-                f"{fname!s}:{arg.lineno}:"
+                f"{fname}:{arg.lineno}:"
                 f" Mixed positional and keyword arguments in function."
             )
 
@@ -201,10 +203,10 @@ def check_file(
                 arg = node.args.args[0]
             except IndexError as exc:
                 raise RuntimeError(
-                    f'"{fname!s}:{node.lineno}" Something went wrong. {vars(node)=}'
+                    f'"{fname}:{node.lineno}" Something went wrong. {vars(node)=}'
                 ) from exc
             print(
-                f"{fname!s}:{arg.lineno}:"
+                f"{fname}:{arg.lineno}:"
                 f" Mixed positional and keyword arguments in function."
             )
 
@@ -308,7 +310,7 @@ def main() -> None:
 
     if violations:
         print(f"{'-' * 79}\nFound {violations} violations.")
-        sys.exit(1)
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

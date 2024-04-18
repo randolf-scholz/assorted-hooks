@@ -12,6 +12,7 @@ repos:
     - id: pyproject-validate-version
     - id: pyproject-update-deps
     - id: pyproject-check-deps
+      args: ["--exclude", "pygithub"]
     - id: python-check-clean-interface
     # pygrep-based hooks
     - id: check-separator-length
@@ -135,7 +136,7 @@ repos:
         - "--"
   # pyright
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.358
+    rev: v1.1.359
     hooks:
       - id: pyright
         files: (^src/|^tests/)

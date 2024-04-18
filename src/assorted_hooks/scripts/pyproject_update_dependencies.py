@@ -66,8 +66,8 @@ import argparse
 import json
 import re
 import subprocess
-import sys
 from functools import cache
+from pathlib import Path
 from re import Pattern
 
 
@@ -304,15 +304,16 @@ def update_versions(
     return new_content
 
 
-def check_file(fname: str, /, *, autofix: bool = True, debug: bool = False) -> bool:
+def check_file(
+    filepath: str | Path, /, *, autofix: bool = True, debug: bool = False
+) -> int:
     r"""Update the dependencies in pyproject.toml."""
-    passed = True
-
-    with open(fname, "r", encoding="utf8") as file:
-        original_pyproject = file.read()
-
-        # new reference to the original file (strings are immutable)
-        pyproject = original_pyproject
+    # Get the AST
+    violations = 0
+    path = Path(filepath)
+    fname = str(path)
+    original_pyproject = path.read_text(encoding="utf8")
+    pyproject = original_pyproject
 
     if debug:
         print(f"Processing {fname!r}")
@@ -325,13 +326,12 @@ def check_file(fname: str, /, *, autofix: bool = True, debug: bool = False) -> b
     pyproject = update_versions(pyproject, dependency_pattern=RE_POETRY_DEP_GROUP)
 
     if pyproject != original_pyproject:
-        passed = False
+        violations += 1
 
         if autofix:  # update the file
-            with open(fname, "w", encoding="utf8") as file:
-                file.write(pyproject)
+            path.write_text(pyproject, encoding="utf8")
 
-    return passed
+    return violations
 
 
 def main() -> None:
@@ -368,7 +368,7 @@ def main() -> None:
         print("Checking dependencies (DRY RUN)...")
 
     try:
-        passed = check_file(
+        violations = check_file(
             args.pyproject_file,
             autofix=args.autofix,
             debug=args.debug,
@@ -376,8 +376,8 @@ def main() -> None:
     except Exception as exc:
         raise RuntimeError(f'Checking file "{args.pyproject_file!s}" failed!') from exc
 
-    if not passed:
-        sys.exit(1)
+    if violations:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

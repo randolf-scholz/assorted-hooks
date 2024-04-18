@@ -230,8 +230,8 @@ def check_module(
     max_key_length = max(map(len, exported_names), default=0)
 
     # remove excluded names
-    with open(pkg.__file__, "rb") as file:
-        tree = ast.parse(file.read())
+    text = path.read_text(encoding="utf8")
+    tree = ast.parse(text)
 
     if ignore_imports_modules and is_module(pkg):
         excluded_names |= get_imported_names(tree)
@@ -442,7 +442,7 @@ def main() -> None:
 
     if violations:
         print(f"{'-' * 79}\nFound {violations} violations.")
-        sys.exit(1)
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
