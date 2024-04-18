@@ -630,13 +630,13 @@ def main() -> None:
             known_undeclared_deps=args.known_undeclared_deps,
             known_undeclared_test_deps=args.known_undeclared_test_deps,
             # error selection
-            error_on_unused_deps=args.error_unused_deps,
-            error_on_missing_deps=args.error_missing_deps,
-            error_on_superfluous_test_deps=args.error_superfluous_test_deps,
-            error_on_unused_test_deps=args.error_unused_test_deps,
+            error_on_unused_deps=args.error_on_unused_deps,
+            error_on_missing_deps=args.error_on_missing_deps,
+            error_on_superfluous_test_deps=args.error_on_superfluous_test_deps,
+            error_on_unused_test_deps=args.error_on_unused_test_deps,
             error_on_undeclared_deps=args.error_on_undeclared_deps,
             error_on_undeclared_test_deps=args.error_on_undeclared_test_deps,
-            error_on_missing_test_deps=args.error_missing_test_deps,
+            error_on_missing_test_deps=args.error_on_missing_test_deps,
             debug=args.debug,
         )
     except Exception as exc:
