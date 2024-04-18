@@ -380,11 +380,10 @@ def calculate_dependencies(
             continue
 
         # get the pypi-package name
-        match PACKAGES[dep]:
-            case [value]:
-                actual_deps.add(value)
-            case [*values]:
-                raise ValueError(f"Found multiple pip-packages for {dep!r}: {values}.")
+        if len(values := set(PACKAGES[dep])) == 1:
+            actual_deps.add(values.pop())
+        else:
+            raise ValueError(f"Found multiple pip-packages for {dep!r}: {values}.")
 
     # normalize the dependencies
     excluded_deps = set(map(normalize, excluded_deps))
