@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 # region project configuration ---------------------------------------------------------
 [project]
 name = "assorted-hooks"
-version = "0.2.0"
+version = "0.2.1"
 authors = [{name="Randolf Scholz", email="randolf.scholz@gmail.com"},]
 description = "Custom pre-commit hooks"
 
@@ -59,7 +59,7 @@ pyproject-validate-version = "assorted_hooks.scripts.pyproject_validate_version:
 [tool.pdm.dev-dependencies]
 dev = [
     "pre-commit>=3.7.0",
-    "ruff>=0.3.7",
+    "ruff>=0.4.0",
     "ruff-lsp>=0.0.53",
     "pyright>=1.1.359",
     "mypy>=1.9.0",
@@ -109,7 +109,7 @@ select = [
     "RUF",   # ruff specific
     "ISC",   # implicit-str-concat
     "TRY",   # tryceratops
-     "FURB",  # refurb
+    "FURB",  # refurb
 ]
 ignore = [
     # pydocstyle

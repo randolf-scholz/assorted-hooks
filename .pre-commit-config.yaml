@@ -6,7 +6,7 @@ default_language_version:
 repos:
   # test with pre-commit try-repo ../assorted-hooks --verbose --all-files
   - repo: https://github.com/randolf-scholz/assorted-hooks
-    rev: v0.2.0
+    rev: v0.2.1
     hooks:
     # script-based hooks
     - id: pyproject-validate-version
@@ -94,7 +94,7 @@ repos:
         files: (^src/|^tests/)
   # ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.7
+    rev: v0.4.0
     hooks:
       - id: ruff
         files: (^src/|^tests/)
