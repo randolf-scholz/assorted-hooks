@@ -345,7 +345,8 @@ def detect_dependencies(fname: str | Path, /) -> GroupedDependencies:
         dependencies |= get_deps_file(path)
     elif path.is_dir():  # Directory
         for file_path in path.rglob("*.py"):
-            dependencies |= get_deps_file(file_path)
+            if file_path.is_file():
+                dependencies |= get_deps_file(file_path)
     elif not path.exists():  # assume module
         dependencies |= get_deps_module(str(fname))
     else:
