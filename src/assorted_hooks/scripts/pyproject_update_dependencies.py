@@ -230,24 +230,7 @@ def strip_version(version: str, /) -> str:
     # get numeric part of version
     numeric_version = re.search(RE_VERSION_NUMERIC_GROUP, version)
     assert numeric_version is not None
-    version = numeric_version.group("version")
-
-    # make sure we return precisely 3 segments
-    segments = version.split(".")
-    match segments:
-        case []:
-            raise ValueError(f"Unreachable? {version=}")
-        case [major]:
-            # version = f"{version}.0.0"
-            version = f"{major}.0"
-        case [major, minor]:
-            # version = f"{version}.0"
-            version = f"{major}.{minor}"
-        case [major, minor, patch, *_]:
-            # version = f"{version}"
-            version = f"{major}.{minor}.{patch}"
-
-    return version
+    return numeric_version.group("version")
 
 
 def update_versions(
