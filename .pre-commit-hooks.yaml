@@ -83,6 +83,12 @@
   entry: '\bsys\.exit\(1\)'
   language: pygrep
   types: [python]
+- id: pyarrow-check-timestamp-seconds
+  name: pyarrow-check-timestamp-seconds
+  description: "Check for usage of second resolution timestamps."
+  entry: '\btimestamp(\((unit=)?"s"|\[s\]\[pyarrow\])'
+  language: pygrep
+  types: [python]
 # endregion pygrep ---------------------------------------------------------------------
 
 
