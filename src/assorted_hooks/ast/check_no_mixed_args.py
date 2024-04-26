@@ -163,12 +163,14 @@ def check_file(
     for node in get_funcs_in_classes(tree):
         if is_ignorable(node):
             continue
+        po_args = node.args.posonlyargs
         args = (
             node.args.args
             if is_staticmethod(node) or node.args.posonlyargs
             else node.args.args[1:]  # exclude self/cls
         )
-        if len(args) > num_allowed_args:
+
+        if (po_args and args) or not po_args and (len(args) > num_allowed_args):
             violations += 1
             try:
                 arg = node.args.args[0]
@@ -184,8 +186,9 @@ def check_file(
     for node in get_funcs_outside_classes(tree):
         if is_ignorable(node):
             continue
+        po_args = node.args.posonlyargs
         args = node.args.args
-        if len(args) > num_allowed_args:
+        if (po_args and args) or not po_args and (len(args) > num_allowed_args):
             violations += 1
             try:
                 arg = node.args.args[0]
