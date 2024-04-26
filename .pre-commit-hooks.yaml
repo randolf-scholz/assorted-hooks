@@ -68,7 +68,7 @@
 - id: python-consider-using-raw-string
   name: python-consider-using-raw-string
   description: "Checks that triple quoted strings are raw (docstrings). Use `$1r$2` find/replace."
-  entry: '(\s+)("""[^\s\.\,\]\)\}])[^\\]*?"""'
+  entry: '(\s+)("""[^\s\.\,\]\)\}][^\\]*?""")'
   language: pygrep
   types: [python]
 - id: python-rename-axes-axis
