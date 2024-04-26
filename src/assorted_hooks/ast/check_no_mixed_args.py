@@ -7,7 +7,7 @@ __all__ = [
     "Func",
     # Functions
     "check_file",
-    "func_has_mixed_args",
+    # "get_mixed_args_function",
     "get_classes",
     "get_full_attribute_name",
     "get_funcs_in_classes",
@@ -19,7 +19,6 @@ __all__ = [
     "is_private",
     "is_staticmethod",
     "main",
-    "method_has_mixed_args",
 ]
 
 import argparse
@@ -93,9 +92,9 @@ def get_funcs_outside_classes(tree: AST, /) -> Iterator[Func]:
                     yield node
 
 
-def func_has_mixed_args(node: Func, /, *, allow_one: bool = False) -> bool:
-    r"""Checks if the func allows mixed po/kwargs."""
-    return len(node.args.args) > allow_one
+# def get_mixed_args_function(node: Func, /) -> list[ast.arg]:
+#     r"""Returns the mixed args of a function (not method)."""
+#     return node.args.args
 
 
 def is_overload(node: Func, /) -> bool:
@@ -127,31 +126,12 @@ def is_decorated_with(node: Func, name: str, /) -> bool:
     return name in [get_full_attribute_name(d) for d in node.decorator_list]
 
 
-def method_has_mixed_args(node: Func, /, *, allow_one: bool = False) -> bool:
-    r"""Checks if the method allows mixed po/kwargs."""
-    if is_staticmethod(node):
-        return func_has_mixed_args(node, allow_one=allow_one)
-
-    po_args = node.args.posonlyargs
-    args = node.args.args
-
-    if not po_args and not args:
-        raise ValueError(
-            f"Unreachable? Method has neither PO-args nor args"
-            f"but is no staticmethod?? {vars(node)=}"
-        )
-
-    if len(args) <= (1 + allow_one) and not po_args:
-        return False
-
-    return len(args) > allow_one
-
-
 def check_file(
     filepath: str | Path,
     /,
     *,
     allow_one: bool = False,
+    allow_two: bool = False,
     ignore_dunder: bool = False,
     ignore_names: Collection[str] = (),
     ignore_decorators: Collection[str] = (),
@@ -167,6 +147,8 @@ def check_file(
     text = path.read_text(encoding="utf8")
     tree = ast.parse(text, filename=fname)
 
+    num_allowed_args = 2 if allow_two else 1 if allow_one else 0
+
     def is_ignorable(func: Func, /) -> bool:
         r"""Checks if the func can be ignored."""
         return (
@@ -181,7 +163,12 @@ def check_file(
     for node in get_funcs_in_classes(tree):
         if is_ignorable(node):
             continue
-        if method_has_mixed_args(node, allow_one=allow_one):
+        args = (
+            node.args.args
+            if is_staticmethod(node) or node.args.posonlyargs
+            else node.args.args[1:]  # exclude self/cls
+        )
+        if len(args) > num_allowed_args:
             violations += 1
             try:
                 arg = node.args.args[0]
@@ -197,7 +184,8 @@ def check_file(
     for node in get_funcs_outside_classes(tree):
         if is_ignorable(node):
             continue
-        if func_has_mixed_args(node, allow_one=allow_one):
+        args = node.args.args
+        if len(args) > num_allowed_args:
             violations += 1
             try:
                 arg = node.args.args[0]
@@ -231,6 +219,13 @@ def main() -> None:
         type=bool,
         default=False,
         help="Allows a single positional_or_keyword argument (only applies when no PO).",
+    )
+    parser.add_argument(
+        "--allow-two",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=False,
+        help="Allows two positional_or_keyword arguments (only applies when no PO).",
     )
     parser.add_argument(
         "--ignore-names",
@@ -283,6 +278,11 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    if args.allow_one and args.allow_two:
+        raise ValueError(
+            "Cannot allow both one and two positional_or_keyword arguments."
+        )
+
     if args.debug:
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
         __logger__.debug("args: %s", vars(args))
@@ -298,6 +298,7 @@ def main() -> None:
             violations += check_file(
                 file,
                 allow_one=args.allow_one,
+                allow_two=args.allow_two,
                 ignore_dunder=args.ignore_dunder,
                 ignore_names=args.ignore_names,
                 ignore_overloads=args.ignore_overloads,
