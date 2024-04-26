@@ -376,6 +376,7 @@ def main() -> None:
         type=str,
         help="One or multiple files, folders or file patterns.",
     )
+    # region auto-enabled checks -------------------------------------------------------
     parser.add_argument(
         "--check-overload-default-ellipsis",
         action=argparse.BooleanOptionalAction,
@@ -397,7 +398,8 @@ def main() -> None:
         default=True,
         help="Check that `from __future__ import annotations` is not used.",
     )
-    # region default enabled checks ----------------------------------------------------
+    # endregion auto-enabled checks ----------------------------------------------------
+    # region auto-disabled checks ------------------------------------------------------
     parser.add_argument(
         "--check-no-optional",
         action=argparse.BooleanOptionalAction,
@@ -447,7 +449,7 @@ def main() -> None:
         default=False,
         help="Check that isinstance uses tuples instead of unions.",
     )
-    # endregion default disabled checks ------------------------------------------------
+    # endregion auto-disabled checks ---------------------------------------------------
     parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,

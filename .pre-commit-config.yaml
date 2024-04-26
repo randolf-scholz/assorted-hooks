@@ -8,26 +8,25 @@ repos:
   - repo: https://github.com/randolf-scholz/assorted-hooks
     rev: v0.2.3
     hooks:
+    # pygrep-based hooks
+    - id: check-separator-length
+    - id: pyarrow-timestamp-seconds
+    - id: python-consider-using-raw-string
+    - id: python-no-blanket-type-ignore
+    - id: python-no-builtin-eval
+    - id: python-rename-axes-axis
+    - id: python-system-exit
+    # ast-based hooks
+    - id: python-check-dunder-all
+    - id: python-check-typing
+    - id: python-direct-imports
+    - id: python-no-mixed-args
+    - id: python-standard-generics
     # script-based hooks
     - id: pyproject-validate-version
     - id: pyproject-update-deps
     - id: pyproject-check-deps
     - id: python-check-clean-interface
-    # pygrep-based hooks
-    - id: check-separator-length
-    - id: python-no-blanket-type-ignore
-    - id: python-no-builtin-eval
-    - id: python-consider-using-raw-string
-    - id: python-rename-axes-axis
-    - id: python-system-exit
-    - id: pyarrow-timestamp-seconds
-    # ast-based hooks
-    - id: python-direct-imports
-    - id: python-no-mixed-args
-    - id: python-standard-generics
-    - id: python-check-dunder-all
-    - id: python-check-typing
-      files: ^src/
     # latex hooks
     - id: chktex
     - id: lacheck
