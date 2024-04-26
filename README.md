@@ -30,6 +30,7 @@ Excludes are lambda functions, functions inside docstrings, and the arguments `s
 Options:
 
 - `--allow-one` allows a single `POSITIONAL_OR_KEYWORD` argument. This is often ok, since there is no ambiguity of the order of arguments. (default: `False`)
+- `--allow-two` allows two `POSITIONAL_OR_KEYWORD` arguments. (default: `False`)
 - `--ignore-dunder`: skip function defs that are dunder methods (default: `False`)
 - `--ignore-private`: skip function defs that are private (default: `False`)
 - `--ignore-overloads`: skip function defs that are overloads of other function defs. (default: `True`)
