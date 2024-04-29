@@ -13,17 +13,11 @@ __all__ = [
     # Functions
     "check_all_files",
     "get_python_files",
-    "is_class_private",
-    "is_dunder",
-    "is_module",
-    "is_package",
-    "is_private",
 ]
 
 import argparse
 from collections.abc import Iterable
 from pathlib import Path
-from types import ModuleType
 from typing import Optional, Protocol
 
 
@@ -215,60 +209,3 @@ BUILTIN_EXCEPTIONS: list[str] = [
     "ZeroDivisionError",
 ]  # fmt: skip
 r"""Builtin exceptions, cf. https://docs.python.org/3/library/exceptions.html."""
-
-
-def is_private(s: str, /) -> bool:
-    r"""Checks if variable name is considered private.
-
-    References:
-        https://stackoverflow.com/a/62865302/9318372
-    """
-    return (
-        s.isidentifier()
-        and s.startswith("_")
-        and not s.startswith("__")
-        and len(s) > 1
-        or is_class_private(s)
-    )
-
-
-def is_class_private(s: str, /) -> bool:
-    r"""Check if variable name is considered class-private."""
-    return (
-        s.isidentifier()
-        and s.startswith("__")
-        and not s.startswith("___")
-        and not s.endswith("__")
-        and len(s) > 2
-    )
-
-
-def is_dunder(s: str, /) -> bool:
-    r"""True if starts and ends with two underscores.
-
-    Roughly equivalent to the regex `^__\w+__$`.
-    """
-    return (
-        s.isidentifier()
-        and s.startswith("__")
-        and not s.startswith("___")
-        and s.endswith("__")
-        and not s.endswith("___")
-        and len(s) > 4
-    )
-
-
-def is_package(module: str | ModuleType, /) -> bool:
-    r"""True if module is a package."""
-    match module:
-        case str(name):
-            return name == "__init__"
-        case ModuleType():
-            return module.__name__ in {module.__package__, "__init__"}
-        case _:
-            raise TypeError
-
-
-def is_module(module: str | ModuleType, /) -> bool:
-    r"""True if module is a non-package module."""
-    return not is_package(module)
