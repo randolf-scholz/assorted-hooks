@@ -32,6 +32,11 @@ __all__ = [
     "get_python_files",
     "get_type_aliases",
     "get_type_variables",
+    "is_class_private",
+    "is_dunder",
+    "is_module",
+    "is_package",
+    "is_private",
     "load_module",
     "main",
 ]
