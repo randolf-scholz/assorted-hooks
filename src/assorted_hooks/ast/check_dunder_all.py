@@ -264,7 +264,7 @@ def main():
         "--warn-superfluous",
         action=argparse.BooleanOptionalAction,
         type=bool,
-        default=True,
+        default=False,
         help="Warn if __all__ is superfluous.",
     )
     parser.add_argument(

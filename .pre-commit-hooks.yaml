@@ -133,6 +133,7 @@
   description: "Check for expired GitHub issues."
   entry: check-github-issues
   language: python
+  stages: [manual]
   types: [text]
 # endregion misc -----------------------------------------------------------------------
 
