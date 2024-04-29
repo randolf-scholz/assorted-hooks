@@ -203,9 +203,10 @@ def check_module(
     pkg: ModuleType,
     /,
     *,
+    erroron_undeclared_variables_package: bool,
     ignore_dunder_attributes: bool,
-    ignore_imports_modules: bool,
-    ignore_imports_packages: bool,
+    ignore_imported_variables_module: bool,
+    ignore_imported_variables_package: bool,
     ignore_private_attributes: bool,
     ignore_type_aliases: bool,
     ignore_type_variables: bool,
@@ -224,26 +225,31 @@ def check_module(
     logger.propagate = False  # don't propagate to root logger
 
     # get variables
-    explicit_names: set[str] = set(getattr(pkg, "__all__", ()))
-    exported_names: set[str] = set(vars(pkg))
-    excluded_names: set[str] = set()
-    max_key_length = max(map(len, exported_names), default=0)
+    declared_vars: set[str] = set(getattr(pkg, "__all__", ()))
+    exported_vars: set[str] = set(vars(pkg))
+    excluded_vars: set[str] = set()
+    max_key_length = max(map(len, exported_vars), default=0)
 
     # remove excluded names
     text = path.read_text(encoding="utf8")
     tree = ast.parse(text)
 
-    if ignore_imports_modules and is_module(pkg):
-        excluded_names |= get_imported_names(tree)
-    if ignore_imports_packages and is_package(pkg):
-        excluded_names |= get_imported_names(tree)
+    if ignore_imported_variables_module and is_module(pkg):
+        excluded_vars |= get_imported_names(tree)
+    if ignore_imported_variables_package and is_package(pkg):
+        excluded_vars |= get_imported_names(tree)
     if ignore_type_variables:
-        excluded_names |= get_type_variables(tree)
+        excluded_vars |= get_type_variables(tree)
     if ignore_type_aliases:
-        excluded_names |= get_type_aliases(tree)
+        excluded_vars |= get_type_aliases(tree)
+
+    undeclared_vars = exported_vars - (declared_vars | excluded_vars)
+    if is_package(pkg) and erroron_undeclared_variables_package and undeclared_vars:
+        violations += 1
+        print(f"{path!s}:0 exports {undeclared_vars!r} not listed in __all__!")
 
     # check all names
-    for key in exported_names - excluded_names:
+    for key in exported_vars - excluded_vars:
         if ignore_dunder_attributes and is_dunder(key):
             logger.debug("%s Skipped! - dunder attribute!", key.ljust(max_key_length))
             continue
@@ -251,7 +257,7 @@ def check_module(
             logger.debug("%s Skipped! - private attribute!", key.ljust(max_key_length))
             continue
 
-        if key not in explicit_names:
+        if key not in declared_vars:
             print(f"{path!s}:0 exports {key!r} not listed in __all__!")
             violations += 1
 
@@ -265,14 +271,15 @@ def check_file(
     check_modules: bool,
     check_packages: bool,
     check_private: bool,
-    ignore_dunder_attributes: bool,
-    ignore_imports_modules: bool,
-    ignore_imports_packages: bool,
-    ignore_private_attributes: bool,
+    erroron_undeclared_variables_package: bool,
+    ignore_dunder_variables: bool,
+    ignore_imported_variables_module: bool,
+    ignore_imported_variables_package: bool,
+    ignore_private_variables: bool,
     ignore_type_variables: bool,
     ignore_type_aliases: bool,
     load_silent: bool = True,
-    skip_if_all_missing: bool = True,
+    skipif_dunder_all_missing: bool = True,
 ) -> int:
     r"""Check a single file."""
     path = Path(fname)
@@ -298,16 +305,17 @@ def check_file(
         print(f"{path!s}:0 module vars() does not agree with dir() ???")
         return 1
 
-    if skip_if_all_missing and not hasattr(pkg, "__all__"):
+    if skipif_dunder_all_missing and not hasattr(pkg, "__all__"):
         __logger__.debug('Skipped "%s:0" - __all__ missing!', path)
         return 0
 
     return check_module(
         pkg,
-        ignore_imports_modules=ignore_imports_modules,
-        ignore_imports_packages=ignore_imports_packages,
-        ignore_dunder_attributes=ignore_dunder_attributes,
-        ignore_private_attributes=ignore_private_attributes,
+        erroron_undeclared_variables_package=erroron_undeclared_variables_package,
+        ignore_imported_variables_module=ignore_imported_variables_module,
+        ignore_imported_variables_package=ignore_imported_variables_package,
+        ignore_dunder_attributes=ignore_dunder_variables,
+        ignore_private_attributes=ignore_private_variables,
         ignore_type_variables=ignore_type_variables,
         ignore_type_aliases=ignore_type_aliases,
     )
@@ -344,31 +352,38 @@ def main() -> None:
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=False,
-        help="Whether to check 'private' modules/pacakges, i.e. files starting with a single underscore.",
+        help="Whether to check 'private' modules/packages, i.e. files starting with a single underscore.",
     )
     parser.add_argument(
-        "--ignore-imports-modules",
+        "--erroron-undeclared-variables-package",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=True,
+        help="Error on undeclared variables in packages (__init__.py).",
+    )
+    parser.add_argument(
+        "--ignore-imported-variables-module",
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=True,
         help="Ignore imported variables in (non-package) modules.",
     )
     parser.add_argument(
-        "--ignore-imports-packages",
+        "--ignore-imported-variables-package",
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=False,
         help="Ignore imported variables in packages (__init__.py).",
     )
     parser.add_argument(
-        "--ignore-dunder-attributes",
+        "--ignore-dunder-variables",
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=True,
         help="Ignore 'dunder' variables, i.e. attributes starting and ending in double underscores.",
     )
     parser.add_argument(
-        "--ignore-private-attributes",
+        "--ignore-private-variables",
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=True,
@@ -389,7 +404,7 @@ def main() -> None:
         help="Ignore type aliases.",
     )
     parser.add_argument(
-        "--skip-if-all-missing",
+        "--skipif-dunder-all-missing",
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=True,
@@ -402,6 +417,8 @@ def main() -> None:
         default=True,
         help="Load modules silently.",
     )
+    # region default disabled options --------------------------------------------------
+    # endregion default disabled options -----------------------------------------------
     parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,
@@ -428,13 +445,14 @@ def main() -> None:
                 check_modules=args.check_modules,
                 check_packages=args.check_packages,
                 check_private=args.check_private,
-                ignore_imports_modules=args.ignore_imports_modules,
-                ignore_imports_packages=args.ignore_imports_packages,
-                ignore_dunder_attributes=args.ignore_dunder_attributes,
-                ignore_private_attributes=args.ignore_private_attributes,
+                erroron_undeclared_variables_package=args.erroron_undeclared_variables_package,
+                ignore_imported_variables_module=args.ignore_imported_variables_module,
+                ignore_imported_variables_package=args.ignore_imported_variables_package,
+                ignore_dunder_variables=args.ignore_dunder_variables,
+                ignore_private_variables=args.ignore_private_variables,
                 ignore_type_aliases=args.ignore_type_aliases,
                 ignore_type_variables=args.ignore_type_variables,
-                skip_if_all_missing=args.skip_if_all_missing,
+                skipif_dunder_all_missing=args.skipif_dunder_all_missing,
                 load_silent=args.load_silent,
             )
         except Exception as exc:
