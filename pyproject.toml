@@ -6,8 +6,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "assorted-hooks"
 version = "0.2.12"
-authors = [{name="Randolf Scholz", email="randolf.scholz@gmail.com"},]
+authors = [{name="Randolf Scholz", email="randolf.scholz@gmail.com"}]
 description = "Custom pre-commit hooks"
+
+# package content
+license = {file="LICENSE"}
+readme = "README.md"
 
 # meta-information
 keywords = ["pre-commit"]
@@ -19,12 +23,8 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Topic :: Utilities",
-    "Typing :: Typed"
+    "Typing :: Typed",
 ]
-
-# package content
-license = {file="LICENSE"}
-readme = "README.md"
 
 # dependencies
 requires-python = ">=3.11"
@@ -54,7 +54,6 @@ pyproject-validate-version = "assorted_hooks.scripts.pyproject_validate_version:
 # endregion project configuration ------------------------------------------------------
 
 
-
 # region development dependencies ------------------------------------------------------
 [tool.pdm.dev-dependencies]
 dev = [
@@ -71,8 +70,7 @@ test = [
     "pytest-rerunfailures>=14.0",
     "pytest-xdist>=3.6.1",
 ]
-# endregion development.dependencies ---------------------------------------------------
-
+# endregion development dependencies ---------------------------------------------------
 
 
 # region ruff configuration ------------------------------------------------------------
@@ -97,7 +95,7 @@ select = [
     "EXE",   # executable
     "F",     # pyflakes
     "I",     # import-order
-    "UP",     # pyupgrade
+    "UP",    # pyupgrade
     "PL",    # pylint
     "PIE",   # pie
     "PYI",   # pyi
@@ -122,22 +120,19 @@ ignore = [
     "E202",  # Whitespace before ')'
     "E203",  # Whitespace before ':'
     "E221",  # Multiple spaces before operator
-    "E226",  # Missing whitespace around arithmetic operator
-    "E231",  # Missing whitespace after ','
+    #    "E226",  # Missing whitespace around arithmetic operator
+    #    "E231",  # Missing whitespace after ','
     "E241",  # Multiple spaces after comma
     "E271",  # Multiple spaces after keyword
     "E272",  # Multiple spaces before keyword
     # pyupgrade
     "UP007",  # Use `X | Y` for type annotations
-    "UP015",  # Unnecessary open mode parameters
     "UP035",  # deprecated-import
     # pylint
-    "PLC1901",  # compare-to-empty-string
     "PLC2401",  # non-ascii-name
     "PLR0124",  # Name compared with itself
     "PLR2004",  # Magic value used in comparison
     "PLR6301",  # no-self-use
-    "PLW1641",  # Object does not implement __hash__ method
     # pylint "too-many-*" rules
     "PLR0904",  # Too many public methods
     "PLR0911",  # Too many return statements
@@ -149,12 +144,6 @@ ignore = [
     "PLR0917",  # Too many positional arguments
     # PYI
     "PYI019",  # Methods like ... should return typing.Self instead of custom TypeVar
-    # PyTest
-    "PT013",   # Found incorrect import of pytest, use simple import pytest instead
-    "PT018",   # Assertion should be broken down into multiple parts
-    # simplify
-    "SIM118",  # Use `key in dict` instead of `key in dict.keys()`
-    "SIM300",  # Yoda conditions are discouraged
     # RUFF
     "RUF001",  # ambiguous-unicode-character-string
     "RUF002",  # ambiguous-unicode-character-docstring
@@ -167,7 +156,7 @@ ignore = [
     # tryceratops
     "TRY003",  # Avoid specifying long messages outside the exception class
     # refurb
-    "FURB140", # reimplemented-starmap (less efficient than comprehension)
+    # "FURB140", # reimplemented-starmap (less efficient than comprehension)
 ]
 
 [tool.ruff.lint.pydocstyle]
@@ -195,14 +184,11 @@ docstring-code-line-length = "dynamic"
 # endregion ruff configuration ---------------------------------------------------------
 
 
-
 # region pylint Configuration ----------------------------------------------------------
 [tool.pylint]
 [tool.pylint."MESSAGES CONTROL"]
-enable= [
-    "useless-suppression",
-]
-disable= [
+enable = ["useless-suppression"]
+disable = [
     "C0103",  # invalid-name
     "C0144",  # non-ascii-name
     "C0204",  # bad-mcs-classmethod-argument
@@ -219,30 +205,29 @@ disable= [
     "R0913",  # too-many-arguments
     "R0914",  # too-many-locals
     "R0915",  # too-many-statements
-#    "W0221",  # arguments-differ
-#    "W0511",  # (fixme) (todos)
+    # "W0221",  # arguments-differ
+    # "W0511",  # (fixme) (todos)
     "W1113",  # keyword-arg-before-vararg
     "W2301",  # unnecessary-ellipsis
 ]
-fail-on= [
+fail-on = [
     "C0116",  # missing-function-docstring
 ]
-fail-under= 9.0
+fail-under = 9.0
 
 [tool.pylint.REPORTS]
 # Set the output format. Available formats are text, parseable, colorized, json and
 # msvs (visual studio). You can also give a reporter class, e.g. mypackage.mymodule.MyReporterClass
-output-format="colorized"
+output-format = "colorized"
 
 [tool.pylint.FORMAT]
-max-line-length=120
+max-line-length = 120
 
 [tool.pylint.TYPECHECK]
 # List of members which are set dynamically and missed by pylint inference system, and so shouldn't
 # trigger E1101 when accessed. Python regular expressions are accepted.
-generated-members=["numpy.*", "torch.*"]
-# endregion pylint Configuration -------------------------------------------------------
-
+generated-members = ["numpy.*", "torch.*"]
+# endregion pyliny Configuration -------------------------------------------------------
 
 
 # region mypy configuration ------------------------------------------------------------
@@ -256,6 +241,8 @@ python_version = "3.11"
 
 disable_error_code = [
     "func-returns-value",  # checks style, not type https://github.com/python/mypy/issues/6549
+    "overload-overlap",  # see https://mypy.readthedocs.io/en/stable/more_types.html#type-checking-the-variants
+    # we do not use this check
 ]
 
 # warnings
@@ -321,6 +308,7 @@ module = [
     "numba.*",
     "pandas.*",
     "pyarrow.*",
+    "pytest_benchmark.*",
     "scipy.*",
     "sklearn.*",
     "tqdm.*",
@@ -340,23 +328,7 @@ pythonVersion = "3.11"
 pythonPlatform = "Linux"
 stubPath = ""
 include = ["src/", "tests/"]
-exclude = [
-    "**/node_modules",
-    "**/__pycache__",
-    "**/.ipynb_checkpoints",
-]
-executionEnvironments = [
-    {root = "src/", pythonVersion = "3.11", pythonPlatform = "Linux", extraPaths = [""]}
-]
-useLibraryCodeForTypes = false   # otherwise hundreds of pandas false-positives.
-# Type Check Diagnostics Settings
-# https://github.com/microsoft/pyright/blob/main/docs/configuration.md#type-check-diagnostics-settings
-reportMissingImports = false
-reportMissingTypeStubs = false
-reportUnsupportedDunderAll = false
-reportPrivateImportUsage = false
 # endregion pyright Configuration ------------------------------------------------------
-
 
 
 # region pytest configuration ----------------------------------------------------------
@@ -365,7 +337,7 @@ reportPrivateImportUsage = false
 
 [tool.pytest.ini_options]
 minversion = "8.0"
-testpaths = [ "src/", "tests/"]
+testpaths = ["src/", "tests/"]
 addopts = [
     "--doctest-modules",
     "--junit-xml=reports/pytest.xml",
@@ -384,11 +356,10 @@ markers = [
     "serial",
 ]
 required_plugins = [
-    "pytest-rerunfailures",
     "pytest-cov",
+    "pytest-rerunfailures",
 ]
 # endregion pytest configuration -------------------------------------------------------
-
 
 
 # region coverage configuration --------------------------------------------------------

@@ -67,7 +67,7 @@ def find_issues(text: str, /) -> Iterator[IssueMatch]:
 
 def find_issues_in_file(path: Path, /) -> Iterator[IssueMatch]:
     r"""Find all issues in the file, as dictionary indexed by line/column number."""
-    with open(path, "r", encoding="utf8") as file:
+    with open(path, encoding="utf8") as file:
         for line_num, line in enumerate(file):
             for match in ISSUE_REGEX.finditer(line):
                 yield IssueMatch(

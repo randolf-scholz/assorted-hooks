@@ -62,11 +62,8 @@ def is_private(s: str, /) -> bool:
     References:
         https://stackoverflow.com/a/62865302/9318372
     """
-    return (
-        s.isidentifier()
-        and s.startswith("_")
-        and not s.startswith("__")
-        and len(s) > 1
+    return s.isidentifier() and (
+        (s.startswith("_") and not s.startswith("__") and (len(s) > 1))
         or is_class_private(s)
     )
 
@@ -78,7 +75,7 @@ def is_class_private(s: str, /) -> bool:
         and s.startswith("__")
         and not s.startswith("___")
         and not s.endswith("__")
-        and len(s) > 2
+        and (len(s) > 2)
     )
 
 

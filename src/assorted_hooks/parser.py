@@ -35,7 +35,7 @@ Actions: TypeAlias = Literal[
 class argument:
     r"""Wraps add_argument, similar to `dataclasses.field`."""
 
-    action: Actions = NotImplemented  # pyright: ignore
+    action: Actions = NotImplemented  # pyright: ignore[reportAssignmentType]
     choices: Container = NotImplemented
     const: object = NotImplemented
     default: object = NotImplemented
