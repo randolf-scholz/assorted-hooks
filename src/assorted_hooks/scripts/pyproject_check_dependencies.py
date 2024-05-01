@@ -60,11 +60,12 @@ else:
     # NOTE: importlib.metadata is bugged in 3.10: https://github.com/python/cpython/issues/94113
     try:
         metadata = importlib.import_module("importlib_metadata")
-    except ImportError as exc:
-        raise ImportError(
+    except ImportError as import_failed:
+        import_failed.add_note(
             "This pre-commit hook runs in the local interpreter and requires importlib.metadata!"
             " Please use python≥3.11 or install 'importlib_metadata'."
-        ) from exc
+        )
+        raise
 
 STDLIB_MODULES = sys.stdlib_module_names
 r"""A set of all standard library modules."""
@@ -464,6 +465,13 @@ def check_file(
     if missing_deps and error_on_missing_deps:
         violations += 1
         print(f"Detected missing dependencies: {missing_deps}")
+    if violations:
+        print(
+            f"Detected dependencies in project {module_dir!s}:"
+            f"\n\t{declared_deps=}"
+            f"\n\t{imported_deps=}"
+            f"\n\t{excluded_deps=}"
+        )
     # endregion check project dependencies ----------------------------------------------
 
     # region check test dependencies ---------------------------------------------------
@@ -472,7 +480,6 @@ def check_file(
 
     detected_test_deps = detect_dependencies(tests_dir)
     imported_test_deps = detected_test_deps.third_party
-
     # we can safely ignore any undeclared dependencies, if they are part of the declared
     # project dependencies.
 
@@ -484,21 +491,29 @@ def check_file(
         excluded_imported_deps=declared_deps | set(known_undeclared_test_deps),
     )
 
+    test_violations = 0
     if undeclared_test_deps and error_on_undeclared_test_deps:
-        violations += 1
+        test_violations += 1
         print(f"Detected undeclared test dependencies: {undeclared_test_deps}.")
     if unused_test_deps and error_on_unused_test_deps:
-        violations += 1
+        test_violations += 1
         print(f"Detected unused test dependencies: {unused_test_deps}.")
     if missing_test_deps and error_on_missing_test_deps:
-        violations += 1
+        test_violations += 1
         print(f"Detected missing test dependencies: {missing_test_deps}.")
     if superfluous_test_deps and error_on_superfluous_test_deps:
-        violations += 1
-        print(f"Detected superfluous test dependencies: {superfluous_test_deps}\n")
+        test_violations += 1
+        print(f"Detected superfluous test dependencies: {superfluous_test_deps}.")
         print("These are redundant, as they are already project dependencies")
+    if test_violations:
+        print(
+            f"Detected dependencies in tests {tests_dir!s}:"
+            f"\n\t{declared_test_deps=}"
+            f"\n\t{imported_test_deps=}"
+            f"\n\t{excluded_deps=}"
+        )
 
-    return violations
+    return violations + test_violations
     # endregion emit violations --------------------------------------------------------
 
 
@@ -640,14 +655,11 @@ def main() -> None:
             debug=args.debug,
         )
     except Exception as exc:
-        raise RuntimeError(f'Checking file "{args.pyproject_file!s}" failed!') from exc
+        exc.add_note(f"Checking file {args.pyproject_file!s} failed!")
+        raise
 
     if violations:
         print(f"{'-' * 79}\nFound {violations} violations.")
-        print(
-            "\nNOTE: Optional dependencies are currently not supported (PR welcome)."
-            "\nNOTE: Workaround: use `importlib.import_module('optional_dependency')`."
-        )
         raise SystemExit(1)
 
 
