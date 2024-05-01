@@ -381,11 +381,11 @@ def calculate_dependencies(
             missing_deps.add(dep)
             continue
 
-        # get the pypi-package name
-        if len(values := set(PACKAGES[dep])) == 1:
-            actual_deps.add(values.pop())
-        else:
-            raise ValueError(f"Found multiple pip-packages for {dep!r}: {values}.")
+        mapped_deps = set(PACKAGES[dep])
+        if len(mapped_deps) != 1:
+            raise ValueError(f"Found multiple pip-packages for {dep!r}: {mapped_deps}.")
+
+        actual_deps.add(mapped_deps.pop())
 
     # normalize the dependencies
     excluded_deps = set(map(normalize, excluded_deps))
@@ -468,9 +468,9 @@ def check_file(
     if violations:
         print(
             f"Detected dependencies in project {module_dir!s}:"
-            f"\n\t{declared_deps=}"
-            f"\n\t{imported_deps=}"
-            f"\n\t{excluded_deps=}"
+            f"\n\t{sorted(declared_deps)=}"
+            f"\n\t{sorted(imported_deps)=}"
+            f"\n\t{sorted(excluded_deps)=}"
         )
     # endregion check project dependencies ----------------------------------------------
 
@@ -508,9 +508,9 @@ def check_file(
     if test_violations:
         print(
             f"Detected dependencies in tests {tests_dir!s}:"
-            f"\n\t{declared_test_deps=}"
-            f"\n\t{imported_test_deps=}"
-            f"\n\t{excluded_deps=}"
+            f"\n\t{sorted(declared_test_deps)=}"
+            f"\n\t{sorted(imported_test_deps)=}"
+            f"\n\t{sorted(excluded_deps)=}"
         )
 
     return violations + test_violations
