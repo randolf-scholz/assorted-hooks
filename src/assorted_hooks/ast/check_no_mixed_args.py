@@ -242,6 +242,20 @@ def main() -> None:
         help="Ignore all methods/functions with certain decorators. (for example: '@jit.script')",
     )
     parser.add_argument(
+        "--ignore-without-positional-only",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=False,
+        help="Skip FunctionDefs without positional-only arguments.",
+    )
+    parser.add_argument(
+        "--ignore-overloads",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=False,
+        help="Ignore FunctionDefs that are @overload decorated..",
+    )
+    parser.add_argument(
         "--ignore-dunder",
         action=argparse.BooleanOptionalAction,
         type=bool,
@@ -252,22 +266,8 @@ def main() -> None:
         "--ignore-private",
         action=argparse.BooleanOptionalAction,
         type=bool,
-        default=False,
-        help="Ignore all private methods/functions (e.g. _method).",
-    )
-    parser.add_argument(
-        "--ignore-overloads",
-        action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
-        help="Ignore FunctionDefs that are @overload decorated..",
-    )
-    parser.add_argument(
-        "--ignore-without-positional-only",
-        action=argparse.BooleanOptionalAction,
-        type=bool,
-        default=False,
-        help="Skip FunctionDefs without positional-only arguments.",
+        help="Ignore all private methods/functions (e.g. _method).",
     )
     parser.add_argument(
         "--debug",
