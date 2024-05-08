@@ -88,7 +88,7 @@
 - id: python-system-exit
   name: python-system-exit
   description: "Consider using `raise SystemExit(1)` instead of `sys.exit(1)`."
-  entry: '\bsys\.exit\(1\)'
+  entry: '\bsys\.exit\('
   language: pygrep
   types: [python]
 - id: pyarrow-timestamp-seconds
