@@ -103,6 +103,16 @@ Analyzes all `import`-statements and makes sure all third-party dependencies are
 applied to test-dependencies as well. This catches missing implicit dependencies, for example package `panads`
 depends on `numpy` but numpy should still be listed in `pyproject.toml` if it is used explicitly.
 
+### `pyright-concise`
+
+Runs the following wrapper around `pyright`:
+
+```bash
+script -c "pyright $*" /dev/null | grep --color=never -Po "(?<=$PWD/)(.*:.*)"
+```
+
+This produces a concise output similar to `mypy --no-pretty --no-error-summary --hide-error-end --hide-error-context`.
+
 ## pygrep-based hooks
 
 ### `python-no-blanket-type-ignore`

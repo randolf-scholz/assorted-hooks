@@ -31,6 +31,14 @@
   language: script
   require_serial: true # otherwise module is loaded multiple times
   types: [python]
+- id: pyright-concise
+  name: pyright-concise
+  description: 'Wrapper that produces more concise output for pyright.'
+  entry: sh -c '! script -c "pyright $*" /dev/null | grep --color=never -Po "(?<=$PWD/)(.*:.*)"' --
+  language: script
+  'types_or': [python, pyi]
+  require_serial: true
+  additional_dependencies: []
 # endregion scripts --------------------------------------------------------------------
 
 
