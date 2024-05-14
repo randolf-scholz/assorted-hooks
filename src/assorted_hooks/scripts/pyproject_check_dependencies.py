@@ -290,10 +290,17 @@ def group_dependencies(
     for dependency in dependencies:
         if dependency in STDLIB_MODULES:
             stdlib_deps.add(dependency)
-        elif filepath.is_relative_to(get_module_dir(dependency)):
-            first_party_deps.add(dependency)
-        else:
+            continue
+
+        try:
+            module_dir = get_module_dir(dependency)
+        except ModuleNotFoundError:
             third_party_deps.add(dependency)
+        else:
+            if filepath.is_relative_to(module_dir):
+                first_party_deps.add(dependency)
+            else:
+                third_party_deps.add(dependency)
 
     return GroupedDependencies(
         first_party=first_party_deps,
