@@ -11,5 +11,11 @@ check_file() {
     lacheck "$fname" | perl -ne "if (m/$PATTERN/) {print \"${BLUE}${fdir}${OUTPUT}\"}"
 }
 
+exit_status=0
+
 # Iterate over each file passed as an argument
-for file in "$@"; do check_file "$file" & done
+for file in "$@"; do
+    check_file "$file" | grep . && exit_status=1
+done
+
+exit $exit_status
