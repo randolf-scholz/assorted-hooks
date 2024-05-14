@@ -1,4 +1,4 @@
-"""Checks that __all__ exists in modules."""
+r"""Checks that __all__ exists in modules."""
 
 __all__ = [
     "check_file",

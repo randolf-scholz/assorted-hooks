@@ -1,4 +1,4 @@
-"""Test check_no_hints_overload_implementation."""
+r"""Test check_no_hints_overload_implementation."""
 
 import ast
 from textwrap import dedent

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Check whether attributes in annotations shadow directly imported symbols.
+r"""Check whether attributes in annotations shadow directly imported symbols.
 
 Example:
     >>> import collections.abc as abc

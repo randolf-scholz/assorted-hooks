@@ -1,1 +1,1 @@
-"""Tests for the `check_typing` hook."""
+r"""Tests for the `check_typing` hook."""

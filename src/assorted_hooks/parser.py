@@ -1,4 +1,4 @@
-"""Provide type checked argument parsing.
+r"""Provide type checked argument parsing.
 
 Based on plain argparse, powered by dataclass_transform.
 """

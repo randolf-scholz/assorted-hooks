@@ -1,4 +1,4 @@
-"""Checks if referenced issues are closed."""
+r"""Checks if referenced issues are closed."""
 
 __all__ = [
     # Constants

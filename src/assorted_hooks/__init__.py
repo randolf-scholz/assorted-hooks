@@ -1,1 +1,1 @@
-"""Assorted Hooks."""
+r"""Assorted Hooks."""

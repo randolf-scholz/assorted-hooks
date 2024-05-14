@@ -1,1 +1,1 @@
-"""Standalone scripts for assorted_hooks."""
+r"""Standalone scripts for assorted_hooks."""

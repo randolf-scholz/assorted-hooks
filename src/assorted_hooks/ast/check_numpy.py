@@ -1,4 +1,4 @@
-"""Checks for interaction with numpy."""
+r"""Checks for interaction with numpy."""
 
 # 1. axes vs axis: we check that functions definitions use the spelling "axis" instead of axes,
 #    even when the function is supposed to handle multiple axes.
