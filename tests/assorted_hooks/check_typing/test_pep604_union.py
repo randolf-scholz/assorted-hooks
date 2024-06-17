@@ -1,4 +1,4 @@
-"""Tests for assorted_hooks.check_typing.check_pep604_union."""
+r"""Tests for assorted_hooks.check_typing.check_pep604_union."""
 
 import ast
 from textwrap import dedent

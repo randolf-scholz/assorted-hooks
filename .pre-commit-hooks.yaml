@@ -180,10 +180,12 @@
 - id: lacheck
   name: lacheck
   description: "A consistency checker for LaTeX documents"
-  language: system
+  pass_filenames: true
+  require_serial: true
+  language: script
   types: [tex]
-  files: \.tex$
-  entry: bash -c '! printf "%s\n" "$@" | xargs -I _ lacheck _ | grep .' --
+  files: '\.tex$'
+  entry: './src/lacheck_wrapper.sh'
   # NOTE: lacheck only takes a single file at a time, so we need to use xargs
   # NOTE: lacheck always returns 0, so we need to grep for output
   # NOTE: grep has exit code 1 if no matches are found, so we need to invert with `!`

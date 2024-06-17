@@ -1,4 +1,4 @@
-"""Test that __future__ import annotations is not used."""
+r"""Test that __future__ import annotations is not used."""
 
 import ast
 from textwrap import dedent

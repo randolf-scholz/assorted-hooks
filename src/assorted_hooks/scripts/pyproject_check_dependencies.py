@@ -26,9 +26,9 @@ __all__ = [
     "calculate_dependencies",
     "check_file",
     "detect_dependencies",
-    "get_dependencies",
-    "get_deps_file",
-    "get_deps_module",
+    "get_module_dir",
+    "get_deps_from_file",
+    "get_deps_from_module",
     "get_deps_pyproject_project",
     "get_deps_pyproject_section",
     "get_deps_pyproject_tests",
@@ -46,18 +46,19 @@ import pkgutil
 import re
 import sys
 import tomllib
-from collections.abc import Collection, Sequence
+from collections.abc import Sequence
 from contextlib import redirect_stderr, redirect_stdout
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from functools import cache
+from importlib.util import find_spec
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Optional, TypeAlias
+from typing import Any, Optional, Self, TypeAlias
 
-# import metadata library
+# NOTE: importlib.metadata is bugged in 3.10: https://github.com/python/cpython/issues/94113
 if sys.version_info >= (3, 11):  # noqa: UP036
     from importlib import metadata
 else:
-    # NOTE: importlib.metadata is bugged in 3.10: https://github.com/python/cpython/issues/94113
     try:
         metadata = importlib.import_module("importlib_metadata")
     except ImportError as import_failed:
@@ -93,67 +94,15 @@ def normalize(dep: str, /) -> str:
     return dep.lower().replace("-", "_")
 
 
-def get_dependencies(tree: ast.AST, /, *, ignore_private: bool = True) -> set[str]:
-    r"""Extract the set of dependencies from `ast.AST` object."""
-    imported_modules: list[str] = []
-    for node in ast.walk(tree):
-        match node:
-            case ast.Import(names=aliases):
-                imported_modules.extend(alias.name for alias in aliases)
-            case ast.ImportFrom(module=str(name)):
-                imported_modules.append(name)
-
-    # only keep the top-level module name
-    dependencies: set[str] = set()
-    for name in imported_modules:
-        module_name = name.split(".")[0]
-        if ignore_private and module_name.startswith("_"):
-            continue
-        dependencies.add(module_name)
-
-    return dependencies
-
-
-def get_deps_file(file_path: str | Path, /) -> set[str]:
-    r"""Extract set of dependencies imported by a script."""
-    path = Path(file_path)
-
-    if path.suffix != ".py":
-        raise ValueError(f"Invalid file extension: {path.suffix}")
-
-    text = path.read_text(encoding="utf8")
-    tree = ast.parse(text, filename=str(path))
-
-    return get_dependencies(tree)
-
-
-def get_deps_module(module: str | ModuleType, /, *, silent: bool = True) -> set[str]:
-    r"""Extract set of dependencies imported by a module."""
-    # NOTE: Generally there is no correct way to do it without importing the module.
-    # This is because modules can be imported dynamically.
-
-    if isinstance(module, str):
-        with (  # load the submodule silently
-            redirect_stdout(None if silent else sys.stdout),
-            redirect_stderr(None if silent else sys.stderr),
-        ):
-            module = importlib.import_module(module)
-
-    # Visit the current module
-    assert module.__file__ is not None
-    dependencies = get_deps_file(module.__file__)
-
-    if not hasattr(module, "__path__"):
-        # note: can only recurse into packages.
-        return dependencies
-
-    # Visit the sub-packages/modules of the package
-    # TODO: add dynamically imported submodules using the `pkgutil` module.
-    for module_info in pkgutil.walk_packages(module.__path__):
-        submodule_name = f"{module.__name__}.{module_info.name}"
-        dependencies |= get_deps_module(submodule_name, silent=silent)
-
-    return dependencies
+@cache
+def get_module_dir(name: str, /) -> Path:
+    r"""Get the directory of a module."""
+    spec = find_spec(name)
+    if spec is None or (origin := spec.origin) is None:
+        raise ModuleNotFoundError(f"Failed to find module: {name!r}")
+    path = Path(origin)
+    assert path.is_file()
+    return path.parent
 
 
 def get_name_pyproject(config: Config, /) -> str:
@@ -308,26 +257,50 @@ def get_deps_pyproject_tests(config: Config, /) -> set[str]:
 class GroupedDependencies:
     r"""A named tuple containing the dependencies grouped by type."""
 
-    first_party: set[str]
-    third_party: set[str]
-    stdlib: set[str]
+    first_party: set[str] = field(default_factory=set)
+    third_party: set[str] = field(default_factory=set)
+    stdlib: set[str] = field(default_factory=set)
+
+    def __or__(self, other: Self, /) -> "GroupedDependencies":
+        return GroupedDependencies(
+            first_party=self.first_party | other.first_party,
+            third_party=self.third_party | other.third_party,
+            stdlib=self.stdlib | other.stdlib,
+        )
+
+    def __ior__(self, other: Self, /) -> Self:
+        self.first_party |= other.first_party
+        self.third_party |= other.third_party
+        self.stdlib |= other.stdlib
+        return self
 
 
 def group_dependencies(
-    dependencies: set[str], /, *, first_party: Collection[str] = ()
+    dependencies: set[str], /, *, filepath: Path
 ) -> GroupedDependencies:
-    r"""Splits the dependencies into first-party and third-party."""
+    r"""Splits the dependencies into first-party and third-party.
+
+    A dependency will be considered first-party, if its origin is a parent directory of path.
+    """
     first_party_deps: set[str] = set()
     stdlib_deps: set[str] = set()
     third_party_deps: set[str] = set()
+    assert filepath.is_file(), "Expected a file."
 
     for dependency in dependencies:
         if dependency in STDLIB_MODULES:
             stdlib_deps.add(dependency)
-        elif dependency in first_party:
-            first_party_deps.add(dependency)
-        else:
+            continue
+
+        try:
+            module_dir = get_module_dir(dependency)
+        except ModuleNotFoundError:
             third_party_deps.add(dependency)
+        else:
+            if filepath.is_relative_to(module_dir):
+                first_party_deps.add(dependency)
+            else:
+                third_party_deps.add(dependency)
 
     return GroupedDependencies(
         first_party=first_party_deps,
@@ -336,24 +309,99 @@ def group_dependencies(
     )
 
 
-def detect_dependencies(fname: str | Path, /) -> GroupedDependencies:
-    r"""Collect the third-party dependencies from files in the given path."""
+def detect_dependencies(
+    fname: str | Path,
+    /,
+    *,
+    ignore_private: bool = True,
+) -> GroupedDependencies:
+    r"""Collect the dependencies from files in the given path."""
     path = Path(fname)
-    dependencies: set[str] = set()
-    first_party: set[str] = set()
+    grouped_deps: GroupedDependencies = GroupedDependencies()
 
     if path.is_file():  # Single file
-        dependencies |= get_deps_file(path)
+        deps = get_deps_from_file(path, ignore_private=ignore_private)
+        grouped_deps |= group_dependencies(deps, filepath=path)
     elif path.is_dir():  # Directory
         for file_path in path.rglob("*.py"):
-            if file_path.is_file():
-                dependencies |= get_deps_file(file_path)
-    elif not path.exists():  # assume module
-        dependencies |= get_deps_module(str(fname))
-    else:
-        raise FileNotFoundError(f"Invalid path: {path}")
+            grouped_deps |= detect_dependencies(file_path)
+    else:  # assume module
+        module_name = path.stem
+        grouped_deps |= get_deps_from_module(module_name)
+    # if not path.exists():
+    #     raise FileNotFoundError(f"Invalid path: {path}")
 
-    return group_dependencies(dependencies, first_party=first_party)
+    return grouped_deps
+
+
+def get_deps_from_file(
+    file_path: str | Path, /, *, ignore_private: bool = True
+) -> set[str]:
+    r"""Extract set of dependencies imported by a script."""
+    path = Path(file_path)
+
+    if path.suffix != ".py":
+        raise ValueError(f"Invalid file extension: {path.suffix}")
+
+    text = path.read_text(encoding="utf8")
+    tree = ast.parse(text, filename=str(path))
+
+    imported_modules: list[str] = []
+    for node in ast.walk(tree):
+        match node:
+            case ast.Import(names=aliases):
+                imported_modules.extend(alias.name for alias in aliases)
+            case ast.ImportFrom(module=str(name)):
+                imported_modules.append(name)
+
+    # only keep the top-level module name
+    dependencies: set[str] = set()
+    for name in imported_modules:
+        module_name = name.split(".")[0]
+        if ignore_private and module_name.startswith("_"):
+            continue
+        dependencies.add(module_name)
+
+    return dependencies
+
+
+def get_deps_from_module(
+    module_or_name: str | ModuleType,
+    /,
+    *,
+    silent: bool = True,
+) -> GroupedDependencies:
+    r"""Extract set of dependencies imported by a module."""
+    # NOTE: Generally there is no correct way to do it without importing the module.
+    # This is because modules can be imported dynamically.
+    match module_or_name:
+        case ModuleType() as module:
+            pass
+        case str(name):
+            with (  # load the submodule silently
+                redirect_stdout(None if silent else sys.stdout),
+                redirect_stderr(None if silent else sys.stderr),
+            ):
+                module = importlib.import_module(name)
+        case _:
+            raise TypeError(f"Invalid type: {type(module_or_name)}")
+
+    # Visit the current module
+    assert module.__file__ is not None
+    deps = get_deps_from_file(module.__file__)
+    grouped_deps = group_dependencies(deps, filepath=Path(module.__file__))
+
+    if not hasattr(module, "__path__"):
+        # note: can only recurse into packages.
+        return grouped_deps
+
+    # Visit the sub-packages/modules of the package
+    # TODO: add dynamically imported submodules using the `pkgutil` module.
+    for module_info in pkgutil.walk_packages(module.__path__):
+        submodule_name = f"{module.__name__}.{module_info.name}"
+        grouped_deps |= get_deps_from_module(submodule_name, silent=silent)
+
+    return grouped_deps
 
 
 def calculate_dependencies(
@@ -447,6 +495,7 @@ def check_file(
     # detect the imported dependencies from the source files
     detected_deps = detect_dependencies(module_dir)
     imported_deps = detected_deps.third_party
+    first_party_deps = detected_deps.first_party
     # get the normalized project name
     undeclared_deps, unused_deps, missing_deps = calculate_dependencies(
         imported_deps=imported_deps,
@@ -468,9 +517,10 @@ def check_file(
     if violations:
         print(
             f"Detected dependencies in project {module_dir!s}:"
-            f"\n\t{sorted(declared_deps)=}"
-            f"\n\t{sorted(imported_deps)=}"
-            f"\n\t{sorted(excluded_deps)=}"
+            f"\n\tdeclared_deps={sorted(declared_deps)}"
+            f"\n\timported_deps={sorted(imported_deps)}"
+            f"\n\texcluded_deps={sorted(excluded_deps)}"
+            f"\n\tfirst_party_deps={sorted(first_party_deps)}"
         )
     # endregion check project dependencies ----------------------------------------------
 
@@ -480,6 +530,7 @@ def check_file(
 
     detected_test_deps = detect_dependencies(tests_dir)
     imported_test_deps = detected_test_deps.third_party
+    first_party_test_deps = detected_test_deps.first_party
     # we can safely ignore any undeclared dependencies, if they are part of the declared
     # project dependencies.
 
@@ -508,9 +559,10 @@ def check_file(
     if test_violations:
         print(
             f"Detected dependencies in tests {tests_dir!s}:"
-            f"\n\t{sorted(declared_test_deps)=}"
-            f"\n\t{sorted(imported_test_deps)=}"
-            f"\n\t{sorted(excluded_deps)=}"
+            f"\n\tdeclared_test_deps={sorted(declared_test_deps)}"
+            f"\n\timported_test_deps={sorted(imported_test_deps)}"
+            f"\n\texcluded_deps={sorted(excluded_deps)}"
+            f"\n\tfirst_party_test_deps={sorted(first_party_test_deps)}"
         )
 
     return violations + test_violations

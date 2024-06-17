@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Check that tests/ directory structure mirrors /src."""
+r"""Check that tests/ directory structure mirrors /src."""
 
 # IDEA: Check that tests/ directory structure mirrors /src.
 # IDEA: --autofix: Automatically create missing folders.

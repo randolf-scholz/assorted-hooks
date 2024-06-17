@@ -1,4 +1,4 @@
-"""Tests for assorted_hooks.check_typing.check_overload_default_ellipsis."""
+r"""Tests for assorted_hooks.check_typing.check_overload_default_ellipsis."""
 
 import ast
 from textwrap import dedent

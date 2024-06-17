@@ -1,4 +1,4 @@
-"""Clean namespace of module (unused)."""
+r"""Clean namespace of module (unused)."""
 
 # import logging
 # from datetime import datetime

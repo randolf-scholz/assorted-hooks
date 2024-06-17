@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Check to ensure collections.abc is used instead of typing."""
+r"""Check to ensure collections.abc is used instead of typing."""
 
 __all__ = [
     # Constants

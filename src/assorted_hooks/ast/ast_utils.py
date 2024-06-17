@@ -1,4 +1,4 @@
-"""AST based utilities for the assorted_hooks package."""
+r"""AST based utilities for the assorted_hooks package."""
 
 __all__ = [
     # Types

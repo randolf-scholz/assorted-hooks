@@ -1,4 +1,4 @@
-"""Some utility functions for assorted_hooks."""
+r"""Some utility functions for assorted_hooks."""
 
 __all__ = [
     # Constants

@@ -1,4 +1,4 @@
-"""Test that isinstance and issubclass are not used with tuple or Union."""
+r"""Test that isinstance and issubclass are not used with tuple or Union."""
 
 import ast
 from textwrap import dedent

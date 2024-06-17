@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Opinionated style checks related to typing.
+r"""Opinionated style checks related to typing.
 
 NOTE: TypeShed defines open() as:
 

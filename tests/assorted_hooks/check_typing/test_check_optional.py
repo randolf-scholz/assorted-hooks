@@ -1,4 +1,4 @@
-"""Tests for assorted_hooks.check_typing.check_optional."""
+r"""Tests for assorted_hooks.check_typing.check_optional."""
 
 import ast
 from textwrap import dedent
