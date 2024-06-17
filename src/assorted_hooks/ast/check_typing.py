@@ -75,7 +75,7 @@ def get_namespace_and_funcs(
                 yield from get_namespace_and_funcs(cls, namespace=(*namespace, name))
 
 
-def is_typing_union(node: AST, /) -> bool:
+def is_typing_union(node: AST, /) -> TypeGuard[Subscript]:
     r"""True if the return node is a union."""
     match node:
         case Subscript(value=Name(id="Union")):
@@ -84,7 +84,7 @@ def is_typing_union(node: AST, /) -> bool:
             return False
 
 
-def is_union(node: AST, /) -> bool:
+def is_union(node: AST, /) -> TypeGuard[Subscript | BinOp]:
     r"""True if the return node is a union."""
     match node:
         case Subscript(value=Name(id="Union")):

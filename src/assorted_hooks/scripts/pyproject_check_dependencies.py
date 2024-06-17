@@ -148,7 +148,7 @@ def get_deps_pyproject_section(config: Config, /, *, section: str) -> set[str]:
 
     match conf:
         # assume format `"package<comparator>version"`
-        case list() as lst:
+        case list(lst):
             matches: set[str] = set()
             for dep in lst:
                 match = re.search(RE_NAME, dep)
@@ -157,7 +157,7 @@ def get_deps_pyproject_section(config: Config, /, *, section: str) -> set[str]:
                 matches.add(match.group())
             return matches
         # assume format `package = "<comparator>version"`
-        case dict() as dct:  # poetry
+        case dict(dct):  # poetry
             return set(dct) - {"python"}
         case _:
             raise TypeError(f"Unexpected type: {type(config)}")
@@ -187,7 +187,7 @@ def get_deps_pyproject_project(config: Config, /) -> set[str]:
         dependencies["project.dependencies"],
         dependencies["tool.poetry.dependencies"],
     ):
-        case set() as a, set() as b:
+        case set(a), set(b):
             if (left := a - b) | (right := b - a):
                 raise ValueError(
                     "Found inconsistent dependencies in [project] and [tool.poetry]."
@@ -195,9 +195,9 @@ def get_deps_pyproject_project(config: Config, /) -> set[str]:
                     f"\n [tool.poetry] is missing: {left}."
                 )
             project_dependencies = a
-        case set() as a, _:
+        case set(a), _:
             project_dependencies = a
-        case _, set() as b:
+        case _, set(b):
             project_dependencies = b
         case _:
             project_dependencies = set()
@@ -233,9 +233,9 @@ def get_deps_pyproject_tests(config: Config, /) -> set[str]:
         match dependencies[test_key], dependencies[tests_key]:
             case set(), set():
                 raise ValueError(f"Found both {test_key} and {tests_key}.")
-            case set() as left, _:
+            case set(left), _:
                 deps[group_name] = left
-            case _, set() as right:
+            case _, set(right):
                 deps[group_name] = right
             case _:
                 pass

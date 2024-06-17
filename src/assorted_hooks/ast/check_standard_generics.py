@@ -5,10 +5,10 @@ __all__ = [
     # Constants
     "REPLACEMENTS",
     "METHODS",
-    "KEYS",
+    "BAD_ALIASES",
     # Functions
     "check_file",
-    "get_deprecated_aliases",
+    "yield_aliases",
     "main",
 ]
 
@@ -85,24 +85,26 @@ REPLACEMENTS |= {
     for key, value in REPLACEMENTS.items()
 }
 
-KEYS: Final[frozenset[str]] = frozenset(REPLACEMENTS.keys())
+BAD_ALIASES: Final[frozenset[str]] = frozenset(REPLACEMENTS.keys())
 
 # validate replacements
 METHODS: Final[set[str]] = set(typing.__all__) & set(abc.__all__)
 assert all(f"typing.{method}" in REPLACEMENTS for method in METHODS)
 
 
-def get_deprecated_aliases(node: AST, /) -> frozenset[str]:
-    r"""Get all deprecated aliases from a node."""
-    match node:
-        case Attribute(attr=attr, value=Name(id=name)):
-            return KEYS & {f"{name}.{attr}"}
-        case Import(names=names):
-            return KEYS & {imp.name for imp in names}
-        case ImportFrom(module=module, names=names):
-            return KEYS & {f"{module}.{imp.name}" for imp in names}
-        case _:
-            return frozenset()
+def yield_aliases(tree: AST, /) -> abc.Iterator[ast.alias]:
+    r"""Yield alias nodes from AST."""
+    for node in ast.walk(tree):
+        match node:
+            case Attribute(attr=attr, value=Name(id=name), lineno=lineno):
+                yield ast.alias(name=f"{name}.{attr}", lineno=lineno)
+            case Import(names=names):
+                yield from names
+            case ImportFrom(module=module, names=names):
+                yield from (
+                    ast.alias(name=f"{module}.{alias.name}", lineno=alias.lineno)
+                    for alias in names
+                )
 
 
 def check_file(filepath: str | Path, /) -> int:
@@ -114,11 +116,12 @@ def check_file(filepath: str | Path, /) -> int:
     text = path.read_text(encoding="utf8")
     tree = ast.parse(text, filename=fname)
 
-    for node in ast.walk(tree):
-        for alias in get_deprecated_aliases(node):
+    for alias in yield_aliases(tree):
+        name, lineno = alias.name, alias.lineno
+        if name in BAD_ALIASES:
             violations += 1
-            replacement = REPLACEMENTS[alias]
-            print(f"{fname}:{node.lineno}: Use {replacement!r} instead of {alias!r}.")
+            replacement = REPLACEMENTS[name]
+            print(f"{fname}:{lineno}: Use {replacement!r} instead of {name!r}.")
 
     return violations
 
