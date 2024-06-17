@@ -88,13 +88,25 @@
 - id: python-system-exit
   name: python-system-exit
   description: "Consider using `raise SystemExit(1)` instead of `sys.exit(1)`."
-  entry: '\bsys\.exit\('
+  entry: '\b(sys\.exit)\('
   language: pygrep
   types: [python]
 - id: pyarrow-timestamp-seconds
   name: pyarrow-timestamp-seconds
   description: "Check for usage of second resolution timestamps (https://github.com/apache/arrow/issues/41382)."
   entry: '\b(timestamp\[s\]\[pyarrow\]|timestamp\((unit=)?"s"|datetime64\[s\])'
+  language: pygrep
+  types: [python]
+- id: python-match-case-builtins
+  name: python-match-case-builtins
+  description: "checks that `str(name)` is used instead of `str() as name`."
+  entry: '\b(bool|bytearray|bytes|dict|float|frozenset|int|list|set|str|tuple)\(\)\s+as\s+'
+  language: pygrep
+  types: [python]
+- id: python-match-case-builtins-simple
+  name: python-match-case-builtins-simple
+  description: "checks that `str(name)` is used instead of `str() as name`."
+  entry: '\b(bool|bytearray|bytes|float|int|str)\(\)\s+as\s+'
   language: pygrep
   types: [python]
 # endregion pygrep ---------------------------------------------------------------------
