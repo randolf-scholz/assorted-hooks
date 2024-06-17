@@ -100,13 +100,13 @@
 - id: python-match-case-builtins
   name: python-match-case-builtins
   description: "checks that `str(name)` is used instead of `str() as name`."
-  entry: '\b(_|bool|bytearray|bytes|dict|float|frozenset|int|list|set|str|tuple)\(\)\s+as\s+'
+  entry: '\b(bool|bytearray|bytes|dict|float|frozenset|int|list|set|str|tuple)\(\)\s+as\s+'
   language: pygrep
   types: [python]
 - id: python-match-case-builtins-simple
   name: python-match-case-builtins-simple
   description: "checks that `str(name)` is used instead of `str() as name`."
-  entry: '\b(_|bool|bytearray|bytes|float|int|str)\(\)\s+as\s+'
+  entry: '\b(bool|bytearray|bytes|float|int|str)\(\)\s+as\s+'
   language: pygrep
   types: [python]
 # endregion pygrep ---------------------------------------------------------------------
