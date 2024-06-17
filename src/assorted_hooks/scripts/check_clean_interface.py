@@ -44,6 +44,7 @@ __all__ = [
 import argparse
 import ast
 import logging
+import os
 import sys
 from ast import AST, AnnAssign, Assign, Call, Import, ImportFrom, Name
 from collections.abc import Iterable
@@ -211,8 +212,9 @@ def load_module(file: str | Path, /, *, load_silent: bool = False) -> ModuleType
     # load the module silently
     module = module_from_spec(spec)
     with (
-        redirect_stdout(None if load_silent else sys.stdout),
-        redirect_stderr(None if load_silent else sys.stderr),
+        open(os.devnull, "w") as devnull,
+        redirect_stdout(devnull if load_silent else sys.stdout),
+        redirect_stderr(devnull if load_silent else sys.stderr),
     ):
         spec.loader.exec_module(module)
 

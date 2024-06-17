@@ -42,6 +42,7 @@ import argparse
 import ast
 import importlib
 import itertools
+import os
 import pkgutil
 import re
 import sys
@@ -379,8 +380,9 @@ def get_deps_from_module(
             pass
         case str(name):
             with (  # load the submodule silently
-                redirect_stdout(None if silent else sys.stdout),
-                redirect_stderr(None if silent else sys.stderr),
+                open(os.devnull, "w") as devnull,
+                redirect_stdout(devnull if silent else sys.stdout),
+                redirect_stderr(devnull if silent else sys.stderr),
             ):
                 module = importlib.import_module(name)
         case _:
