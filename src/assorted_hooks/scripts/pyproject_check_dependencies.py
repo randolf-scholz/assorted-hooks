@@ -457,7 +457,7 @@ def calculate_dependencies(
 
 
 def check_file(
-    fname: str | Path,
+    filename: str | Path,
     /,
     *,
     module_dir: str = "src/",
@@ -479,7 +479,7 @@ def check_file(
     r"""Check a single file."""
     violations = 0
 
-    with open(fname, "rb") as file:
+    with open(filename, "rb") as file:
         config = tomllib.load(file)
 
     # get the normalized project name

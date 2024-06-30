@@ -8,17 +8,59 @@ __all__ = [
     "BUILTIN_CONSTANTS",
     "BUILTIN_SITE_CONSTANTS",
     "BUILTIN_EXCEPTIONS",
+    "VERSION_REGEX",
     # Protocols
     "FileCheck",
     # Functions
     "check_all_files",
+    "is_canonical_version",
     "get_python_files",
 ]
 
 import argparse
+import re
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Optional, Protocol
+
+# https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
+VERSION_REGEX = re.compile(
+    r"""(?ix:                                       # case-insensitive, verbose
+        v?(?:
+            (?:(?P<epoch>[0-9]+)!)?                           # epoch
+            (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
+            (?P<pre>                                          # pre-release
+                [-_.]?
+                (?P<pre_l>(?:a|b|c|rc|alpha|beta|pre|preview))
+                [-_.]?
+                (?P<pre_n>[0-9]+)?
+            )?
+            (?P<post>                                         # post release
+                (?:-(?P<post_n1>[0-9]+))
+                |
+                (?:
+                    [-_.]?
+                    (?P<post_l>post|rev|r)
+                    [-_.]?
+                    (?P<post_n2>[0-9]+)?
+                )
+            )?
+            (?P<dev>                                          # dev release
+                [-_.]?
+                (?P<dev_l>dev)
+                [-_.]?
+                (?P<dev_n>[0-9]+)?
+            )?
+        )
+        (?:\+(?P<local>[a-z0-9]+(?:[-_.][a-z0-9]+)*))?        # local version
+    )"""
+)
+r"""Regular expression for parsing version strings."""
+
+
+def is_canonical_version(version: str, /) -> bool:
+    r"""Check if the given version string is canonical."""
+    return re.match(VERSION_REGEX, version) is not None
 
 
 class FileCheck(Protocol):
