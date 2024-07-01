@@ -138,7 +138,7 @@ def extract_names(deps: list[str], /, *, normalize_names: bool = True) -> list[s
     r"""Simplify the dependencies by removing the version, duplicates, and normalizing."""
     # We are only interested in the name, not the version.
     # https://packaging.python.org/en/latest/specifications/dependency-specifiers/#names
-    name_regex = re.compile(r"^([A-Z0-9]|[A-Z0-9][A-Z0-9._-]*[A-Z0-9])$")
+    name_regex = re.compile(r"^([A-Z0-9](?:[A-Z0-9._-]*[A-Z0-9])?)", re.IGNORECASE)
 
     processed_deps = []
     for dep in deps:
