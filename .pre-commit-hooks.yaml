@@ -24,6 +24,14 @@
   files: ^pyproject\.toml$
   language: script
   types: [toml]
+- id: pyproject-check-unmaintained
+  name: pyproject-check-unmaintained
+  description: "Check for unmaintained dependencies"
+  files: ^pyproject\.toml$
+  language: script
+  types: [toml]
+  entry: "./src/assorted_hooks/scripts/pyproject_check_unmaintained.py"
+  additional_dependencies: [aiohttp]
 - id: python-check-clean-interface
   name: python-check-clean-interface
   description: "Check that __all__ holds all exported variables."

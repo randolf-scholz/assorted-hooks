@@ -168,10 +168,10 @@ def get_deps_pyproject_project(config: Config, /) -> set[str]:
     r"""Extract the dependencies from a pyproject.toml file.
 
     There are 6 sections we check:
-    - pyproject.dependencies
-    - pyproject.optional-dependencies.test(s)
-    - tool.poetry.dependencies
-    - tool.poetry.group.test(s).dependencies
+    - `pyproject.dependencies`
+    - `pyproject.optional-dependencies.test(s)`
+    - `tool.poetry.dependencies`
+    - `tool.poetry.group.test(s).dependencies`
 
     If dependencies are specified in multiple sections, it is validated that they are
     the same.
@@ -311,13 +311,13 @@ def group_dependencies(
 
 
 def detect_dependencies(
-    fname: str | Path,
+    filename: str | Path,
     /,
     *,
     ignore_private: bool = True,
 ) -> GroupedDependencies:
     r"""Collect the dependencies from files in the given path."""
-    path = Path(fname)
+    path = Path(filename)
     grouped_deps: GroupedDependencies = GroupedDependencies()
 
     if path.is_file():  # Single file
