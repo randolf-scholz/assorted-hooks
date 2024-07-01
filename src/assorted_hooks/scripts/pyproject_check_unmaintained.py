@@ -219,10 +219,11 @@ def get_optional_dependencies_from_pyproject(
     return extract_names(raw_optional_deps, normalize_names=normalize)
 
 
-def get_local_packages() -> dict[str, tuple[str, str, str]]:
+def get_local_packages(*, normalize: bool = True) -> dict[str, tuple[str, str, str]]:
     r"""Get the packages installed in the current environment."""
+    name_fn = _normalize if normalize else lambda x: x
     packages = {
-        x.name: (
+        name_fn(x.name): (
             x.version,
             x.metadata["Summary"],
             x.metadata["License"],
@@ -247,12 +248,15 @@ def check_pyproject(
     with open(filename, "rb") as file:
         pyproject = tomllib.load(file)
 
+    # extract project name and dependencies (normalizing names)
     project_name = get_project_name_from_pyproject(pyproject)
     project_dependencies = get_dependencies_from_pyproject(pyproject)
     project_optional_deps = get_optional_dependencies_from_pyproject(pyproject)
 
     # get local packages
     local_packages = get_local_packages()
+    # exclude the project itself
+    local_packages.pop(project_name, None)
 
     # get the latest versions of all packages
     pypi_packages = asyncio.run(get_all_pypi_json(local_packages))
@@ -269,8 +273,6 @@ def check_pyproject(
     ]
     # normalize the names
     unmaintained_packages = extract_names(unmaintained_packages)
-    # exclude the project itself
-    unmaintained_packages.remove(project_name)
 
     # Split unmaintained packages into 3 groups:
     #   1. direct dependencies (listed in pyproject.toml)
