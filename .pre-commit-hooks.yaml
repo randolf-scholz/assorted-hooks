@@ -31,7 +31,6 @@
   language: script
   types: [toml]
   entry: "./src/assorted_hooks/scripts/pyproject_check_unmaintained.py"
-  additional_dependencies: [aiohttp]
 - id: python-check-clean-interface
   name: python-check-clean-interface
   description: "Check that __all__ holds all exported variables."
