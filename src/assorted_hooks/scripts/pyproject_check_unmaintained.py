@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 r"""Detects unmaintained dependencies."""
 
 __all__ = [
