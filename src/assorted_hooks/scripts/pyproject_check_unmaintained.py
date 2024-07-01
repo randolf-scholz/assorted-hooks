@@ -5,14 +5,16 @@ __all__ = [
     # Constants
     "VERSION_REGEX",
     # Functions
+    "check_file",
     "check_pyproject",
     "extract_names",
     "get_all_pypi_json",
     "get_dependencies_from_pyproject",
-    "get_latest_version",
+    "get_latest_release",
     "get_local_packages",
     "get_optional_dependencies_from_pyproject",
     "get_project_name_from_pyproject",
+    "get_pypi_fallback",
     "get_pypi_json",
     "get_release_date",
     "get_release_version",
@@ -22,15 +24,16 @@ __all__ = [
 
 import argparse
 import asyncio
+import importlib
 import importlib.metadata as importlib_metadata
+import json
 import re
 import tomllib
 import warnings
 from collections.abc import Iterable
 from datetime import datetime, timedelta
 from typing import Any, TypeAlias
-
-import aiohttp
+from urllib.request import urlopen
 
 JSON: TypeAlias = dict[str, Any]
 
@@ -80,7 +83,7 @@ def _normalize(name: str, /) -> str:
     return re.sub(r"\W", "_", name).lower()
 
 
-async def get_pypi_json(pkg: str, /, *, session: aiohttp.ClientSession) -> JSON:
+async def get_pypi_json(pkg: str, /, *, session: Any) -> JSON:
     r"""Get the JSON data for the given package."""
     url = f"https://pypi.org/pypi/{pkg}/json"
     async with session.get(url) as response:
@@ -93,12 +96,34 @@ async def get_pypi_json(pkg: str, /, *, session: aiohttp.ClientSession) -> JSON:
                 raise ValueError(f"Failed to get package {pkg!r}: {status=}")
 
 
+async def get_pypi_fallback(pkg: str, /) -> JSON:
+    url = f"https://pypi.org/pypi/{pkg}/json"
+    loop = asyncio.get_event_loop()
+    response = await loop.run_in_executor(None, urlopen, url)
+    match response.status:
+        case 200:
+            return json.load(response)
+        case 404:
+            raise ValueError(f"Package {pkg!r} not found.")
+        case status:
+            raise ValueError(f"Failed to get package {pkg!r}: {status=}")
+
+
 async def get_all_pypi_json(packages: Iterable[str], /) -> dict[str, JSON]:
     r"""Get the JSON data for all the given packages."""
-    async with aiohttp.ClientSession() as session:
-        tasks = (get_pypi_json(pkg, session=session) for pkg in packages)
+    # load aiohttp if available
+    try:
+        aiohttp = importlib.import_module("aiohttp")
+    except (ImportError, ModuleNotFoundError):
+        warnings.warn("aiohttp is not available, using fallback.", stacklevel=2)
+        tasks = (get_pypi_fallback(pkg) for pkg in packages)
         responses = await asyncio.gather(*tasks)
-        return dict(zip(packages, responses, strict=True))
+    else:
+        async with aiohttp.ClientSession() as session:
+            tasks = (get_pypi_json(pkg, session=session) for pkg in packages)
+            responses = await asyncio.gather(*tasks)
+
+    return dict(zip(packages, responses, strict=True))
 
 
 def get_release_version(version: str, /) -> tuple[int, ...]:
@@ -113,25 +138,22 @@ def get_release_version(version: str, /) -> tuple[int, ...]:
 def get_release_date(releases: list[JSON], /) -> datetime:
     r"""Get the upload date of the earliest release."""
     uploads = [datetime.fromisoformat(release["upload_time"]) for release in releases]
-    if not uploads:
-        raise ValueError("No uploads found.")
-    return min(uploads)
+    return min(uploads, default=datetime.min)
 
 
-def get_latest_version(metadata: JSON, /) -> tuple[str, datetime]:
+def get_latest_release(metadata: JSON, /) -> tuple[str, datetime]:
     r"""Get the latest version and upload date of the given package."""
     releases: dict[str, list[JSON]] = metadata["releases"]
 
-    # pick the release with the highest version number
-    sorted_releases = sorted(releases, key=get_release_version)
-    latest_release = sorted_releases[-1]
+    # pick the latest release
+    upload_dates: dict[str, datetime] = {}
+    for version in releases:
+        upload_dates[version] = get_release_date(releases[version])
 
-    # one release can have multiple uploads (windows, mac, linux, etc.)
-    # we choose the earliest upload
-    release_uploads = releases[latest_release]
-    upload_date = get_release_date(release_uploads)
+    # pick the most recent release
+    latest_release: str = max(upload_dates, key=upload_dates.__getitem__)
 
-    return latest_release, upload_date
+    return latest_release, upload_dates[latest_release]
 
 
 def extract_names(deps: list[str], /, *, normalize_names: bool = True) -> list[str]:
@@ -214,7 +236,7 @@ def get_optional_dependencies_from_pyproject(
             return []
 
     # concatenate the lists
-    raw_optional_deps = list(set().union(*raw_optional_deps))
+    raw_optional_deps = list(set().union(*raw_optional_deps.values()))
 
     return extract_names(raw_optional_deps, normalize_names=normalize)
 
@@ -234,19 +256,15 @@ def get_local_packages(*, normalize: bool = True) -> dict[str, tuple[str, str, s
 
 
 def check_pyproject(
-    filename: str,
+    pyproject: JSON,
     /,
     *,
-    threshold: int,
-    check_optional: bool,
-    check_unlisted: bool,
+    threshold: int = 1000,
+    check_optional: bool = True,
+    check_unlisted: bool = True,
 ) -> int:
     r"""Check the pyproject.toml file for unmaintained dependencies."""
     threshold_date = datetime.now() - timedelta(days=threshold)
-
-    # load the pyproject.toml as dict
-    with open(filename, "rb") as file:
-        pyproject = tomllib.load(file)
 
     # extract project name and dependencies (normalizing names)
     project_name = get_project_name_from_pyproject(pyproject)
@@ -258,12 +276,32 @@ def check_pyproject(
     # exclude the project itself
     local_packages.pop(project_name, None)
 
+    # add missing declared dependencies
+    for dep in project_dependencies + project_optional_deps:
+        if dep not in local_packages:
+            warnings.warn(
+                f"Dependency {dep!r} appears to not be installed.", stacklevel=2
+            )
+            local_packages[dep] = ("unknown", "unknown", "unknown")
+
     # get the latest versions of all packages
     pypi_packages = asyncio.run(get_all_pypi_json(local_packages))
-    latest_versions = {
-        pkg: get_latest_version(pkg_metadata)
-        for pkg, pkg_metadata in pypi_packages.items()
-    }
+    latest_versions: dict[str, tuple[str, datetime]] = {}
+    for pkg, pkg_metadata in pypi_packages.items():
+        try:
+            latest_versions[pkg] = get_latest_release(pkg_metadata)
+        except Exception as exc:
+            exc.add_note(
+                f"Failed to get latest version for {pkg!r}"
+                f"\n{sorted(local_packages)=}"
+                f"\n{project_dependencies=}"
+                f"\n{project_optional_deps=}"
+            )
+            raise
+    # latest_versions = {
+    #     pkg: get_latest_version(pkg_metadata)
+    #     for pkg, pkg_metadata in pypi_packages.items()
+    # }
 
     # check which packages are unmaintained
     unmaintained_packages: list[str] = [
@@ -287,7 +325,7 @@ def check_pyproject(
             violations += 1
             print(
                 f"Dependency {pkg} appears unmaintained "
-                f"(latest version={latest_version} from {upload_date}"
+                f"(latest release={latest_version} from {upload_date}"
             )
         return violations
 
@@ -297,7 +335,7 @@ def check_pyproject(
             violations += 1
             print(
                 f"Optional dependency {pkg} appears unmaintained "
-                f"(latest version={latest_version} from {upload_date}"
+                f"(latest release={latest_version} from {upload_date}"
             )
 
     for pkg in set(unmaintained_packages) & set(project_dependencies):
@@ -305,10 +343,19 @@ def check_pyproject(
         violations += 1
         print(
             f"Dependency {pkg} appears unmaintained "
-            f"(latest version={latest_version} from {upload_date}"
+            f"(latest release={latest_version} from {upload_date}"
         )
 
     return violations
+
+
+def check_file(filename: str, /, **opts: Any) -> int:
+    r"""Check the pyproject.toml file for unmaintained dependencies."""
+    # load the pyproject.toml as dict
+    with open(filename, "rb") as file:
+        pyproject = tomllib.load(file)
+
+    return check_pyproject(pyproject, **opts)
 
 
 def main() -> None:
@@ -356,7 +403,7 @@ def main() -> None:
     args = parser.parse_args()
 
     try:
-        violations = check_pyproject(
+        violations = check_file(
             args.pyproject_file,
             check_optional=args.check_optional,
             check_unlisted=args.check_unlisted,
