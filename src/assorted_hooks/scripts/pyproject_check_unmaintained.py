@@ -203,26 +203,29 @@ def get_dependencies_from_pyproject(
     """
     deps: list[str] = []
 
-    try:  # obtain dependencies from [project.dependencies]
-        dependencies = pyproject["project"]["dependencies"]
-    except KeyError as exc:
-        exc.add_note("Cannot find dependencies in pyproject.toml.")
-        raise
-    else:
-        deps += dependencies
+    if "dependencies" in pyproject.get("project", {}):
+        try:  # obtain dependencies from [project.dependencies]
+            dependencies = pyproject["project"]["dependencies"]
+        except KeyError as exc:
+            exc.add_note("Cannot find dependencies in pyproject.toml.")
+            raise
+        else:
+            deps += dependencies
 
-    try:  # obtain dependencies from [tool.poetry.dependencies]
-        dependencies = list(pyproject["tool"]["poetry"]["dependencies"])
-    except KeyError:
-        warnings.warn(
-            "Cannot find poetry dependencies in pyproject.toml.",
-            stacklevel=2,
-        )
-    else:
-        # remove python from the dependencies
-        if "python" in dependencies:
-            dependencies.remove("python")
-        deps += dependencies
+    if "poetry" in pyproject.get("tool", {}):
+        try:  # obtain dependencies from [tool.poetry.dependencies]
+            dependencies = list(pyproject["tool"]["poetry"]["dependencies"])
+        except KeyError as exc:
+            exc.add_note("Cannot find dependencies in pyproject.toml.")
+            raise
+        else:
+            # remove python from the dependencies
+            if "python" in dependencies:
+                dependencies.remove("python")
+            deps += dependencies
+
+    if not deps:
+        raise ValueError("No dependencies found in pyproject.toml.")
 
     return extract_names(deps, normalize_names=normalize)
 
@@ -243,37 +246,46 @@ def get_optional_deps_from_pyproject(
     """
     deps: list[str] = []
 
-    try:  # obtain dependencies from [project.optional-dependencies]
-        optional_deps = pyproject["project"]["optional-dependencies"]
-    except KeyError as exc:
-        if error_on_missing:
-            exc.add_note("Cannot find optional-dependencies in pyproject.toml.")
-            raise
-    else:
-        # concatenate the lists
-        deps += list(set().union(*optional_deps.values()))
+    if "optional-dependencies" in pyproject.get("project", {}):
+        try:  # obtain dependencies from [project.optional-dependencies]
+            optional_deps = pyproject["project"]["optional-dependencies"]
+        except KeyError as exc:
+            if error_on_missing:
+                exc.add_note("Cannot find optional-dependencies in pyproject.toml.")
+                raise
+        else:
+            # concatenate the lists
+            deps += list(set().union(*optional_deps.values()))
 
-    try:  # obtain dependencies from [tool.pdm.dev-dependencies]
-        optional_deps = pyproject["tool"]["pdm"]["dev-dependencies"]
-    except KeyError as exc:
-        if error_on_missing:
-            exc.add_note("Cannot find optional-dependencies in pyproject.toml.")
-            raise
-    else:
-        # concatenate the lists
-        deps += list(set().union(*optional_deps.values()))
+    if "pdm" in pyproject.get("tool", {}):
+        try:  # obtain dependencies from [tool.pdm.dev-dependencies]
+            optional_deps = pyproject["tool"]["pdm"]["dev-dependencies"]
+        except KeyError as exc:
+            if error_on_missing:
+                exc.add_note("Cannot find development-dependencies in pyproject.toml.")
+                raise
+        else:
+            # concatenate the lists
+            deps += list(set().union(*optional_deps.values()))
 
-    try:  # obtain dependencies from [tool.poetry.group.*.dependencies]
-        dep_groups = pyproject["tool"]["poetry"]["group"]
-    except KeyError as exc:
-        if error_on_missing:
-            exc.add_note("Cannot find optional-dependencies in pyproject.toml.")
-            raise
-    else:
-        optional_deps = []
-        for group in dep_groups:
-            optional_deps += list(group["dependencies"])
-        deps += optional_deps
+    if "poetry" in pyproject.get("tool", {}):
+        try:  # obtain dependencies from [tool.poetry.group.*.dependencies]
+            dep_groups = pyproject["tool"]["poetry"]["group"]
+        except KeyError as exc:
+            if error_on_missing:
+                exc.add_note("Cannot find optional-dependencies in pyproject.toml.")
+                raise
+        else:
+            optional_deps = []
+            for group in dep_groups:
+                optional_deps += list(group["dependencies"])
+            deps += optional_deps
+
+    if not deps:
+        raise ValueError(
+            "No optional/development dependencies found in pyproject.toml."
+            "If there are none, use with option --no-check-optional."
+        )
 
     return extract_names(deps, normalize_names=normalize)
 
