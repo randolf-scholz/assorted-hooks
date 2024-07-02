@@ -24,13 +24,14 @@
   files: ^pyproject\.toml$
   language: script
   types: [toml]
-- id: pyproject-check-unmaintained
-  name: pyproject-check-unmaintained
+- id: pyproject-check-unmaintained-local
+  name: pyproject-check-unmaintained-local
   description: "Check for unmaintained dependencies"
   files: ^pyproject\.toml$
   language: script
   types: [toml]
   entry: "./src/assorted_hooks/scripts/pyproject_check_unmaintained.py"
+  args: ["--check-unlisted"]
 - id: python-check-clean-interface
   name: python-check-clean-interface
   description: "Check that __all__ holds all exported variables."
@@ -155,6 +156,14 @@
 
 
 # region misc --------------------------------------------------------------------------
+- id: pyproject-check-unmaintained
+  name: pyproject-check-unmaintained
+  description: "Check for unmaintained dependencies"
+  files: ^pyproject\.toml$
+  language: python
+  types: [toml]
+  entry: "./src/assorted_hooks/scripts/pyproject_check_unmaintained.py"
+  additional_dependencies: [aiohttp]
 - id: expired-github-issues
   name: expired-github-issues
   description: "Check for expired GitHub issues."

@@ -12,7 +12,7 @@ __all__ = [
     "get_dependencies_from_pyproject",
     "get_latest_release",
     "get_local_packages",
-    "get_optional_dependencies_from_pyproject",
+    "get_optional_deps_from_pyproject",
     "get_project_name_from_pyproject",
     "get_pypi_fallback",
     "get_pypi_json",
@@ -212,7 +212,7 @@ def get_dependencies_from_pyproject(
     return extract_names(raw_dependencies, normalize_names=normalize)
 
 
-def get_optional_dependencies_from_pyproject(
+def get_optional_deps_from_pyproject(
     pyproject: dict, /, *, normalize: bool = True, error_on_missing: bool = False
 ) -> list[str]:
     r"""Extracts the optional dependencies from the pyproject.toml file.
@@ -259,54 +259,55 @@ def check_pyproject(
     pyproject: JSON,
     /,
     *,
-    threshold: int = 1000,
     check_optional: bool = True,
-    check_unlisted: bool = True,
+    check_unlisted: bool = False,
+    threshold: int = 1000,
 ) -> int:
     r"""Check the pyproject.toml file for unmaintained dependencies."""
     threshold_date = datetime.now() - timedelta(days=threshold)
 
     # extract project name and dependencies (normalizing names)
     project_name = get_project_name_from_pyproject(pyproject)
-    project_dependencies = get_dependencies_from_pyproject(pyproject)
-    project_optional_deps = get_optional_dependencies_from_pyproject(pyproject)
+    project_dependencies: list[str] = get_dependencies_from_pyproject(pyproject)
+    project_optional_deps: list[str] = get_optional_deps_from_pyproject(pyproject)
 
     # get local packages
-    local_packages = get_local_packages()
-    # exclude the project itself
-    local_packages.pop(project_name, None)
-
-    # add missing declared dependencies
-    for dep in project_dependencies + project_optional_deps:
-        if dep not in local_packages:
-            warnings.warn(
-                f"Dependency {dep!r} appears to not be installed.", stacklevel=2
-            )
-            local_packages[dep] = ("unknown", "unknown", "unknown")
+    if check_unlisted:
+        local_packages: list[str] = sorted(get_local_packages())
+        # exclude the project itself
+        if project_name in local_packages:
+            local_packages.remove(project_name)
+        # add missing declared dependencies
+        for dep in project_dependencies + project_optional_deps:
+            if dep not in local_packages:
+                warnings.warn(
+                    f"Dependency {dep!r} appears to not be installed.",
+                    stacklevel=2,
+                )
+                local_packages.append(dep)
+    else:
+        local_packages = project_dependencies + project_optional_deps
 
     # get the latest versions of all packages
     pypi_packages = asyncio.run(get_all_pypi_json(local_packages))
-    latest_versions: dict[str, tuple[str, datetime]] = {}
+    latest_releases: dict[str, tuple[str, datetime]] = {}
     for pkg, pkg_metadata in pypi_packages.items():
         try:
-            latest_versions[pkg] = get_latest_release(pkg_metadata)
+            latest_releases[pkg] = get_latest_release(pkg_metadata)
         except Exception as exc:
             exc.add_note(
-                f"Failed to get latest version for {pkg!r}"
-                f"\n{sorted(local_packages)=}"
+                f"Failed to get latest release for {pkg!r}"
+                f"\n{local_packages=}"
+                f"\n{project_name=}"
                 f"\n{project_dependencies=}"
                 f"\n{project_optional_deps=}"
             )
             raise
-    # latest_versions = {
-    #     pkg: get_latest_version(pkg_metadata)
-    #     for pkg, pkg_metadata in pypi_packages.items()
-    # }
 
     # check which packages are unmaintained
     unmaintained_packages: list[str] = [
         pkg
-        for pkg, (_, upload_date) in latest_versions.items()
+        for pkg, (_, upload_date) in latest_releases.items()
         if upload_date < threshold_date
     ]
     # normalize the names
@@ -321,7 +322,7 @@ def check_pyproject(
     violations = 0
     if check_unlisted:
         for pkg in unmaintained_packages:
-            latest_version, upload_date = latest_versions[pkg]
+            latest_version, upload_date = latest_releases[pkg]
             violations += 1
             print(
                 f"Dependency {pkg} appears unmaintained "
@@ -331,7 +332,7 @@ def check_pyproject(
 
     if check_optional:
         for pkg in set(unmaintained_packages) & set(project_optional_deps):
-            latest_version, upload_date = latest_versions[pkg]
+            latest_version, upload_date = latest_releases[pkg]
             violations += 1
             print(
                 f"Optional dependency {pkg} appears unmaintained "
@@ -339,7 +340,7 @@ def check_pyproject(
             )
 
     for pkg in set(unmaintained_packages) & set(project_dependencies):
-        latest_version, upload_date = latest_versions[pkg]
+        latest_version, upload_date = latest_releases[pkg]
         violations += 1
         print(
             f"Dependency {pkg} appears unmaintained "
