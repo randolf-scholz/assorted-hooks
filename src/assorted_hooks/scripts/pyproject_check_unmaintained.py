@@ -154,7 +154,7 @@ def get_latest_release(metadata: JSON, /) -> tuple[str, datetime]:
     return latest_release, upload_dates[latest_release]
 
 
-def extract_names(deps: list[str], /, *, normalize_names: bool = True) -> list[str]:
+def extract_names(deps: Iterable[str], /, *, normalize_names: bool = True) -> list[str]:
     r"""Simplify the dependencies by removing the version, duplicates, and normalizing."""
     # We are only interested in the name, not the version.
     # https://packaging.python.org/en/latest/specifications/dependency-specifiers/#names
@@ -277,8 +277,8 @@ def get_optional_deps_from_pyproject(
                 raise
         else:
             optional_deps = []
-            for group in dep_groups:
-                optional_deps += list(group["dependencies"])
+            for dep_group in dep_groups.values():
+                optional_deps += list(dep_group["dependencies"])
             deps += optional_deps
 
     if not deps:
@@ -354,13 +354,16 @@ def check_pyproject(
             raise
 
     # check which packages are unmaintained
-    unmaintained_packages: list[str] = [
+    unmaintained_packages: set[str] = {
         pkg
         for pkg, (_, upload_date) in latest_releases.items()
         if upload_date < threshold_date
-    ]
+    }
     # normalize the names
-    unmaintained_packages = extract_names(unmaintained_packages)
+    unmaintained_packages = set(extract_names(unmaintained_packages))
+    bad_direct_deps = unmaintained_packages & set(project_dependencies)
+    bad_optional_deps = unmaintained_packages & set(project_optional_deps)
+    bad_unlisted_deps = unmaintained_packages - (bad_direct_deps | bad_optional_deps)
 
     # Split unmaintained packages into 3 groups:
     #   1. direct dependencies (listed in pyproject.toml)
@@ -369,32 +372,31 @@ def check_pyproject(
     # NOTE: We need to normalize names!
 
     violations = 0
-    if check_unlisted:
-        for pkg in unmaintained_packages:
-            latest_version, upload_date = latest_releases[pkg]
-            violations += 1
-            print(
-                f"Dependency {pkg} appears unmaintained "
-                f"(latest release={latest_version} from {upload_date}"
-            )
-        return violations
-
-    if check_optional:
-        for pkg in set(unmaintained_packages) & set(project_optional_deps):
-            latest_version, upload_date = latest_releases[pkg]
-            violations += 1
-            print(
-                f"Optional dependency {pkg} appears unmaintained "
-                f"(latest release={latest_version} from {upload_date}"
-            )
-
-    for pkg in set(unmaintained_packages) & set(project_dependencies):
+    for pkg in bad_direct_deps:
         latest_version, upload_date = latest_releases[pkg]
         violations += 1
         print(
-            f"Dependency {pkg} appears unmaintained "
-            f"(latest release={latest_version} from {upload_date}"
+            f"Direct dependency {pkg!r} appears unmaintained "
+            f"(latest release: {latest_version} from {upload_date})"
         )
+
+    if check_optional:
+        for pkg in bad_optional_deps:
+            latest_version, upload_date = latest_releases[pkg]
+            violations += 1
+            print(
+                f"Optional dependency {pkg!r} appears unmaintained "
+                f"(latest release: {latest_version} from {upload_date})"
+            )
+
+    if check_unlisted:
+        for pkg in bad_unlisted_deps:
+            latest_version, upload_date = latest_releases[pkg]
+            violations += 1
+            print(
+                f"Unlisted dependency {pkg!r} appears unmaintained "
+                f"(latest release: {latest_version} from {upload_date})"
+            )
 
     return violations
 
