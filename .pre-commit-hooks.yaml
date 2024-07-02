@@ -162,7 +162,7 @@
   files: ^pyproject\.toml$
   language: python
   types: [toml]
-  entry: "./src/assorted_hooks/scripts/pyproject_check_unmaintained.py"
+  entry: pyproject-check-unmaintained
   additional_dependencies: [aiohttp]
 - id: expired-github-issues
   name: expired-github-issues
