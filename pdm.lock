@@ -5,14 +5,14 @@
 groups = ["default", "dev", "test"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.2"
-content_hash = "sha256:f27960e375c7c13e88e75d14ac6ab87d92a0470aef3c07271a1fca1b5f883093"
+content_hash = "sha256:d75504fc7b081dd223af9718a77af33e7156e048c9070b251ecaded615977ec0"
 
 [[package]]
 name = "aiohttp"
 version = "3.9.5"
 requires_python = ">=3.8"
 summary = "Async http client/server framework (asyncio)"
-groups = ["dev"]
+groups = ["default"]
 dependencies = [
     "aiosignal>=1.1.2",
     "attrs>=17.3.0",
@@ -59,7 +59,7 @@ name = "aiosignal"
 version = "1.3.1"
 requires_python = ">=3.7"
 summary = "aiosignal: a list of registered asynchronous callbacks"
-groups = ["dev"]
+groups = ["default"]
 dependencies = [
     "frozenlist>=1.1.0",
 ]
@@ -73,7 +73,7 @@ name = "attrs"
 version = "23.2.0"
 requires_python = ">=3.7"
 summary = "Classes Without Boilerplate"
-groups = ["dev"]
+groups = ["default", "dev"]
 files = [
     {file = "attrs-23.2.0-py3-none-any.whl", hash = "sha256:99b87a485a5820b23b879f04c2305b44b951b502fd64be915879d77a7e8fc6f1"},
     {file = "attrs-23.2.0.tar.gz", hash = "sha256:935dc3b529c262f6cf76e50877d35a4bd3c1de194fd41f47a2b7ae8f19971f30"},
@@ -363,7 +363,7 @@ name = "frozenlist"
 version = "1.4.1"
 requires_python = ">=3.8"
 summary = "A list-like structure which implements collections.abc.MutableSequence"
-groups = ["dev"]
+groups = ["default"]
 files = [
     {file = "frozenlist-1.4.1-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:a0cb6f11204443f27a1628b0e460f37fb30f624be6051d490fa7d7e26d4af3d0"},
     {file = "frozenlist-1.4.1-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:b46c8ae3a8f1f41a0d2ef350c0b6e65822d80772fe46b653ab6b6274f61d4a49"},
@@ -415,7 +415,7 @@ name = "idna"
 version = "3.7"
 requires_python = ">=3.5"
 summary = "Internationalized Domain Names in Applications (IDNA)"
-groups = ["default", "dev"]
+groups = ["default"]
 files = [
     {file = "idna-3.7-py3-none-any.whl", hash = "sha256:82fee1fc78add43492d3a1898bfa6d8a904cc97d8427f683ed8e798d07761aa0"},
     {file = "idna-3.7.tar.gz", hash = "sha256:028ff3aadf0609c1fd278d8ea3089299412a7a8b9bd005dd08b9f8285bcb5cfc"},
@@ -452,7 +452,7 @@ name = "multidict"
 version = "6.0.5"
 requires_python = ">=3.7"
 summary = "multidict implementation"
-groups = ["dev"]
+groups = ["default"]
 files = [
     {file = "multidict-6.0.5-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:f285e862d2f153a70586579c15c44656f888806ed0e5b56b64489afe4a2dbfba"},
     {file = "multidict-6.0.5-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:53689bb4e102200a4fafa9de9c7c3c212ab40a7ab2c8e474491914d2305f187e"},
@@ -942,7 +942,7 @@ name = "yarl"
 version = "1.9.4"
 requires_python = ">=3.7"
 summary = "Yet another URL library"
-groups = ["dev"]
+groups = ["default"]
 dependencies = [
     "idna>=2.0",
     "multidict>=4.0",

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 # region project configuration ---------------------------------------------------------
 [project]
 name = "assorted-hooks"
-version = "0.2.28"
+version = "0.2.30"
 authors = [{name="Randolf Scholz", email="randolf.scholz@gmail.com"}]
 description = "Custom pre-commit hooks"
 
@@ -29,6 +29,7 @@ classifiers = [
 # dependencies
 requires-python = ">=3.11"
 dependencies = [
+    "aiohttp>=3.9.5",
     "pygithub>=2.3.0",
 ]
 
@@ -58,7 +59,6 @@ pyproject-check-unmaintained = "assorted_hooks.scripts.pyproject_check_unmaintai
 # region development dependencies ------------------------------------------------------
 [tool.pdm.dev-dependencies]
 dev = [
-    "aiohttp>=3.9.5",
     "pre-commit>=3.7.1",
     "ruff>=0.5.0",
     "ruff-lsp>=0.0.54",

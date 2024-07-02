@@ -24,7 +24,6 @@ __all__ = [
 
 import argparse
 import asyncio
-import importlib
 import importlib.metadata as importlib_metadata
 import json
 import re
@@ -111,9 +110,8 @@ async def get_pypi_fallback(pkg: str, /) -> JSON:
 
 async def get_all_pypi_json(packages: Iterable[str], /) -> dict[str, JSON]:
     r"""Get the JSON data for all the given packages."""
-    # load aiohttp if available
-    try:
-        aiohttp = importlib.import_module("aiohttp")
+    try:  # load aiohttp if available
+        import aiohttp
     except (ImportError, ModuleNotFoundError):
         warnings.warn("aiohttp is not available, using fallback.", stacklevel=2)
         tasks = (get_pypi_fallback(pkg) for pkg in packages)
