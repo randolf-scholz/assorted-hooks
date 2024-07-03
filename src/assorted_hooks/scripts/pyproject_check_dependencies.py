@@ -56,7 +56,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any, Optional, Self, TypeAlias
 
-# NOTE: importlib.metadata is bugged in 3.10: https://github.com/python/cpython/issues/94113
+# NOTE: importlib.metadata is bugged in 3.10: https://github.com/python/cpython/issues/94113#issuecomment-1164678873
 if sys.version_info >= (3, 11):  # noqa: UP036
     from importlib import metadata
 else:
