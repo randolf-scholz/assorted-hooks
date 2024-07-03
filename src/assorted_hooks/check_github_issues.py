@@ -2,7 +2,6 @@ r"""Checks if referenced issues are closed."""
 
 __all__ = [
     # Constants
-    "ISSUE_PATTERN",
     "ISSUE_REGEX",
     # classes
     "IssueMatch",
@@ -43,17 +42,23 @@ class IssueMatch:
     org: str
     repo: str
     number: int
+    comment: int | None = None
 
     @property
-    def url(self):
-        return f"https://github.com/{self.org}/{self.repo}/issues/{self.number}"
+    def url(self) -> str:
+        url = f"https://github.com/{self.org}/{self.repo}/issues/{self.number}"
+        if self.comment is not None:
+            url += f"#issuecomment-{self.comment}"
+        return url
 
 
-ISSUE_PATTERN = (
-    r"https:\/\/github\.com\/(?P<org>[\w-]+)\/(?P<repo>[\w-]+)\/issues\/(?P<number>\d+)"
-)
-r"""Pattern to match issue references."""
-ISSUE_REGEX: re.Pattern = re.compile(ISSUE_PATTERN)
+ISSUE_REGEX: re.Pattern = re.compile(r"""(?x:  # verbose regex
+    https://github\.com/
+    (?P<org>[\w-]+)/
+    (?P<repo>[\w-]+)/
+    issues/(?P<number>\d+)
+    (?:\#issuecomment-(?P<comment>\d+))?
+)""")
 r"""Compiled regex for issue references."""
 
 
@@ -67,6 +72,7 @@ def find_issues(text: str, /) -> Iterator[IssueMatch]:
                 org=match.group("org"),
                 repo=match.group("repo"),
                 number=int(match.group("number")),
+                comment=int(match.group("comment")) if match.group("comment") else None,
             )
 
 
@@ -81,6 +87,9 @@ def find_issues_in_file(path: Path, /) -> Iterator[IssueMatch]:
                     org=match.group("org"),
                     repo=match.group("repo"),
                     number=int(match.group("number")),
+                    comment=int(match.group("comment"))
+                    if match.group("comment")
+                    else None,
                 )
 
 
@@ -91,7 +100,13 @@ def is_closed_issue(match: IssueMatch, /, *, git: Github) -> bool:
     return issue.state == "closed"
 
 
-def check_file(filepath: str | Path, /, *, git: Github) -> int:
+def check_file(
+    filepath: str | Path,
+    /,
+    *,
+    git: Github,
+    ignore_comments: bool = True,
+) -> int:
     r"""Check if issues are closed."""
     # Get the AST
     violations = 0
@@ -100,6 +115,8 @@ def check_file(filepath: str | Path, /, *, git: Github) -> int:
     text = path.read_text(encoding="utf8")
 
     for issue in find_issues(text):
+        if ignore_comments and issue.comment is not None:
+            continue
         if is_closed_issue(issue, git=git):
             violations += 1
             print(f"{fname}:{issue.line}:{issue.col}: Issue {issue.url} is resolved.")
@@ -166,6 +183,13 @@ def main() -> None:
         help="GitHub authentication token.",
     )
     parser.add_argument(
+        "--ignore-comments",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=True,
+        help="Ignore urls that point to comments on issues rather than issues themselves.",
+    )
+    parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,
         type=bool,
@@ -189,7 +213,9 @@ def main() -> None:
     for file in files:
         __logger__.debug('Checking "%s:0"', file)
         try:
-            violations += check_file(file, git=git)
+            violations += check_file(
+                file, git=git, ignore_comments=args.ignore_comments
+            )
         except Exception as exc:
             raise RuntimeError(f"{file!s}: Checking file failed!") from exc
 

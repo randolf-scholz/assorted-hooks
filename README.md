@@ -4,6 +4,15 @@
 
 [ast-based hooks](#ast-based-hooks) | [script-based hooks](#script-based-hooks) | [pygrep-based hooks](#pygrep-based-hooks) | [latex hooks](#latex-hooks) | [changelog](CHANGELOG.md)
 
+## Misc. Hooks
+
+### `check-resolved-github-issues`
+
+Checks code for references to GitHub issues. Queries the GitHub API to check if the issues are resolved.
+This hook is configured to only run manually, as it requires a GitHub token.
+
+- `--ignore-comments`: Ignore urls that point to comments in issues rather than the issue itself. (default: `True`)
+
 ## AST-based Hooks
 
 ### `python-direct-imports`
