@@ -8,6 +8,8 @@ __all__ = [
     "IssueMatch",
     # Functions
     "authenticate",
+    "authenticate_token",
+    "authenticate_query",
     "check_file",
     "find_issues",
     "find_issues_in_file",
@@ -23,7 +25,6 @@ import sys
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 from github import Auth, Github
 from github.GithubException import BadCredentialsException
@@ -106,23 +107,44 @@ def check_file(filepath: str | Path, /, *, git: Github) -> int:
     return violations
 
 
-def authenticate(auth: Optional[str] = None, /) -> Github:
-    r"""Authenticate with GitHub."""
-    if auth is None:
-        auth = getpass.getpass(
-            "GitHub authentication token is required. Press Enter to continue:"
+def authenticate_query() -> Github:
+    r"""Ask the user for authentication."""
+    for k in range(3):
+        msg = (
+            "\nInvalid credentials! Please try again." * (k > 0)
+            + "\nGitHub authentication token is required:"
         )
-        return authenticate(auth)
+        auth = getpass.getpass(msg)
 
+        git = Github(auth=Auth.Token(auth))
+
+        try:
+            _ = git.get_user().login
+        except BadCredentialsException:
+            continue
+        else:
+            return git
+
+    raise RuntimeError("Failed to authenticate with GitHub (max retries reached).")
+
+
+def authenticate_token(auth: str, /) -> Github:
+    r"""Authenticate with GitHub."""
     git = Github(auth=Auth.Token(auth))
 
     try:
         _ = git.get_user().login
-    except BadCredentialsException as exc:
-        print(f"Failed to authenticate with token! {exc}")
-        return authenticate()
-    else:
-        return git
+    except BadCredentialsException:
+        raise RuntimeError("Invalid GitHub authentication token.") from None
+
+    return git
+
+
+def authenticate(auth: str | None, /) -> Github:
+    r"""Authenticate with GitHub."""
+    if auth is None:
+        return authenticate_query()
+    return authenticate_token(auth)
 
 
 def main() -> None:
