@@ -164,9 +164,9 @@
   types: [toml]
   entry: pyproject-check-unmaintained
   additional_dependencies: [aiohttp]
-- id: expired-github-issues
-  name: expired-github-issues
-  description: "Check for expired GitHub issues."
+- id: check-resolved-github-issues
+  name: check-resolved-github-issues
+  description: "Check for references to resolved GitHub issues."
   entry: check-github-issues
   language: python
   stages: [manual]

@@ -29,6 +29,8 @@ repos:
     - id: pyproject-check-deps
     - id: python-check-clean-interface
       files: '^src/'
+    # other hooks
+    - id: check-resolved-github-issues
     # latex hooks
     - id: chktex
     - id: lacheck
