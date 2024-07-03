@@ -6,7 +6,7 @@ default_language_version:
 repos:
   # test with pre-commit try-repo ../assorted-hooks --verbose --all-files
   - repo: https://github.com/randolf-scholz/assorted-hooks
-    rev: v0.2.34
+    rev: v0.2.35
     hooks:
     # pygrep-based hooks
     - id: check-separator-length
@@ -140,7 +140,7 @@ repos:
         - "--"
   # pyright
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.369
+    rev: v1.1.370
     hooks:
       - id: pyright
         files: (^src/|^tests/)
