@@ -13,6 +13,8 @@ This hook is configured to only run manually, as it requires a GitHub token.
 
 - `--ignore-comments`: Ignore urls that point to comments in issues rather than the issue itself. (default: `True`)
 
+Note: Currently this hook is rather slow because the queries are not running asynchronously.
+
 ## AST-based Hooks
 
 ### `python-direct-imports`
