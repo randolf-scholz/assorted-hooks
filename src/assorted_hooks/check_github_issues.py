@@ -7,10 +7,11 @@ __all__ = [
     # classes
     "IssueMatch",
     # Functions
-    "is_closed",
+    "authenticate",
     "check_file",
     "find_issues",
     "find_issues_in_file",
+    "is_closed_issue",
     "main",
 ]
 
@@ -18,9 +19,11 @@ import argparse
 import logging
 import re
 import sys
+import warnings
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 from github import Auth, Github
 
@@ -79,7 +82,7 @@ def find_issues_in_file(path: Path, /) -> Iterator[IssueMatch]:
                 )
 
 
-def is_closed(match: IssueMatch, /, *, git: Github) -> bool:
+def is_closed_issue(match: IssueMatch, /, *, git: Github) -> bool:
     r"""Check if the issue is closed."""
     repo = git.get_repo(f"{match.org}/{match.repo}")
     issue = repo.get_issue(number=match.number)
@@ -95,11 +98,26 @@ def check_file(filepath: str | Path, /, *, git: Github) -> int:
     text = path.read_text(encoding="utf8")
 
     for issue in find_issues(text):
-        if is_closed(issue, git=git):
+        if is_closed_issue(issue, git=git):
             violations += 1
             print(f"{fname}:{issue.line}:{issue.col}: Issue {issue.url} is resolved.")
 
     return violations
+
+
+def authenticate(auth: Optional[str] = None, /) -> Github:
+    r"""Authenticate with GitHub."""
+    if auth is None:
+        auth = input(
+            "GitHub authentication token is required. Press Enter to continue:"
+        )
+        return authenticate(auth)
+
+    try:
+        return Github(auth=Auth.Token(auth))
+    except Exception as exc:
+        warnings.warn(f"Failed to authenticate with token! {exc}", stacklevel=2)
+        return authenticate()
 
 
 def main() -> None:
@@ -128,18 +146,13 @@ def main() -> None:
         help="Print debug information.",
     )
     args = parser.parse_args()
+
     if args.debug:
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
         __logger__.debug("args: %s", vars(args))
 
-    if args.auth is None:
-        raise NotImplementedError(
-            "GitHub authentication token is required."
-            "Please call with hook manually with additional args `--auth <token>`."
-        )
-
     # authenticate
-    git = Github(auth=Auth.Token(args.auth))
+    git = authenticate(args.auth)
 
     # find all files
     files: list[Path] = get_python_files(args.files)
