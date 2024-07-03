@@ -72,7 +72,7 @@
 - id: python-no-blanket-type-ignore
   name: python-no-blanket-type-ignore
   description: "Enforce that `# type: ignore` annotations always specify codes."
-  entry: '.\#\s*(type|pyright)\:\s*ignore(?!\[)'
+  entry: '\#\s*(type|pyright)\:\s*ignore(?!\[)'
   language: pygrep
   types: [python]
 - id: python-no-builtin-eval

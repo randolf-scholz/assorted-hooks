@@ -142,8 +142,11 @@ Therefore, there are two versions of the hook:
 
 A modified version of the hook at <https://github.com/pre-commit/pygrep-hooks>.
 
-- allows `# type: ignore` at the top of the file to ignore the whole file (cf. <https://github.com/python/mypy/issues/964>)
 - colon after "type" non-optional.
+- also checks for `pyright: ignore` comments
+- To ignore errors across a whole file, use `# mypy: ignore-errors` instead.
+  - <https://mypy.readthedocs.io/en/stable/common_issues.html#ignoring-a-whole-file>
+  - <https://microsoft.github.io/pyright/#/comments?id=comments>
 
 ### `python-no-builtin-eval`
 

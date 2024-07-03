@@ -271,7 +271,7 @@ python_version = "3.11"
 #platform = "linux"
 
 disable_error_code = [
-    "func-returns-value",  # checks style, not type https://github.com/python/mypy/issues/6549
+    "func-returns-value",  # checks style, not type https://github.com/python/mypy/issues/6549#issuecomment-1123958228
     "overload-overlap",  # see https://mypy.readthedocs.io/en/stable/more_types.html#type-checking-the-variants
     # we do not use this check
 ]
