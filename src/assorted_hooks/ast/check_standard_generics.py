@@ -89,7 +89,8 @@ BAD_ALIASES: Final[frozenset[str]] = frozenset(REPLACEMENTS.keys())
 
 # validate replacements
 METHODS: Final[set[str]] = set(typing.__all__) & set(abc.__all__)
-assert all(f"typing.{method}" in REPLACEMENTS for method in METHODS)
+if any(f"typing.{method}" not in REPLACEMENTS for method in METHODS):
+    raise ValueError("Missing replacements for standard generics.")
 
 
 def yield_aliases(tree: AST, /) -> abc.Iterator[ast.alias]:

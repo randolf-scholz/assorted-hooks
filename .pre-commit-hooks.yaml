@@ -168,6 +168,7 @@
   name: check-resolved-github-issues
   description: "Check for references to resolved GitHub issues."
   entry: check-github-issues
+  require_serial: true
   language: python
   stages: [manual]
   types: [text]

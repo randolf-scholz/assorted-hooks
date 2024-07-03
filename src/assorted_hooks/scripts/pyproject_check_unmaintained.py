@@ -145,8 +145,8 @@ def get_latest_release(metadata: JSON, /) -> tuple[str, datetime]:
 
     # pick the latest release
     upload_dates: dict[str, datetime] = {}
-    for version in releases:
-        upload_dates[version] = get_release_date(releases[version])
+    for version, release in releases.items():
+        upload_dates[version] = get_release_date(release)
 
     # pick the most recent release
     latest_release: str = max(upload_dates, key=upload_dates.__getitem__)

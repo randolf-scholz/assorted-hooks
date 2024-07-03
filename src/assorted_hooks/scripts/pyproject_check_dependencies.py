@@ -78,7 +78,7 @@ RE_NAME = re.compile(r"""\b[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?\b""")
 NAME = RE_NAME.pattern
 RE_NAME_GROUP = re.compile(rf"""(?P<name>{NAME})""")
 NAME_GROUP = RE_NAME_GROUP.pattern
-assert RE_NAME_GROUP.groups == 1, f"{RE_NAME_GROUP.groups=}."
+assert RE_NAME_GROUP.groups == 1, f"{RE_NAME_GROUP.groups=}."  # noqa: S101
 
 PACKAGES: dict[str, list[str]] = dict(metadata.packages_distributions())
 r"""A dictionary that maps module names to their pip-package names."""
@@ -101,8 +101,11 @@ def get_module_dir(name: str, /) -> Path:
     spec = find_spec(name)
     if spec is None or (origin := spec.origin) is None:
         raise ModuleNotFoundError(f"Failed to find module: {name!r}")
+
     path = Path(origin)
-    assert path.is_file()
+    if not path.is_file():
+        raise FileNotFoundError(f"Invalid path: {path} is not a file!")
+
     return path.parent
 
 
@@ -286,7 +289,8 @@ def group_dependencies(
     first_party_deps: set[str] = set()
     stdlib_deps: set[str] = set()
     third_party_deps: set[str] = set()
-    assert filepath.is_file(), "Expected a file."
+    if not filepath.is_file():
+        raise FileNotFoundError(f"Invalid file: {filepath}")
 
     for dependency in dependencies:
         if dependency in STDLIB_MODULES:
@@ -380,7 +384,7 @@ def get_deps_from_module(
             pass
         case str(name):
             with (  # load the submodule silently
-                open(os.devnull, "w") as devnull,
+                open(os.devnull, "w", encoding="utf8") as devnull,
                 redirect_stdout(devnull if silent else sys.stdout),
                 redirect_stderr(devnull if silent else sys.stderr),
             ):
@@ -389,7 +393,9 @@ def get_deps_from_module(
             raise TypeError(f"Invalid type: {type(module_or_name)}")
 
     # Visit the current module
-    assert module.__file__ is not None
+    if module.__file__ is None:
+        raise ValueError(f"Invalid module: {module} has no __file__ attribute.")
+
     deps = get_deps_from_file(module.__file__)
     grouped_deps = group_dependencies(deps, filepath=Path(module.__file__))
 
@@ -474,7 +480,6 @@ def check_file(
     error_on_undeclared_test_deps: bool = True,
     error_on_unused_deps: bool = True,
     error_on_unused_test_deps: bool = False,
-    debug: bool = False,
 ) -> int:
     r"""Check a single file."""
     violations = 0
@@ -706,7 +711,6 @@ def main() -> None:
             error_on_undeclared_deps=args.error_on_undeclared_deps,
             error_on_undeclared_test_deps=args.error_on_undeclared_test_deps,
             error_on_missing_test_deps=args.error_on_missing_test_deps,
-            debug=args.debug,
         )
     except Exception as exc:
         exc.add_note(f"Checking file {args.pyproject_file!s} failed!")

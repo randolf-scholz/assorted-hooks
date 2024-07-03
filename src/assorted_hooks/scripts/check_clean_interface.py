@@ -200,19 +200,18 @@ def get_python_files(
 def load_module(file: str | Path, /, *, load_silent: bool = False) -> ModuleType:
     r"""Load a module from a file."""
     path = Path(file)
-    assert path.exists(), f"{path=} does not exist!"
-    assert path.is_file(), f"{path=} is not a file!"
-    assert path.suffix == ".py", f"{path=} is not a python file!"
+    if not path.exists() or not path.is_file() or path.suffix != ".py":
+        raise FileNotFoundError(f"{path=} is not a python file!")
 
     # get module specification
     spec = spec_from_file_location(path.stem, path)
-    assert spec is not None, f"{path=} has no spec ?!?!"
-    assert spec.loader is not None, f"{path=} has no loader ?!?!"
+    if spec is None or spec.loader is None:
+        raise ImportError(f"{path=} has no spec or loader!")
 
     # load the module silently
     module = module_from_spec(spec)
     with (
-        open(os.devnull, "w") as devnull,
+        open(os.devnull, "w", encoding="utf8") as devnull,
         redirect_stdout(devnull if load_silent else sys.stdout),
         redirect_stderr(devnull if load_silent else sys.stderr),
     ):
@@ -235,7 +234,9 @@ def check_module(
 ) -> int:
     r"""Check a single module."""
     # create logger with custom formatting
-    assert pkg.__file__ is not None, f"{pkg=} has no __file__ ?!?!"
+    if pkg.__file__ is None:
+        raise ImportError(f"{pkg=} has no __file__ ?!?!")
+
     path = Path(pkg.__file__).relative_to(Path.cwd())
     logger = logging.getLogger().getChild(f"{path!s}:0")
     formatter = logging.Formatter(fmt="%(name)s %(message)s", style="%")
@@ -301,9 +302,8 @@ def check_file(
 ) -> int:
     r"""Check a single file."""
     path = Path(fname)
-    assert path.exists(), f"{path=} does not exist!"
-    assert path.is_file(), f"{path=} is not a file!"
-    assert path.suffix == ".py", f"{path=} is not a python file!"
+    if not path.exists() or not path.is_file() or path.suffix != ".py":
+        raise FileNotFoundError(f"{path=} is not a python file!")
 
     # determine whether to check the file at all
     module_name = path.stem

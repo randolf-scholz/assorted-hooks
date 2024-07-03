@@ -16,16 +16,17 @@ __all__ = [
 ]
 
 import argparse
+import getpass
 import logging
 import re
 import sys
-import warnings
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
 from github import Auth, Github
+from github.GithubException import BadCredentialsException
 
 from assorted_hooks.utils import get_python_files
 
@@ -108,16 +109,20 @@ def check_file(filepath: str | Path, /, *, git: Github) -> int:
 def authenticate(auth: Optional[str] = None, /) -> Github:
     r"""Authenticate with GitHub."""
     if auth is None:
-        auth = input(
+        auth = getpass.getpass(
             "GitHub authentication token is required. Press Enter to continue:"
         )
         return authenticate(auth)
 
+    git = Github(auth=Auth.Token(auth))
+
     try:
-        return Github(auth=Auth.Token(auth))
-    except Exception as exc:
-        warnings.warn(f"Failed to authenticate with token! {exc}", stacklevel=2)
+        _ = git.get_user().login
+    except BadCredentialsException as exc:
+        print(f"Failed to authenticate with token! {exc}")
         return authenticate()
+    else:
+        return git
 
 
 def main() -> None:

@@ -132,16 +132,20 @@ def is_at_top(node: Assign | AnnAssign, /, *, module: Module) -> bool:
     loc = body.index(node)
 
     # exclude docstring
-    assert len(body) > 0, "Expected at least one node in the body."
-    start = isinstance(body[0], Expr)
+    if len(body) <= 0:
+        raise ValueError("Expected at least one node in the body.")
 
+    start = isinstance(body[0], Expr)
     return all(is_future_import(_node) for _node in body[start:loc])
 
 
 def get_duplicate_keys(node: Assign | AnnAssign | AugAssign, /) -> set[str]:
     r"""Check if __all__ node has duplicate keys."""
-    assert node.value is not None, "Expected __all__ to have a value."
-    assert is_literal_list(node.value), "Expected literal list."
+    if node.value is None:
+        raise ValueError("Expected __all__ to have a value.")
+    if not is_literal_list(node.value):
+        raise ValueError(f"Expected literal list, got {type(node.value)}.")
+
     elements = Counter(el.value for el in node.value.elts)  # type: ignore[attr-defined]
     return {key for key, count in elements.items() if count > 1}
 

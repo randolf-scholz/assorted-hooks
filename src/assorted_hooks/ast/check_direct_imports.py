@@ -94,7 +94,8 @@ def get_imported_attributes(tree: AST, /) -> Iterator[tuple[Attribute, Name, str
             parent, string = get_full_attribute_parent(node)
 
             head, tail = string.split(".", maxsplit=1)
-            assert head == parent.id
+            if head != parent.id:
+                raise ValueError(f"{head=!r} != {parent.id=!r}")
 
             # e.g. DataFrame -> pandas.DataFrame
             matched_symbol = imported_symbols[node.attr]

@@ -65,7 +65,7 @@ RE_VERSION = re.compile(
 VERSION = RE_VERSION.pattern
 RE_VERSION_GROUP = re.compile(rf"""(?P<version>{VERSION})""")
 VERSION_GROUP = RE_VERSION_GROUP.pattern
-assert "version" in RE_VERSION_GROUP.groupindex, f"{RE_VERSION_GROUP.groupindex=}."
+assert "version" in RE_VERSION_GROUP.groupindex, f"{RE_VERSION_GROUP.groupindex=}."  # noqa: S101
 
 
 def get_version(pyproject: dict, /) -> str:

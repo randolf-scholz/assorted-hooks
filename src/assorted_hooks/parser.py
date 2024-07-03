@@ -92,4 +92,4 @@ def make_parser(cls: type[T], /) -> type[T]:
                 help="Recursively check for unions.",
             )
     """
-    raise NotImplementedError("This is a dataclass transform, not a function.")
+    raise NotImplementedError(f"This is a dataclass transform, not a function. {cls=}")
