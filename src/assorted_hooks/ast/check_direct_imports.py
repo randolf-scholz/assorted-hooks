@@ -12,13 +12,13 @@ Example:
 """
 
 __all__ = [
-    "is_pure_attribute",
-    "get_pure_attributes",
+    "check_file",
     "get_full_attribute_parent",
     "get_imported_symbols",
-    "get_imported_attributes",
-    "check_file",
+    "is_pure_attribute",
     "main",
+    "yield_imported_attributes",
+    "yield_pure_attributes",
 ]
 
 
@@ -45,7 +45,7 @@ def is_pure_attribute(node: AST, /) -> TypeGuard[Attribute]:
             return False
 
 
-def get_pure_attributes(tree: AST, /) -> Iterator[Attribute]:
+def yield_pure_attributes(tree: AST, /) -> Iterator[Attribute]:
     r"""Get all nodes that consist only of attributes."""
     for node in ast.walk(tree):
         if is_pure_attribute(node):
@@ -84,11 +84,11 @@ def get_imported_symbols(tree: AST, /) -> dict[str, str]:
     return imported_symbols
 
 
-def get_imported_attributes(tree: AST, /) -> Iterator[tuple[Attribute, Name, str]]:
+def yield_imported_attributes(tree: AST, /) -> Iterator[tuple[Attribute, Name, str]]:
     r"""Finds attributes that can be replaced by directly imported symbols."""
     imported_symbols = get_imported_symbols(tree)
 
-    for node in get_pure_attributes(tree):
+    for node in yield_pure_attributes(tree):
         if node.attr in imported_symbols:
             # parent = get_full_attribute_string(node)
             parent, string = get_full_attribute_parent(node)
@@ -115,15 +115,15 @@ def check_file(filepath: str | Path, /, *, debug: bool = False) -> int:
     # Get the AST
     violations = 0
     path = Path(filepath)
-    fname = str(path)
+    filename = str(path)
     text = path.read_text(encoding="utf8")
-    tree = ast.parse(text, filename=fname)
+    tree = ast.parse(text, filename=filename)
 
     # find all violations
-    for node, _, string in get_imported_attributes(tree):
+    for node, _, string in yield_imported_attributes(tree):
         violations += 1
         print(
-            f"{fname}:{node.lineno}"
+            f"{filename}:{node.lineno}"
             f" use directly imported {node.attr!r} instead of {string!r}"
         )
 
