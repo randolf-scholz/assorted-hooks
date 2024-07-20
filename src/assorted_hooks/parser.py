@@ -15,11 +15,9 @@ __all__ = [
 
 from collections.abc import Container
 from dataclasses import dataclass
-from typing import Literal, TypeAlias, TypeVar, dataclass_transform
+from typing import Literal, dataclass_transform
 
-T = TypeVar("T")
-
-Actions: TypeAlias = Literal[
+type Actions = Literal[
     "store",
     "store_const",
     "store_true",
@@ -70,7 +68,7 @@ def parse_args() -> None:
 
 
 @dataclass_transform()
-def make_parser(cls: type[T], /) -> type[T]:
+def make_parser[T](cls: type[T], /) -> type[T]:
     r"""Perform dataclass transform to create an argparser instance.
 
     This will do the following:

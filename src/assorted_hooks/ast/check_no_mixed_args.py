@@ -1,23 +1,9 @@
 #!/usr/bin/env python
-# FIXME: https://github.com/python/mypy/issues/11673
 r"""Disallow mixed positional and keyword arguments in function-defs."""
 
 __all__ = [
-    # Types
-    "Func",
     # Functions
     "check_file",
-    # "get_mixed_args_function",
-    "get_classes",
-    "get_full_attribute_name",
-    "get_funcs_in_classes",
-    "get_funcs_outside_classes",
-    "get_functions",
-    "is_decorated_with",
-    "is_dunder",
-    "is_overload",
-    "is_private",
-    "is_staticmethod",
     "main",
 ]
 
@@ -25,105 +11,22 @@ import argparse
 import ast
 import logging
 import sys
-from ast import AST, AsyncFunctionDef, Attribute, Call, ClassDef, FunctionDef, Name
-from collections.abc import Collection, Iterator
+from collections.abc import Collection
 from pathlib import Path
-from typing import TypeAlias
 
+from assorted_hooks.ast.ast_utils import (
+    Func,
+    is_decorated_with,
+    is_dunder_method,
+    is_overload,
+    is_private_method,
+    is_staticmethod,
+    yield_funcs_in_classes,
+    yield_funcs_outside_classes,
+)
 from assorted_hooks.utils import get_python_files
 
 __logger__ = logging.getLogger(__name__)
-
-Func: TypeAlias = FunctionDef | AsyncFunctionDef
-r"""Type alias for function-defs."""
-
-
-def get_full_attribute_name(node: AST, /) -> str:
-    r"""Get the parent of an attribute node."""
-    match node:
-        case Call(func=Attribute() | Name() as func):
-            return get_full_attribute_name(func)
-        case Attribute(value=Attribute() | Name() as value, attr=attr):
-            string = get_full_attribute_name(value)
-            return f"{string}.{attr}"
-        case Name(id=node_id):
-            return node_id
-        case _:
-            raise TypeError(f"Expected Call, Attribute or Name, got {type(node)=!r}")
-
-
-def get_functions(tree: AST, /) -> Iterator[Func]:
-    r"""Get all function-defs from the tree."""
-    for node in ast.walk(tree):
-        if isinstance(node, Func):  # type: ignore[misc, arg-type]
-            yield node  # type: ignore[misc]
-
-
-def get_classes(tree: AST, /) -> Iterator[ClassDef]:
-    r"""Get all class-defs from the tree."""
-    for node in ast.walk(tree):
-        if isinstance(node, ClassDef):
-            yield node
-
-
-def get_funcs_in_classes(tree: AST, /) -> Iterator[Func]:
-    r"""Get all function that are defined directly inside class bodies."""
-    for cls in get_classes(tree):
-        for node in cls.body:
-            if isinstance(node, Func):  # type: ignore[misc, arg-type]
-                yield node  # type: ignore[misc]
-
-
-def get_funcs_outside_classes(tree: AST, /) -> Iterator[Func]:
-    r"""Get all functions that are nod defined inside class body."""
-    funcs_in_classes: set[AST] = set()
-
-    for node in ast.walk(tree):
-        match node:
-            case ClassDef(body=body):
-                funcs_in_classes.update(
-                    child
-                    for child in body
-                    if isinstance(child, Func)  # type: ignore[misc, arg-type]
-                )
-            # FIXME: https://github.com/python/cpython/issues/106246
-            case FunctionDef() | AsyncFunctionDef():
-                if node not in funcs_in_classes:
-                    yield node
-
-
-# def get_mixed_args_function(node: Func, /) -> list[ast.arg]:
-#     r"""Returns the mixed args of a function (not method)."""
-#     return node.args.args
-
-
-def is_overload(node: Func, /) -> bool:
-    r"""Checks if the func is an overload."""
-    decorators = (d for d in node.decorator_list if isinstance(d, Name))
-    return "overload" in [d.id for d in decorators]
-
-
-def is_staticmethod(node: Func, /) -> bool:
-    r"""Checks if the func is a staticmethod."""
-    decorators = (d for d in node.decorator_list if isinstance(d, Name))
-    return "staticmethod" in [d.id for d in decorators]
-
-
-def is_dunder(node: Func, /) -> bool:
-    r"""Checks if the name is a dunder name."""
-    name = node.name
-    return name.startswith("__") and name.endswith("__") and name.isidentifier()
-
-
-def is_private(node: Func, /) -> bool:
-    r"""Checks if the name is a private name."""
-    name = node.name
-    return name.startswith("_") and not name.startswith("__") and name.isidentifier()
-
-
-def is_decorated_with(node: Func, name: str, /) -> bool:
-    r"""Checks if the function is decorated with a certain decorator."""
-    return name in [get_full_attribute_name(d) for d in node.decorator_list]
 
 
 def check_file(
@@ -143,9 +46,9 @@ def check_file(
     # Get the AST
     violations = 0
     path = Path(filepath)
-    fname = str(path)
+    filename = str(path)
     text = path.read_text(encoding="utf8")
-    tree = ast.parse(text, filename=fname)
+    tree = ast.parse(text, filename=filename)
 
     num_allowed_args = 2 if allow_two else 1 if allow_one else 0
 
@@ -153,14 +56,14 @@ def check_file(
         r"""Checks if the func can be ignored."""
         return (
             (ignore_wo_pos_only and not func.args.posonlyargs)
-            or (ignore_dunder and is_dunder(func))
+            or (ignore_dunder and is_dunder_method(func))
             or (ignore_overloads and is_overload(func))
-            or (ignore_private and is_private(func))
+            or (ignore_private and is_private_method(func))
             or (func.name in ignore_names)
             or any(is_decorated_with(func, name) for name in ignore_decorators)
         )
 
-    for node in get_funcs_in_classes(tree):
+    for node in yield_funcs_in_classes(tree):
         if is_ignorable(node):
             continue
         args = (
@@ -175,14 +78,14 @@ def check_file(
                 arg = node.args.args[0]
             except IndexError as exc:
                 raise RuntimeError(
-                    f'"{fname}:{node.lineno}" Something went wrong. {vars(node)=}'
+                    f'"{filename}:{node.lineno}" Something went wrong. {vars(node)=}'
                 ) from exc
             print(
-                f"{fname}:{arg.lineno}:"
+                f"{filename}:{arg.lineno}:"
                 f" Mixed positional and keyword arguments in function."
             )
 
-    for node in get_funcs_outside_classes(tree):
+    for node in yield_funcs_outside_classes(tree):
         if is_ignorable(node):
             continue
         if len(node.args.args) > num_allowed_args:
@@ -191,10 +94,10 @@ def check_file(
                 arg = node.args.args[0]
             except IndexError as exc:
                 raise RuntimeError(
-                    f'"{fname}:{node.lineno}" Something went wrong. {vars(node)=}'
+                    f'"{filename}:{node.lineno}" Something went wrong. {vars(node)=}'
                 ) from exc
             print(
-                f"{fname}:{arg.lineno}:"
+                f"{filename}:{arg.lineno}:"
                 f" Mixed positional and keyword arguments in function."
             )
 

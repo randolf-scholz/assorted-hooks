@@ -97,7 +97,7 @@ def is_union(node: AST, /) -> TypeGuard[Subscript | BinOp]:
 
 def is_function_def(node: AST, /) -> TypeGuard[Func]:
     r"""True if the return node is a function definition."""
-    return isinstance(node, Func)  # type: ignore[misc, arg-type]
+    return isinstance(node, Func)
 
 
 def is_overload(node: AST, /) -> bool:
