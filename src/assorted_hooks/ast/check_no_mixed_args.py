@@ -46,9 +46,9 @@ def check_file(
     # Get the AST
     violations = 0
     path = Path(filepath)
-    fname = str(path)
+    filename = str(path)
     text = path.read_text(encoding="utf8")
-    tree = ast.parse(text, filename=fname)
+    tree = ast.parse(text, filename=filename)
 
     num_allowed_args = 2 if allow_two else 1 if allow_one else 0
 
@@ -78,10 +78,10 @@ def check_file(
                 arg = node.args.args[0]
             except IndexError as exc:
                 raise RuntimeError(
-                    f'"{fname}:{node.lineno}" Something went wrong. {vars(node)=}'
+                    f'"{filename}:{node.lineno}" Something went wrong. {vars(node)=}'
                 ) from exc
             print(
-                f"{fname}:{arg.lineno}:"
+                f"{filename}:{arg.lineno}:"
                 f" Mixed positional and keyword arguments in function."
             )
 
@@ -94,10 +94,10 @@ def check_file(
                 arg = node.args.args[0]
             except IndexError as exc:
                 raise RuntimeError(
-                    f'"{fname}:{node.lineno}" Something went wrong. {vars(node)=}'
+                    f'"{filename}:{node.lineno}" Something went wrong. {vars(node)=}'
                 ) from exc
             print(
-                f"{fname}:{arg.lineno}:"
+                f"{filename}:{arg.lineno}:"
                 f" Mixed positional and keyword arguments in function."
             )
 

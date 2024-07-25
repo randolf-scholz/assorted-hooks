@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 # region project configuration ---------------------------------------------------------
 [project]
 name = "assorted-hooks"
-version = "0.2.40"
+version = "0.3.1"
 authors = [{name="Randolf Scholz", email="randolf.scholz@gmail.com"}]
 description = "Custom pre-commit hooks"
 
@@ -21,13 +21,13 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Utilities",
     "Typing :: Typed",
 ]
 
 # dependencies
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "aiohttp>=3.9.5",
     "pygithub>=2.3.0",
@@ -60,13 +60,13 @@ pyproject-check-unmaintained = "assorted_hooks.scripts.pyproject_check_unmaintai
 [tool.pdm.dev-dependencies]
 dev = [
     "pre-commit>=3.7.1",
-    "ruff>=0.5.0",
+    "ruff>=0.5.4",
     "ruff-lsp>=0.0.54",
-    "pyright>=1.1.369",
-    "mypy>=1.10.1",
+    "pyright>=1.1.373",
+    "mypy>=1.11.0",
 ]
 test = [
-    "pytest>=8.2.2",
+    "pytest>=8.3.2",
     "pytest-benchmark>=4.0.0",
     "pytest-cov>=5.0.0",
     "pytest-rerunfailures>=14.0",
@@ -263,17 +263,17 @@ generated-members = ["numpy.*", "torch.*"]
 
 # region mypy configuration ------------------------------------------------------------
 [tool.mypy]
+# platform = "linux"
+# platform configuration
+enable_incomplete_feature = "NewGenericSyntax"
 files = ["src/", "tests/"]
 plugins = []
-
-# platform configuration
-python_version = "3.11"
-#platform = "linux"
+python_version = "3.12"
 
 disable_error_code = [
-    "func-returns-value",  # checks style, not type https://github.com/python/mypy/issues/6549#issuecomment-1123958228
-    "overload-overlap",  # see https://mypy.readthedocs.io/en/stable/more_types.html#type-checking-the-variants
-    # we do not use this check
+    "func-returns-value",  # REF: https://github.com/python/mypy/issues/6549
+    "overload-overlap",  # REF: https://mypy.readthedocs.io/en/stable/more_types.html#type-checking-the-variants
+    "method-assign",  # REF: https://github.com/python/mypy/issues/2427#issuecomment-1419206807
 ]
 
 # warnings
@@ -328,35 +328,18 @@ no_incremental = false
 #skip_version_check = false
 #skip_cache_mtime_checks = false
 
-# advanced
-pdb = false
-
 [[tool.mypy.overrides]]
-module = [
-    "h5py.*",
-    "matplotlib.*",
-    "modin.*",
-    "numba.*",
-    "pandas.*",
-    "pyarrow.*",
-    "pytest_benchmark.*",
-    "scipy.*",
-    "sklearn.*",
-    "tqdm.*",
-    "github.*",
-]
+module = ["github.*"]
 ignore_missing_imports = true
 # endregion mypy configuration ---------------------------------------------------------
 
 
 # region pyright Configuration ---------------------------------------------------------
 [tool.pyright]
-root = ""
 venv = ".venv"
 venvPath = "."
-pythonVersion = "3.11"
+pythonVersion = "3.12"
 pythonPlatform = "Linux"
-stubPath = ""
 include = ["src/", "tests/"]
 # endregion pyright Configuration ------------------------------------------------------
 

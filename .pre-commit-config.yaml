@@ -1,12 +1,12 @@
 exclude: '(\.git/|\.venv/|\.idea/|\docs/_build/)'
 minimum_pre_commit_version: 3.6.0
 default_language_version:
-  python: python3.11
+  python: python3.12
   node: "20.10.0"
 repos:
   # test with pre-commit try-repo ../assorted-hooks --verbose --all-files
   - repo: https://github.com/randolf-scholz/assorted-hooks
-    rev: v0.2.38
+    rev: v0.3.0
     hooks:
     # pygrep-based hooks
     - id: check-separator-length
@@ -99,7 +99,7 @@ repos:
         files: (^src/|^tests/)
   # ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.0
+    rev: v0.5.3
     hooks:
       - id: ruff
         files: (^src/|^tests/)
@@ -127,7 +127,7 @@ repos:
       args: ["-x", "--shell=bash", "--color=always", "--format=gcc", "--"]
   # mypy
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.1
+    rev: v1.11.0
     hooks:
       - id: mypy
         files: (^src/|^tests/)
@@ -141,7 +141,7 @@ repos:
         - "--"
   # pyright
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.370
+    rev: v1.1.372
     hooks:
       - id: pyright
         files: (^src/|^tests/)

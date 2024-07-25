@@ -137,7 +137,9 @@ def check_no_return_union(
         # always check overloads
         funcs += overloads
         # only check implementations if not excluded
-        if func is not None and overloads and not exclude_overloaded_impl:
+        if func is not None and (
+            not overloads or (overloads and not exclude_overloaded_impl)
+        ):
             funcs.append(func)
 
     # emit violations

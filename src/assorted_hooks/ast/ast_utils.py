@@ -201,7 +201,7 @@ def is_literal_list(node: AST, /) -> TypeGuard[List]:
 
 def is_function_def(node: AST, /) -> TypeGuard[Func]:
     r"""True if the return node is a function definition."""
-    return isinstance(node, Func)  # type: ignore[misc, arg-type]
+    return isinstance(node, Func)
 
 
 def is_overload(node: AST, /) -> bool:
@@ -270,8 +270,8 @@ def yield_overloads(tree: AST, /) -> Iterator[Func]:
 def yield_functions(tree: AST, /) -> Iterator[Func]:
     r"""Get all function-defs from the tree."""
     for node in ast.walk(tree):
-        if isinstance(node, Func):  # type: ignore[misc, arg-type]
-            yield node  # type: ignore[misc]
+        if isinstance(node, Func):
+            yield node
 
 
 def yield_classes(tree: AST, /) -> Iterator[ClassDef]:
@@ -285,8 +285,8 @@ def yield_funcs_in_classes(tree: AST, /) -> Iterator[Func]:
     r"""Get all function that are defined directly inside class bodies."""
     for cls in yield_classes(tree):
         for node in cls.body:
-            if isinstance(node, Func):  # type: ignore[misc, arg-type]
-                yield node  # type: ignore[misc]
+            if isinstance(node, Func):
+                yield node
 
 
 def yield_funcs_outside_classes(tree: AST, /) -> Iterator[Func]:
@@ -297,9 +297,7 @@ def yield_funcs_outside_classes(tree: AST, /) -> Iterator[Func]:
         match node:
             case ClassDef(body=body):
                 funcs_in_classes.update(
-                    child
-                    for child in body
-                    if isinstance(child, Func)  # type: ignore[misc, arg-type]
+                    child for child in body if isinstance(child, Func)
                 )
             # FIXME: https://github.com/python/cpython/issues/106246
             case FunctionDef() | AsyncFunctionDef():

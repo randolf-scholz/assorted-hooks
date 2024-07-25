@@ -21,9 +21,5 @@
       <option name="workingDir" value="$ProjectFileDir$" />
       <envs />
     </TaskOptions>
-    <enabled-global>
-      <option value="ruff-isort" />
-      <option value="ruff-format" />
-    </enabled-global>
   </component>
 </project>

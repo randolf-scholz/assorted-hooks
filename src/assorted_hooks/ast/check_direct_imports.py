@@ -17,7 +17,6 @@ __all__ = [
     "main",
 ]
 
-
 import argparse
 import ast
 import logging
@@ -35,15 +34,15 @@ def check_file(filepath: str | Path, /, *, debug: bool = False) -> int:
     # Get the AST
     violations = 0
     path = Path(filepath)
-    fname = str(path)
+    filename = str(path)
     text = path.read_text(encoding="utf8")
-    tree = ast.parse(text, filename=fname)
+    tree = ast.parse(text, filename=filename)
 
     # find all violations
     for node, _, string in yield_imported_attributes(tree):
         violations += 1
         print(
-            f"{fname}:{node.lineno}"
+            f"{filename}:{node.lineno}"
             f" use directly imported {node.attr!r} instead of {string!r}"
         )
 
