@@ -373,9 +373,11 @@ def yield_aliases(tree: AST, /) -> Iterator[ast.alias]:
 class FunctionContext(NamedTuple):
     r"""Tuple of function definition and associated overloads."""
 
-    func: Func | None
-    r"""Function definition (None if all defs are overloads)."""
-    overloads: list[Func]
+    name: str
+    r"""Function name."""
+    function_defs: list[Func]
+    r"""Function definitions for the name."""
+    overload_defs: list[Func]
     r"""List of associated overloads."""
     context: AST
     r"""Function context."""
@@ -387,45 +389,34 @@ class FunctionContextVisitor(ast.NodeVisitor):
     Each def is paired with a list of associated overloads.
     """
 
-    parent_node: AST
+    base: AST
     r"""Parent node of the current node."""
     funcs: list[Func]
     r"""List of functions."""
 
     def __init__(self, tree: AST, /) -> None:
         r"""Initialize the visitor."""
-        self.parent_node = tree
+        self.base = tree
         self.funcs = []
 
     def __iter__(self) -> Iterator[FunctionContext]:
         r"""Iterate over the tree."""
         # recursion
-        yield from self.generic_visit(self.parent_node)
+        yield from self.generic_visit(self.base)
 
-        # group funcs by name
-        func_map: dict[str, list[Func]] = {}
+        # group funcs by name and whether they are overloads
+        func_map: dict[str, tuple[list[Func], list[Func]]] = defaultdict(
+            lambda: ([], [])
+        )
         for func in self.funcs:
-            func_map.setdefault(func.name, []).append(func)
+            if is_overload(func):
+                func_map[func.name][1].append(func)
+            else:
+                func_map[func.name][0].append(func)
 
-        for funcs in func_map.values():
-            function_defs = []
-            overload_defs = []
-            for fn in funcs:
-                if is_overload(fn):
-                    overload_defs.append(fn)
-                else:
-                    function_defs.append(fn)
-
-            match function_defs:
-                case []:  # all are overloads
-                    yield FunctionContext(None, overload_defs, self.parent_node)
-                case [func]:  # single non-overload
-                    yield FunctionContext(func, overload_defs, self.parent_node)
-                case _:  # multiple non-overloads
-                    raise ValueError(
-                        "Multiple definitions for the same function!"
-                        f"\n{function_defs!r}"
-                    )
+        # yield function contexts
+        for name, (function_defs, overload_defs) in func_map.items():
+            yield FunctionContext(name, function_defs, overload_defs, self.base)
 
     def visit_FunctionDef(self, node: FunctionDef) -> Iterator[FunctionContext]:  # noqa: N802
         r"""Visit a function definition."""
@@ -475,13 +466,5 @@ def yield_functions_in_context(tree: AST, /) -> Iterator[FunctionContext]:
             func_map[func.name][0].append(func)
 
     # yield function contexts
-    for function_defs, overload_defs in func_map.values():
-        match function_defs:
-            case []:  # all are overloads
-                yield FunctionContext(None, overload_defs, tree)
-            case [func]:  # single non-overload
-                yield FunctionContext(func, overload_defs, tree)
-            case _:  # multiple non-overloads
-                raise ValueError(
-                    f"Multiple definitions for the same function!\n{function_defs!r}"
-                )
+    for name, (function_defs, overload_defs) in func_map.items():
+        yield FunctionContext(name, function_defs, overload_defs, tree)

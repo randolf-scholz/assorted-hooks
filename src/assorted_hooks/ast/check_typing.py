@@ -133,14 +133,23 @@ def check_no_return_union(
     # determine all functions to check
     funcs: list[Func] = []
 
-    for func, overloads, *_ in FunctionContextVisitor(tree):
-        # always check overloads
-        funcs += overloads
-        # only check implementations if not excluded
-        if func is not None and (
-            not overloads or (overloads and not exclude_overloaded_impl)
-        ):
-            funcs.append(func)
+    for ctx in FunctionContextVisitor(tree):
+        # always include overload definitions
+        funcs += ctx.overload_defs
+
+        # include non-overload definitions
+        match ctx.function_defs:
+            case []:
+                continue
+            case [fn]:
+                if not ctx.overload_defs or not exclude_overloaded_impl:
+                    funcs.append(fn)
+            case _:  # multiple function definitions
+                msg = f"Got multiple declarations of the same function {ctx.name!r}!"
+                msg += "\n".join(
+                    f"{fname}:{node.lineno}:" for node in ctx.function_defs
+                )
+                raise ValueError(msg)
 
     # emit violations
     for fn in funcs:
