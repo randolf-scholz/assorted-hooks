@@ -207,10 +207,10 @@ def is_function_def(node: AST, /) -> TypeGuard[Func]:
 def is_overload(node: AST, /) -> bool:
     r"""True if the return node is a function definition."""
     match node:
-        case FunctionDef(decorator_list=[Name(id="overload"), *_]):
-            return True
-        case AsyncFunctionDef(decorator_list=[Name(id="overload"), *_]):
-            return True
+        case FunctionDef(decorator_list=decos) | AsyncFunctionDef(decorator_list=decos):
+            return any(
+                isinstance(deco, Name) and deco.id == "overload" for deco in decos
+            )
         case _:
             return False
 

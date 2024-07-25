@@ -131,7 +131,7 @@ repos:
     hooks:
       - id: mypy
         files: (^src/|^tests/)
-        additional_dependencies: [types-all-latest, aiohttp]
+        additional_dependencies: [types-all-latest, aiohttp, pytest]
         args:
         - "--scripts-are-modules"
         - "--hide-error-context"
