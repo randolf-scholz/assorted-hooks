@@ -43,10 +43,10 @@ from pathlib import Path
 
 from assorted_hooks.ast.ast_utils import (
     Func,
+    FunctionContextVisitor,
     has_union,
     is_typing_union,
     is_union,
-    yield_functions,
     yield_namespace_and_funcs,
     yield_overloads,
 )
@@ -117,7 +117,12 @@ def check_pep604_union(tree: AST, /, *, fname: str) -> int:
 
 
 def check_no_return_union(
-    tree: AST, /, *, recursive: bool, fname: str, exclude_overloaded_impl: bool = True
+    tree: AST,
+    /,
+    *,
+    recursive: bool,
+    fname: str,
+    exclude_overloaded_impl: bool = True,
 ) -> int:
     r"""Check if function returns a union type.
 
@@ -125,17 +130,23 @@ def check_no_return_union(
     """
     violations = 0
 
-    if exclude_overloaded_impl:
-        # generate list of all overloaded fns
-        # overloaded_funcs: set[str] = {node.name for node in yield_overloads(tree)}
-        pass
+    # determine all functions to check
+    funcs: list[Func] = []
 
-    for node in yield_functions(tree):
-        if node.returns is None:
-            continue
-        if is_union(node.returns) or (recursive and has_union(node.returns)):
+    for func, overloads, *_ in FunctionContextVisitor(tree):
+        # always check overloads
+        funcs += overloads
+        # only check implementations if not excluded
+        if func is not None and overloads and not exclude_overloaded_impl:
+            funcs.append(func)
+
+    # emit violations
+    for fn in funcs:
+        if fn.returns is not None and (
+            is_union(fn.returns) or (recursive and has_union(fn.returns))
+        ):
             violations += 1
-            print(f"{fname}:{node.lineno}: Do not return union type!")
+            print(f"{fname}:{fn.lineno}: Do not return union type!")
 
     return violations
 

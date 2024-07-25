@@ -3,6 +3,9 @@ r"""AST based utilities for the assorted_hooks package."""
 __all__ = [
     # Types
     "Func",
+    # Classes
+    "FunctionContext",
+    "FunctionContextVisitor",
     # Functions
     "get_full_name",
     "get_full_name_and_parent",
@@ -29,6 +32,7 @@ __all__ = [
     "yield_funcs_in_classes",
     "yield_funcs_outside_classes",
     "yield_functions",
+    "yield_functions_in_context",
     "yield_imported_attributes",
     "yield_namespace_and_funcs",
     "yield_overloads",
@@ -59,8 +63,9 @@ from ast import (
     Name,
     Subscript,
 )
+from collections import defaultdict
 from collections.abc import Iterator
-from typing import TypeAlias, TypeGuard
+from typing import NamedTuple, TypeAlias, TypeGuard
 
 Func: TypeAlias = FunctionDef | AsyncFunctionDef
 r"""Type alias for function-defs."""
@@ -364,4 +369,121 @@ def yield_aliases(tree: AST, /) -> Iterator[ast.alias]:
                 yield from (
                     ast.alias(name=f"{module}.{alias.name}", lineno=alias.lineno)
                     for alias in names
+                )
+
+
+class FunctionContext(NamedTuple):
+    r"""Tuple of function definition and associated overloads."""
+
+    func: Func | None
+    r"""Function definition (None if all defs are overloads)."""
+    overloads: list[Func]
+    r"""List of associated overloads."""
+    context: AST
+    r"""Function context."""
+
+
+class FunctionContextVisitor(ast.NodeVisitor):
+    r"""Get all function-defs and corresponding overloads from the tree.
+
+    Each def is paired with a list of associated overloads.
+    """
+
+    parent_node: AST
+    r"""Parent node of the current node."""
+    funcs: list[Func]
+    r"""List of functions."""
+
+    def __init__(self, tree: AST, /) -> None:
+        r"""Initialize the visitor."""
+        self.parent_node = tree
+        self.funcs = []
+
+    def __iter__(self) -> Iterator[FunctionContext]:
+        r"""Iterate over the tree."""
+        # recursion
+        yield from self.generic_visit(self.parent_node)
+
+        # group funcs by name
+        func_map: dict[str, list[Func]] = {}
+        for func in self.funcs:
+            func_map.setdefault(func.name, []).append(func)
+
+        for funcs in func_map.values():
+            function_defs = []
+            overload_defs = []
+            for fn in funcs:
+                if is_overload(fn):
+                    overload_defs.append(fn)
+                else:
+                    function_defs.append(fn)
+
+            match function_defs:
+                case []:  # all are overloads
+                    yield FunctionContext(None, overload_defs, self.parent_node)
+                case [func]:  # single non-overload
+                    yield FunctionContext(func, overload_defs, self.parent_node)
+                case _:  # multiple non-overloads
+                    raise ValueError(
+                        "Multiple definitions for the same function!"
+                        f"\n{function_defs!r}"
+                    )
+
+    def visit_FunctionDef(self, node: FunctionDef) -> Iterator[FunctionContext]:  # noqa: N802
+        r"""Visit a function definition."""
+        self.funcs.append(node)
+        yield from FunctionContextVisitor(node)
+
+    def visit_AsyncFunctionDef(  # noqa: N802
+        self, node: AsyncFunctionDef
+    ) -> Iterator[FunctionContext]:
+        r"""Visit a async function definition."""
+        self.funcs.append(node)
+        yield from FunctionContextVisitor(node)
+
+    def visit_ClassDef(self, node: ClassDef) -> Iterator[FunctionContext]:  # noqa: N802
+        r"""Visit a class definition."""
+        yield from FunctionContextVisitor(node)
+
+    def generic_visit(self, node: AST) -> Iterator[FunctionContext]:
+        r"""Generic visit method."""
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, ClassDef | Func):
+                yield from self.visit(child)
+            else:
+                self.visit(child)
+
+
+def yield_functions_in_context(tree: AST, /) -> Iterator[FunctionContext]:
+    r"""Functional alternative to `FunctionContextVisitor`."""
+    funcs = []
+    nodes = list(ast.iter_child_nodes(tree))
+    for node in nodes:
+        match node:
+            case FunctionDef() | AsyncFunctionDef() as fn:
+                funcs.append(fn)
+                yield from yield_functions_in_context(fn)
+            case ClassDef() as cls:
+                yield from yield_functions_in_context(cls)
+            case _:
+                nodes.extend(ast.iter_child_nodes(node))
+
+    # group funcs by name and whether they are overloads
+    func_map: dict[str, tuple[list[Func], list[Func]]] = defaultdict(lambda: ([], []))
+    for func in funcs:
+        if is_overload(func):
+            func_map[func.name][1].append(func)
+        else:
+            func_map[func.name][0].append(func)
+
+    # yield function contexts
+    for function_defs, overload_defs in func_map.values():
+        match function_defs:
+            case []:  # all are overloads
+                yield FunctionContext(None, overload_defs, tree)
+            case [func]:  # single non-overload
+                yield FunctionContext(func, overload_defs, tree)
+            case _:  # multiple non-overloads
+                raise ValueError(
+                    f"Multiple definitions for the same function!\n{function_defs!r}"
                 )
