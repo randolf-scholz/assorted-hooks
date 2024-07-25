@@ -15,15 +15,7 @@ __all__ = [
     "check_optional",
     "check_overload_default_ellipsis",
     "check_pep604_union",
-    "get_function_defs",
-    "get_namespace_and_funcs",
-    "get_overloads",
     "get_python_files",
-    "has_union",
-    "is_function_def",
-    "is_overload",
-    "is_typing_union",
-    "is_union",
     "main",
 ]
 
@@ -47,90 +39,20 @@ from ast import (
     Subscript,
     Tuple,
 )
-from collections.abc import Iterator
 from pathlib import Path
-from typing import TypeAlias, TypeGuard
 
+from assorted_hooks.ast.ast_utils import (
+    Func,
+    has_union,
+    is_typing_union,
+    is_union,
+    yield_functions,
+    yield_namespace_and_funcs,
+    yield_overloads,
+)
 from assorted_hooks.utils import get_python_files
 
 __logger__ = logging.getLogger(__name__)
-
-Func: TypeAlias = FunctionDef | AsyncFunctionDef
-r"""Type alias for function-defs."""
-
-
-def get_namespace_and_funcs(
-    tree: AST, /, *, namespace: tuple[str, ...] = ()
-) -> Iterator[tuple[tuple[str, ...], Func]]:
-    r"""Yields both namespace and function node."""
-    for node in ast.iter_child_nodes(tree):
-        match node:
-            case FunctionDef(name=name) as func:
-                yield namespace, func
-                yield from get_namespace_and_funcs(func, namespace=(*namespace, name))
-            case AsyncFunctionDef(name=name) as func:
-                yield namespace, func
-                yield from get_namespace_and_funcs(func, namespace=(*namespace, name))
-            case ClassDef(name=name) as cls:
-                yield from get_namespace_and_funcs(cls, namespace=(*namespace, name))
-
-
-def is_typing_union(node: AST, /) -> TypeGuard[Subscript]:
-    r"""True if the return node is a union."""
-    match node:
-        case Subscript(value=Name(id="Union")):
-            return True
-        case _:
-            return False
-
-
-def is_union(node: AST, /) -> TypeGuard[Subscript | BinOp]:
-    r"""True if the return node is a union."""
-    match node:
-        case Subscript(value=Name(id="Union")):
-            return True
-        case BinOp(op=BitOr()):
-            return True
-        case _:
-            return False
-
-
-def is_function_def(node: AST, /) -> TypeGuard[Func]:
-    r"""True if the return node is a function definition."""
-    return isinstance(node, Func)  # type: ignore[misc, arg-type]
-
-
-def is_overload(node: AST, /) -> bool:
-    r"""True if the return node is a function definition."""
-    match node:
-        case FunctionDef(decorator_list=[Name(id="overload"), *_]):
-            return True
-        case AsyncFunctionDef(decorator_list=[Name(id="overload"), *_]):
-            return True
-        case _:
-            return False
-
-
-def has_union(tree: AST, /) -> bool:
-    r"""True if the return node is a union."""
-    return any(is_union(node) for node in ast.walk(tree))
-
-
-def get_function_defs(tree: AST, /) -> Iterator[Func]:
-    r"""Get all return nodes."""
-    for node in ast.walk(tree):
-        if is_function_def(node):
-            yield node
-
-
-def get_overloads(tree: AST, /) -> Iterator[Func]:
-    r"""Get all function definitions that are decorated with `@overload`."""
-    for node in ast.walk(tree):
-        match node:
-            case FunctionDef(decorator_list=[Name(id="overload"), *_]):
-                yield node
-            case AsyncFunctionDef(decorator_list=[Name(id="overload"), *_]):
-                yield node
 
 
 def check_no_future_annotations(tree: AST, /, *, fname: str) -> int:
@@ -151,7 +73,7 @@ def check_overload_default_ellipsis(tree: AST, /, *, fname: str) -> int:
     r"""Check that keyword arguments in overloads assign Ellipsis instead of a value."""
     violations = 0
 
-    for node in get_overloads(tree):
+    for node in yield_overloads(tree):
         pos_defaults = node.args.defaults
         pos_args = node.args.posonlyargs + node.args.args
         pos_args = pos_args[-len(pos_defaults) :] if pos_defaults else []
@@ -184,7 +106,6 @@ def check_overload_default_ellipsis(tree: AST, /, *, fname: str) -> int:
 
 def check_pep604_union(tree: AST, /, *, fname: str) -> int:
     r"""Check that X | Y is used instead of Union[X, Y]."""
-    # FIXME: https://github.com/python/mypy/issues/11673
     violations = 0
 
     for node in ast.walk(tree):
@@ -195,12 +116,21 @@ def check_pep604_union(tree: AST, /, *, fname: str) -> int:
     return violations
 
 
-def check_no_return_union(tree: AST, /, *, recursive: bool, fname: str) -> int:
-    r"""Check if function returns a union type."""
-    # FIXME: https://github.com/python/mypy/issues/11673
+def check_no_return_union(
+    tree: AST, /, *, recursive: bool, fname: str, exclude_overloaded_impl: bool = True
+) -> int:
+    r"""Check if function returns a union type.
+
+    By default, for overloaded functions only the overloads are checked and not the implementations.
+    """
     violations = 0
 
-    for node in get_function_defs(tree):
+    if exclude_overloaded_impl:
+        # generate list of all overloaded fns
+        # overloaded_funcs: set[str] = {node.name for node in yield_overloads(tree)}
+        pass
+
+    for node in yield_functions(tree):
         if node.returns is None:
             continue
         if is_union(node.returns) or (recursive and has_union(node.returns)):
@@ -281,7 +211,7 @@ def check_no_hints_overload_implementation(
     r"""Checks that the implementation of an overloaded function has no type hints."""
     violations = 0
     namespace_and_funcs: list[tuple[tuple[str, ...], Func]] = list(
-        get_namespace_and_funcs(tree)
+        yield_namespace_and_funcs(tree)
     )
     namespaces = {namespace for namespace, _ in namespace_and_funcs}
 

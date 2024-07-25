@@ -2,13 +2,8 @@ r"""Checks that __all__ exists in modules."""
 
 __all__ = [
     "check_file",
-    "get__all__nodes",
     "get_duplicate_keys",
-    "is__all__node",
     "is_at_top",
-    "is_future_import",
-    "is_literal_list",
-    "is_main_node",
     "is_superfluous",
     "main",
 ]
@@ -18,83 +13,26 @@ import ast
 import logging
 import sys
 from ast import (
-    AST,
     AnnAssign,
     Assign,
     AugAssign,
-    Compare,
-    Constant,
-    Eq,
     Expr,
-    If,
-    Import,
-    ImportFrom,
-    List,
     Module,
-    Name,
     Pass,
 )
 from collections import Counter
-from collections.abc import Iterator
 from pathlib import Path
-from typing import TypeGuard
 
+from assorted_hooks.ast.ast_utils import (
+    is_dunder_all,
+    is_dunder_main,
+    is_future_import,
+    is_literal_list,
+    yield_dunder_all,
+)
 from assorted_hooks.utils import get_python_files
 
 __logger__ = logging.getLogger(__name__)
-
-
-def is_main_node(node: AST, /) -> bool:
-    r"""Check whether node is `if __name__ == "__main__":` check."""
-    match node:
-        case If(
-            test=Compare(
-                left=Name(id="__name__"),
-                ops=[Eq()],
-                comparators=[Constant(value="__main__")],
-            )
-        ):
-            return True
-        case _:
-            return False
-
-
-def is__all__node(node: AST, /) -> TypeGuard[Assign | AnnAssign | AugAssign]:
-    r"""Check whether a node is __all__."""
-    match node:
-        case Assign(targets=targets):
-            names = [target.id for target in targets if isinstance(target, Name)]
-            has_all = "__all__" in names
-            if has_all and len(names) > 1:
-                raise ValueError("Multiple targets in __all__ assignment.")
-            return has_all
-        case AnnAssign(target=target):
-            return isinstance(target, Name) and target.id == "__all__"
-        case _:
-            return False
-
-
-def is_future_import(node: AST, /) -> bool:
-    r"""Check whether a node is a future import."""
-    match node:
-        case ImportFrom(module=module):
-            return module == "__future__"
-        case Import(names=names):
-            return any(imp.name == "__future__" for imp in names)
-        case _:
-            return False
-
-
-def is_literal_list(node: AST, /) -> bool:
-    r"""Check whether node is a literal list of strings."""
-    # match node:
-    #     case List(elts=[*Constant(value=str())]):
-    #         return True
-    #     case _:
-    #         return False
-    return isinstance(node, List) and all(
-        isinstance(el, Constant) and isinstance(el.value, str) for el in node.elts
-    )
 
 
 def is_superfluous(tree: Module, /) -> bool:
@@ -107,13 +45,13 @@ def is_superfluous(tree: Module, /) -> bool:
 
     # ignore __main__ code if present
     for node in tree.body:
-        if is_main_node(node):
+        if is_dunder_main(node):
             # remove from copy
             body.remove(node)
 
     # ignore first __all__ if present
     for node in tree.body:
-        if is__all__node(node):
+        if is_dunder_all(node):
             body.remove(node)
             break  # only remove the first occurrence
 
@@ -150,14 +88,6 @@ def get_duplicate_keys(node: Assign | AnnAssign | AugAssign, /) -> set[str]:
     return {key for key, count in elements.items() if count > 1}
 
 
-def get__all__nodes(tree: Module, /) -> Iterator[Assign | AnnAssign | AugAssign]:
-    r"""Get the __all__ node from the tree."""
-    # NOTE: we are only interested in the module body.
-    for node in tree.body:
-        if is__all__node(node):
-            yield node
-
-
 def check_file(
     filepath: str | Path,
     /,
@@ -188,7 +118,7 @@ def check_file(
             if allow_missing:
                 return 0
         case _:
-            node_list.extend(get__all__nodes(tree))
+            node_list.extend(yield_dunder_all(tree))
 
     match node_list:
         case []:

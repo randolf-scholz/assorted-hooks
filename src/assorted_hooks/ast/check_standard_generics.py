@@ -8,7 +8,6 @@ __all__ = [
     "BAD_ALIASES",
     # Functions
     "check_file",
-    "yield_aliases",
     "main",
 ]
 
@@ -17,11 +16,11 @@ import ast
 import logging
 import sys
 import typing
-from ast import AST, Attribute, Import, ImportFrom, Name
 from collections import abc
 from pathlib import Path
 from typing import Final
 
+from assorted_hooks.ast.ast_utils import yield_aliases
 from assorted_hooks.utils import get_python_files
 
 __logger__ = logging.getLogger(__name__)
@@ -91,21 +90,6 @@ BAD_ALIASES: Final[frozenset[str]] = frozenset(REPLACEMENTS.keys())
 METHODS: Final[set[str]] = set(typing.__all__) & set(abc.__all__)
 if any(f"typing.{method}" not in REPLACEMENTS for method in METHODS):
     raise ValueError("Missing replacements for standard generics.")
-
-
-def yield_aliases(tree: AST, /) -> abc.Iterator[ast.alias]:
-    r"""Yield alias nodes from AST."""
-    for node in ast.walk(tree):
-        match node:
-            case Attribute(attr=attr, value=Name(id=name), lineno=lineno):
-                yield ast.alias(name=f"{name}.{attr}", lineno=lineno)
-            case Import(names=names):
-                yield from names
-            case ImportFrom(module=module, names=names):
-                yield from (
-                    ast.alias(name=f"{module}.{alias.name}", lineno=alias.lineno)
-                    for alias in names
-                )
 
 
 def check_file(filepath: str | Path, /) -> int:
