@@ -24,7 +24,6 @@ import ast
 import builtins
 import logging
 import sys
-import warnings
 from ast import (
     AST,
     AsyncFunctionDef,
@@ -148,10 +147,10 @@ def check_no_return_union(
             case [*fns]:  # multiple function definitions
                 # this can happen e.g. with property setters/getters, dispatch, etc.
                 msg = f"Got multiple declarations of the same function {ctx.name!r}!"
-                msg += "\n".join(
-                    f"{fname}:{node.lineno}:" for node in ctx.function_defs
+                msg += "".join(
+                    f"\n\t{fname}:{node.lineno}:" for node in ctx.function_defs
                 )
-                warnings.warn(msg, stacklevel=0)
+                print(msg)
                 funcs.extend(fns)
 
     # emit violations
@@ -160,7 +159,7 @@ def check_no_return_union(
             is_union(fn.returns) or (recursive and has_union(fn.returns))
         ):
             violations += 1
-            print(f"{fname}:{fn.lineno}: Do not return union type!")
+            print(f"{fname}:{fn.lineno}: Avoid returning union types!")
 
     return violations
 
