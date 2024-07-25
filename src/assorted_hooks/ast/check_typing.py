@@ -151,7 +151,7 @@ def check_no_return_union(
                 msg += "\n".join(
                     f"{fname}:{node.lineno}:" for node in ctx.function_defs
                 )
-                warnings.warn(msg, stacklevel=2)
+                warnings.warn(msg, stacklevel=0)
                 funcs.extend(fns)
 
     # emit violations
