@@ -81,10 +81,15 @@ def get_duplicate_keys(node: Assign | AnnAssign | AugAssign, /) -> set[str]:
     r"""Check if __all__ node has duplicate keys."""
     if node.value is None:
         raise ValueError("Expected __all__ to have a value.")
-    if not is_literal_list(node.value):
-        raise ValueError(f"Expected literal list, got {type(node.value)}.")
+    match node:
+        case ast.List(elts=items):
+            pass
+        case ast.Tuple(elts=items):
+            pass
+        case _:
+            raise ValueError("Expected __all__ to be a list or tuple.")
 
-    elements = Counter(el.value for el in node.value.elts)  # type: ignore[attr-defined]
+    elements = Counter(el.value for el in items)  # type: ignore[attr-defined]
     return {key for key, count in elements.items() if count > 1}
 
 
