@@ -92,12 +92,13 @@ def check_file(
     filepath: str | Path,
     /,
     *,
-    allow_missing: bool = True,
-    warn_non_literal: bool = True,
     warn_annotated: bool = True,
     warn_duplicate_keys: bool = True,
     warn_location: bool = True,
+    warn_missing: bool = True,
+    allow_missing_empty: bool = True,
     warn_multiple_definitions: bool = True,
+    warn_non_literal: bool = True,
     warn_superfluous: bool = True,
 ) -> int:
     r"""Check a single file."""
@@ -115,14 +116,14 @@ def check_file(
 
     match tree.body:
         case [] | [Expr()]:
-            if allow_missing:
+            if allow_missing_empty:
                 return 0
         case _:
             node_list.extend(yield_dunder_all(tree))
 
     match node_list:
         case []:
-            if not is_superfluous(tree):
+            if warn_missing and not is_superfluous(tree):
                 violations += 1
                 print(f"{fname}:0: No __all__ found.")
         case [node, *nodes]:
@@ -167,18 +168,25 @@ def main():
         help="One or multiple files, folders or file patterns.",
     )
     parser.add_argument(
+        "--warn-missing",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=True,
+        help="Warn if __all__ is missing.",
+    )
+    parser.add_argument(
+        "--allow-missing-empty",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=True,
+        help="Allow missing __all__ if files is essentially empty.",
+    )
+    parser.add_argument(
         "--warn-non-literal",
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=True,
         help="Check that __all__ is a literal list of strings.",
-    )
-    parser.add_argument(
-        "--allow-missing",
-        action=argparse.BooleanOptionalAction,
-        type=bool,
-        default=True,
-        help="Don't raise an error if file has no content than a module docstring.",
     )
     parser.add_argument(
         "--warn-annotated",
@@ -238,10 +246,11 @@ def main():
         try:
             violations += check_file(
                 file,
-                allow_missing=args.allow_missing,
+                allow_missing_empty=args.allow_missing_empty,
                 warn_annotated=args.warn_annotated,
                 warn_duplicate_keys=args.warn_duplicate_keys,
                 warn_location=args.warn_location,
+                warn_missing=args.warn_missing,
                 warn_multiple_definitions=args.warn_multiple_definitions,
                 warn_non_literal=args.warn_non_literal,
                 warn_superfluous=args.warn_superfluous,
