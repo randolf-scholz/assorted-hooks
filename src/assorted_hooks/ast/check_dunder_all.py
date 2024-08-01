@@ -81,7 +81,7 @@ def get_duplicate_keys(node: Assign | AnnAssign | AugAssign, /) -> set[str]:
     r"""Check if __all__ node has duplicate keys."""
     if node.value is None:
         raise ValueError("Expected __all__ to have a value.")
-    match node:
+    match node.value:
         case ast.List(elts=items):
             pass
         case ast.Tuple(elts=items):
@@ -261,7 +261,8 @@ def main():
                 warn_superfluous=args.warn_superfluous,
             )
         except Exception as exc:
-            raise RuntimeError(f"{file!s}: Checking file failed!") from exc
+            exc.add_note(f"{file!s}:0 Checking file failed!")
+            raise
 
     if violations:
         print(f"{'-' * 79}\nFound {violations} violations.")
