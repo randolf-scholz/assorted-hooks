@@ -1,14 +1,22 @@
 #!/bin/env bash
 # shellcheck disable=SC2016
-BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+RESET='\033[0m'
+
+# the pattern to match the error message (returns 3 groups)
 PATTERN='^"(.*?)",\s*line\s*(\d+):\s*(.*?)$'
-OUTPUT='/$1:$2:\033[0m $3\n'
+line='$1'
+col='$2'
+error='$3'
 
 check_file() {
-    fdir=$(dirname "$1")
+    path=$(dirname "$1")
     fname=$(basename "$1")
-    cd "$fdir" || exit 1
-    lacheck "$fname" | perl -ne "if (m/$PATTERN/) {print \"${BLUE}${fdir}${OUTPUT}\"}"
+    cd "$path" || exit 1
+    lacheck "$fname" | perl -ne "
+      if (m/$PATTERN/) {
+        print \"${CYAN}${path}/${line}:${col}:${RESET} ${error}\n\"
+      }"
 }
 
 exit_status=0
