@@ -188,7 +188,7 @@
     - "--nowarn=1"   # Command terminated with space.
     - "--nowarn=3"   # Enclose previous parentheses with `{}`.
     - "--nowarn=9"   # ‘%s’ expected, found ‘%s’.
-    - "--nowarn=17"  # Number of ‘character’ doesn’t match the number of ‘character’.
+    - "--nowarn=17"  # Number of ‘character’ doesn't match the number of ‘character’.
     - "--nowarn=19"  # You should use "`’`" (ASCII 39) instead of "`’`" (ASCII 180).
     - "--nowarn=21"  # This command might not be intended.
     - "--nowarn=22"  # Comment displayed.
@@ -208,3 +208,16 @@
   # NOTE: grep has exit code 1 if no matches are found, so we need to invert with `!`
   # NOTE: We add a `--` to the end of the command to ensure that no filenames are interpreted as arguments
 # endregion latex ----------------------------------------------------------------------
+
+
+# region pyright-wrapper ---------------------------------------------------------------
+- id: pyright-wrapper
+  name: pyright-wrapper
+  description: "Wrapper for pyright that produces more concise output."
+  entry: './src/pyright_wrapper.sh'
+  language: python
+  types_or: [ python, pyi ]
+  require_serial: true
+  additional_dependencies: [ ]
+  minimum_pre_commit_version: '2.9.2'
+# endregion pyright-wrapper ------------------------------------------------------------
