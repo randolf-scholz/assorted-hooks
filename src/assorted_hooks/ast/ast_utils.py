@@ -12,6 +12,7 @@ __all__ = [
     "get_imported_symbols",
     "has_union",
     # checks
+    "is_abc",
     "is_decorated_with",
     "is_dunder",
     "is_dunder_all",
@@ -23,10 +24,12 @@ __all__ = [
     "is_private",
     "is_protocol",
     "is_pure_attribute",
+    "is_concrete_class",
     "is_staticmethod",
     "is_typing_union",
     "is_union",
     # Iterators
+    "yield_concrete_classes",
     "yield_aliases",
     "yield_classes",
     "yield_dunder_all",
@@ -251,6 +254,17 @@ def is_pure_attribute(node: AST, /) -> TypeGuard[Attribute]:
             return False
 
 
+def is_concrete_class(node: AST, /) -> TypeGuard[ClassDef]:
+    match node:
+        case ClassDef(bases=bases, keywords=keywords):
+            return not (
+                any(map(is_protocol, bases))
+                or any(map(is_abc, bases))
+                or any(keyword.arg == "metaclass" for keyword in keywords)
+            )
+    return True
+
+
 def yield_pure_attributes(tree: AST, /) -> Iterator[Attribute]:
     r"""Get all nodes that consist only of attributes."""
     for node in ast.walk(tree):
@@ -371,6 +385,13 @@ def yield_aliases(tree: AST, /) -> Iterator[ast.alias]:
                 )
 
 
+def yield_concrete_classes(tree: AST, /) -> Iterator[ClassDef]:
+    r"""Yield concrete classes."""
+    for node in ast.walk(tree):
+        if is_concrete_class(node):
+            yield node
+
+
 class FunctionContext(NamedTuple):
     r"""Tuple of function definition and associated overloads."""
 
@@ -390,6 +411,16 @@ def is_protocol(node: AST, /) -> bool:
         case Name(id="Protocol"):
             return True
         case Attribute(attr="Protocol"):
+            return True
+        case _:
+            return False
+
+
+def is_abc(node: AST, /) -> bool:
+    match node:
+        case Name(id="ABC" | "ABCMeta"):
+            return True
+        case Attribute(attr="ABC" | "ABCMeta"):
             return True
         case _:
             return False

@@ -2,10 +2,9 @@
 r"""Disallow mixed positional and keyword arguments in function-defs."""
 
 __all__ = [
-    # Types
-    "Func",
     # Functions
     "check_file",
+    "check_concrete_classes_concrete_types",
     "check_no_future_annotations",
     "check_no_hints_overload_implementation",
     "check_no_optional",
@@ -26,6 +25,7 @@ import logging
 import sys
 from ast import (
     AST,
+    AnnAssign,
     AsyncFunctionDef,
     BinOp,
     BitOr,
@@ -48,6 +48,7 @@ from assorted_hooks.ast.ast_utils import (
     is_protocol,
     is_typing_union,
     is_union,
+    yield_concrete_classes,
     yield_namespace_and_funcs,
     yield_overloads,
 )
@@ -231,6 +232,27 @@ def check_no_tuple_isinstance(tree: AST, /, *, fname: str) -> int:
                 )
 
     return violations
+
+
+def check_concrete_classes_concrete_types(tree: AST, /, *, fname: str) -> int:
+    r"""Check that concrete classes use concrete return types."""
+    VALUES = (
+        "AbstractSet",
+        "Collection",
+        "Iterable",
+        "Mapping",
+        "MutableMapping",
+        "MutableSequence",
+        "MutableSet",
+        "Sequence",
+        "Set",
+    )
+    for cls in yield_concrete_classes(tree):
+        for node in cls.body:
+            match node:
+                case AnnAssign(annotation=Subscript(value=Name(id="Type" | "type"))):
+                    ...
+    raise NotImplementedError(f"{fname} {VALUES}")
 
 
 def check_no_hints_overload_implementation(
