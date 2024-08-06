@@ -21,6 +21,7 @@ __all__ = [
     "is_literal_list",
     "is_overload",
     "is_private",
+    "is_protocol",
     "is_pure_attribute",
     "is_staticmethod",
     "is_typing_union",
@@ -381,6 +382,17 @@ class FunctionContext(NamedTuple):
     r"""List of associated overloads."""
     context: AST
     r"""Function context."""
+
+
+def is_protocol(node: AST, /) -> bool:
+    r"""Check if the node is a protocol."""
+    match node:
+        case Name(id="Protocol"):
+            return True
+        case Attribute(attr="Protocol"):
+            return True
+        case _:
+            return False
 
 
 class FunctionContextVisitor(ast.NodeVisitor):

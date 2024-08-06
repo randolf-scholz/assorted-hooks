@@ -45,6 +45,7 @@ from assorted_hooks.ast.ast_utils import (
     Func,
     FunctionContextVisitor,
     has_union,
+    is_protocol,
     is_typing_union,
     is_union,
     yield_namespace_and_funcs,
@@ -123,6 +124,7 @@ def check_no_return_union(
     recursive: bool,
     fname: str,
     exclude_overloaded_impl: bool = True,
+    check_protocols: bool = True,
 ) -> int:
     r"""Check if function returns a union type.
 
@@ -137,6 +139,13 @@ def check_no_return_union(
         # always include overload definitions
         funcs += ctx.overload_defs
 
+        # skip if inside protocol context.
+        if not check_protocols:
+            match ctx.context:
+                case ClassDef(bases=bases):
+                    if any(map(is_protocol, bases)):
+                        continue
+
         # include non-overload definitions
         match ctx.function_defs:
             case []:
@@ -146,11 +155,6 @@ def check_no_return_union(
                     funcs.append(fn)
             case [*fns]:  # multiple function definitions
                 # this can happen e.g. with property setters/getters, dispatch, etc.
-                msg = f"Got multiple declarations of the same function {ctx.name!r}!"
-                msg += "".join(
-                    f"\n\t{fname}:{node.lineno}:" for node in ctx.function_defs
-                )
-                print(msg)
                 funcs.extend(fns)
 
     # emit violations
@@ -307,7 +311,10 @@ def check_file(filepath: str | Path, /, *, options: argparse.Namespace) -> int:
         violations += check_no_future_annotations(tree, fname=fname)
     if options.check_no_return_union:
         violations += check_no_return_union(
-            tree, recursive=options.check_no_return_union_recursive, fname=fname
+            tree,
+            fname=fname,
+            recursive=options.check_no_return_union_recursive,
+            check_protocols=options.check_no_return_union_protocol,
         )
     if options.check_no_tuple_isinstance:
         violations += check_no_tuple_isinstance(tree, fname=fname)
@@ -381,6 +388,13 @@ def main() -> None:
         type=bool,
         default=False,
         help="Recursively check that functions do not return Unions.",
+    )
+    parser.add_argument(
+        "--check-no-return-union-protocol",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=False,
+        help="Check that functions do not return Unions inside protocols.",
     )
     parser.add_argument(
         "--check-no-hints-overload-implementation",
