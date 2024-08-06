@@ -234,9 +234,18 @@ def check_no_tuple_isinstance(tree: AST, /, *, fname: str) -> int:
     return violations
 
 
-def check_concrete_classes_concrete_types(tree: AST, /, *, fname: str) -> int:
+def check_concrete_classes_concrete_types(
+    tree: AST,
+    /,
+    *,
+    fname: str,
+    check_attrs: bool = True,
+    check_funcs: bool = True,
+) -> int:
     r"""Check that concrete classes use concrete return types."""
-    VALUES = (
+    # These generic types are considered non-concrete.
+    # Better would be to use a type checker and see if ABCs/Protocols are returned.
+    VALUES = {
         "AbstractSet",
         "Collection",
         "Iterable",
@@ -246,13 +255,31 @@ def check_concrete_classes_concrete_types(tree: AST, /, *, fname: str) -> int:
         "MutableSet",
         "Sequence",
         "Set",
-    )
+        "Sized",
+    }
+    violations = 0
+    matches: list[AnnAssign | FunctionDef | AsyncFunctionDef] = []
+
     for cls in yield_concrete_classes(tree):
         for node in cls.body:
             match node:
-                case AnnAssign(annotation=Subscript(value=Name(id="Type" | "type"))):
-                    ...
-    raise NotImplementedError(f"{fname} {VALUES}")
+                case AnnAssign(annotation=Subscript(value=Name(id=ann))) if check_attrs:
+                    if ann in VALUES:
+                        matches.append(node)
+                case FunctionDef(returns=Subscript(value=Name(id=ann))) if check_funcs:
+                    if ann in VALUES:
+                        matches.append(node)
+                case AsyncFunctionDef(
+                    returns=Subscript(value=Name(id=ann))
+                ) if check_funcs:
+                    if ann in VALUES:
+                        matches.append(node)
+
+    for node in matches:
+        violations += 1
+        print(f"{fname}:{node.lineno}: Concrete classes should return concrete types.")
+
+    return violations
 
 
 def check_no_hints_overload_implementation(
@@ -344,6 +371,8 @@ def check_file(filepath: str | Path, /, *, options: argparse.Namespace) -> int:
         violations += check_no_union_isinstance(tree, fname=fname)
     if options.check_no_hints_overload_implementation:
         violations += check_no_hints_overload_implementation(tree, fname=fname)
+    if options.check_concrete:
+        violations += check_concrete_classes_concrete_types(tree, fname=fname)
     return violations
 
 
@@ -410,6 +439,13 @@ def main() -> None:
         type=bool,
         default=False,
         help="Recursively check that functions do not return Unions.",
+    )
+    parser.add_argument(
+        "--check-concrete",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=False,
+        help="Check that concrete classes return concrete types.",
     )
     parser.add_argument(
         "--check-no-return-union-protocol",

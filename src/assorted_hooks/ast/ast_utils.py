@@ -13,6 +13,8 @@ __all__ = [
     "has_union",
     # checks
     "is_abc",
+    "is_abstractmethod",
+    "is_concrete_class",
     "is_decorated_with",
     "is_dunder",
     "is_dunder_all",
@@ -24,7 +26,6 @@ __all__ = [
     "is_private",
     "is_protocol",
     "is_pure_attribute",
-    "is_concrete_class",
     "is_staticmethod",
     "is_typing_union",
     "is_union",
@@ -254,14 +255,25 @@ def is_pure_attribute(node: AST, /) -> TypeGuard[Attribute]:
             return False
 
 
+def is_abstractmethod(node: AST, /) -> TypeGuard[FunctionDef]:
+    r"""Check whether a node is an abstract method."""
+    return isinstance(node, FunctionDef) and any(
+        isinstance(deco, Name) and deco.id == "abstractmethod"
+        for deco in node.decorator_list
+    )
+
+
 def is_concrete_class(node: AST, /) -> TypeGuard[ClassDef]:
     match node:
-        case ClassDef(bases=bases, keywords=keywords):
-            return not (
+        case ClassDef(bases=bases, keywords=keywords, body=body):
+            if (
                 any(map(is_protocol, bases))
                 or any(map(is_abc, bases))
                 or any(keyword.arg == "metaclass" for keyword in keywords)
-            )
+                or any(map(is_abstractmethod, body))
+            ):
+                return False
+
     return True
 
 
