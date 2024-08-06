@@ -136,15 +136,15 @@ def check_no_return_union(
     funcs: list[Func] = []
 
     for ctx in FunctionContextVisitor(tree):
-        # always include overload definitions
-        funcs += ctx.overload_defs
-
         # skip if inside protocol context.
         if not check_protocols:
             match ctx.context:
                 case ClassDef(bases=bases):
                     if any(map(is_protocol, bases)):
                         continue
+
+        # always include overload definitions
+        funcs += ctx.overload_defs
 
         # include non-overload definitions
         match ctx.function_defs:
