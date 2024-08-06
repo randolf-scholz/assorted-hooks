@@ -266,15 +266,14 @@ def is_abstractmethod(node: AST, /) -> TypeGuard[FunctionDef]:
 def is_concrete_class(node: AST, /) -> TypeGuard[ClassDef]:
     match node:
         case ClassDef(bases=bases, keywords=keywords, body=body):
-            if (
+            return not (
                 any(map(is_protocol, bases))
                 or any(map(is_abc, bases))
                 or any(keyword.arg == "metaclass" for keyword in keywords)
                 or any(map(is_abstractmethod, body))
-            ):
-                return False
+            )
 
-    return True
+    return False
 
 
 def yield_pure_attributes(tree: AST, /) -> Iterator[Attribute]:
