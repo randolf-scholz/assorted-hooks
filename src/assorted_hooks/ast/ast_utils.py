@@ -27,6 +27,7 @@ __all__ = [
     "is_protocol",
     "is_pure_attribute",
     "is_staticmethod",
+    "is_typeddict",
     "is_typing_union",
     "is_union",
     # Iterators
@@ -268,6 +269,7 @@ def is_concrete_class(node: AST, /) -> TypeGuard[ClassDef]:
         case ClassDef(bases=bases, keywords=keywords, body=body):
             return not (
                 any(map(is_protocol, bases))
+                or any(map(is_typeddict, bases))
                 or any(map(is_abc, bases))
                 or any(keyword.arg == "metaclass" for keyword in keywords)
                 or any(map(is_abstractmethod, body))
@@ -419,6 +421,8 @@ class FunctionContext(NamedTuple):
 def is_protocol(node: AST, /) -> bool:
     r"""Check if the node is a protocol."""
     match node:
+        case ClassDef(bases=bases):
+            return any(map(is_protocol, bases))
         case Name(id="Protocol"):
             return True
         case Attribute(attr="Protocol"):
@@ -429,9 +433,23 @@ def is_protocol(node: AST, /) -> bool:
 
 def is_abc(node: AST, /) -> bool:
     match node:
+        case ClassDef(bases=bases):
+            return any(map(is_abc, bases))
         case Name(id="ABC" | "ABCMeta"):
             return True
         case Attribute(attr="ABC" | "ABCMeta"):
+            return True
+        case _:
+            return False
+
+
+def is_typeddict(node: AST, /) -> bool:
+    match node:
+        case ClassDef(bases=bases):
+            return any(map(is_typeddict, bases))
+        case Name(id="TypedDict"):
+            return True
+        case Attribute(attr="TypedDict"):
             return True
         case _:
             return False
