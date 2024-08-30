@@ -4,6 +4,7 @@ __all__ = [
     # Types
     "Func",
     # Classes
+    "AttributeVisitor",
     "FunctionContext",
     "FunctionContextVisitor",
     # Functions
@@ -65,12 +66,14 @@ from ast import (
     Import,
     ImportFrom,
     List,
+    MatchValue,
     Module,
     Name,
     Subscript,
 )
 from collections import defaultdict
 from collections.abc import Iterator
+from dataclasses import dataclass, field
 from typing import NamedTuple, TypeAlias, TypeGuard
 
 Func: TypeAlias = FunctionDef | AsyncFunctionDef
@@ -280,9 +283,7 @@ def is_concrete_class(node: AST, /) -> TypeGuard[ClassDef]:
 
 def yield_pure_attributes(tree: AST, /) -> Iterator[Attribute]:
     r"""Get all nodes that consist only of attributes."""
-    for node in ast.walk(tree):
-        if is_pure_attribute(node):
-            yield node
+    yield from AttributeVisitor(tree)
 
 
 def yield_overloads(tree: AST, /) -> Iterator[Func]:
@@ -455,26 +456,22 @@ def is_typeddict(node: AST, /) -> bool:
             return False
 
 
+@dataclass
 class FunctionContextVisitor(ast.NodeVisitor):
     r"""Get all function-defs and corresponding overloads from the tree.
 
     Each def is paired with a list of associated overloads.
     """
 
-    base: AST
+    tree: AST
     r"""Parent node of the current node."""
-    funcs: list[Func]
+    funcs: list[Func] = field(default_factory=list)
     r"""List of functions."""
-
-    def __init__(self, tree: AST, /) -> None:
-        r"""Initialize the visitor."""
-        self.base = tree
-        self.funcs = []
 
     def __iter__(self) -> Iterator[FunctionContext]:
         r"""Iterate over the tree."""
         # recursion
-        yield from self.generic_visit(self.base)
+        yield from self.generic_visit(self.tree)
 
         # group funcs by name and whether they are overloads
         func_map: dict[str, tuple[list[Func], list[Func]]] = defaultdict(
@@ -488,7 +485,7 @@ class FunctionContextVisitor(ast.NodeVisitor):
 
         # yield function contexts
         for name, (function_defs, overload_defs) in func_map.items():
-            yield FunctionContext(name, function_defs, overload_defs, self.base)
+            yield FunctionContext(name, function_defs, overload_defs, self.tree)
 
     def visit_FunctionDef(self, node: FunctionDef) -> Iterator[FunctionContext]:  # noqa: N802
         r"""Visit a function definition."""
@@ -513,6 +510,33 @@ class FunctionContextVisitor(ast.NodeVisitor):
                 yield from self.visit(child)
             else:
                 self.visit(child)
+
+
+@dataclass
+class AttributeVisitor(ast.NodeVisitor):
+    r"""Get all attributes from the tree.
+
+    Excludes MatchValue(value=Attribute()) nodes.
+    """
+
+    tree: AST
+
+    def __iter__(self) -> Iterator[Attribute]:
+        r"""Iterate over the tree."""
+        yield from self.generic_visit(self.tree)
+
+    def generic_visit(self, node: AST) -> Iterator[Attribute]:
+        r"""Generic visit method."""
+        match node:
+            case MatchValue(value=Attribute()):
+                # skip
+                pass
+            case Attribute() as attr:
+                if is_pure_attribute(attr):
+                    yield attr
+            case _:
+                for child in ast.iter_child_nodes(node):
+                    yield from self.visit(child)
 
 
 def yield_functions_in_context(tree: AST, /) -> Iterator[FunctionContext]:

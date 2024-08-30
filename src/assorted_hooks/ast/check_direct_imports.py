@@ -14,6 +14,7 @@ Example:
 __all__ = [
     # functions
     "check_file",
+    "check_direct_imports",
     "main",
 ]
 
@@ -29,20 +30,14 @@ from assorted_hooks.utils import get_python_files
 __logger__ = logging.getLogger(__name__)
 
 
-def check_file(filepath: str | Path, /, *, debug: bool = False) -> int:
-    r"""Finds shadowed attributes in a file."""
-    # Get the AST
+def check_direct_imports(tree: ast.AST, /, *fname: str, debug: bool = False) -> int:
     violations = 0
-    path = Path(filepath)
-    filename = str(path)
-    text = path.read_text(encoding="utf8")
-    tree = ast.parse(text, filename=filename)
 
     # find all violations
     for node, _, string in yield_imported_attributes(tree):
         violations += 1
         print(
-            f"{filename}:{node.lineno}"
+            f"{fname}:{node.lineno}"
             f" use directly imported {node.attr!r} instead of {string!r}"
         )
 
@@ -55,6 +50,16 @@ def check_file(filepath: str | Path, /, *, debug: bool = False) -> int:
             print(2 * pad, f"{key:{max_key_len}} -> {value}")
 
     return violations
+
+
+def check_file(filepath: str | Path, /, *, debug: bool = False) -> int:
+    r"""Finds shadowed attributes in a file."""
+    path = Path(filepath)
+    filename = str(path)
+    text = path.read_text(encoding="utf8")
+    tree = ast.parse(text, filename=filename)
+
+    return check_direct_imports(tree, filename, debug=debug)
 
 
 def main() -> None:
