@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 r"""Detects unmaintained dependencies."""
 
+# TODO: add timeout for server response.
+
 __all__ = [
     # Constants
     "VERSION_REGEX",
