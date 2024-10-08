@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 r"""Detects unmaintained dependencies."""
 
-# TODO: add timeout for server response.
-
 __all__ = [
     # Constants
     "VERSION_REGEX",
+    "TIMEOUT",
     # Functions
     "check_file",
     "check_pyproject",
@@ -33,11 +32,12 @@ import tomllib
 import warnings
 from collections.abc import Iterable
 from datetime import datetime, timedelta
+from functools import partial
 from typing import Any, TypeAlias
 from urllib.request import urlopen
 
 JSON: TypeAlias = dict[str, Any]
-
+TIMEOUT = 3  # seconds
 
 # https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
 VERSION_REGEX = re.compile(
@@ -87,7 +87,7 @@ def _normalize(name: str, /) -> str:
 async def get_pypi_json(pkg: str, /, *, session: Any) -> JSON:
     r"""Get the JSON data for the given package."""
     url = f"https://pypi.org/pypi/{pkg}/json"
-    async with session.get(url) as response:
+    async with session.get(url, timeout=TIMEOUT) as response:
         match response.status:
             case 200:
                 return await response.json()
@@ -100,7 +100,8 @@ async def get_pypi_json(pkg: str, /, *, session: Any) -> JSON:
 async def get_pypi_fallback(pkg: str, /) -> JSON:
     url = f"https://pypi.org/pypi/{pkg}/json"
     loop = asyncio.get_event_loop()
-    response = await loop.run_in_executor(None, urlopen, url)
+    getter = partial(urlopen, timeout=TIMEOUT)
+    response = await loop.run_in_executor(None, getter, url)
     match response.status:
         case 200:
             return json.load(response)

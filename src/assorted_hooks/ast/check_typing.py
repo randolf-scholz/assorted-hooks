@@ -239,7 +239,7 @@ def check_concrete_classes_concrete_types(
     /,
     *,
     fname: str,
-    check_attrs: bool = True,
+    check_attrs: bool = False,
     check_funcs: bool = True,
 ) -> int:
     r"""Check that concrete classes use concrete return types."""
@@ -269,9 +269,9 @@ def check_concrete_classes_concrete_types(
                 case FunctionDef(returns=Subscript(value=Name(id=ann))) if check_funcs:
                     if ann in VALUES:
                         matches.append(node)
-                case AsyncFunctionDef(
-                    returns=Subscript(value=Name(id=ann))
-                ) if check_funcs:
+                case AsyncFunctionDef(returns=Subscript(value=Name(id=ann))) if (
+                    check_funcs
+                ):
                     if ann in VALUES:
                         matches.append(node)
 

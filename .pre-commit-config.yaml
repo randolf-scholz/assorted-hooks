@@ -6,7 +6,7 @@ default_language_version:
 repos:
   # test with pre-commit try-repo ../assorted-hooks --verbose --all-files
   - repo: https://github.com/randolf-scholz/assorted-hooks
-    rev: v0.3.5.4
+    rev: v0.3.6.0
     hooks:
     # pygrep-based hooks
     - id: check-separator-length
@@ -37,7 +37,7 @@ repos:
     - id: lacheck
   # https://pre-commit.com/hooks.html
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       - id: check-added-large-files
         description: "prevents giant files from being committed."
@@ -49,6 +49,8 @@ repos:
         description: "forbids files which have a utf-8 byte-order marker."
       - id: check-case-conflict
         description: "checks for files with names that would conflict on a case-insensitive filesystem."
+      - id: check-illegal-windows-names
+        description: "checks for windows-incompatible filenames."
       - id: check-json
         description: "checks json files for parseable syntax."
       - id: check-executables-have-shebangs
@@ -99,7 +101,7 @@ repos:
         files: (^src/|^tests/)
   # ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.6
+    rev: v0.6.9
     hooks:
       - id: ruff
         files: (^src/|^tests/)
@@ -111,7 +113,7 @@ repos:
         files: (^src/|^tests/)
   # markdownlint
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.41.0
+    rev: v0.42.0
     hooks:
       - id: markdownlint
         args:
@@ -127,7 +129,7 @@ repos:
       args: ["-x", "--shell=bash", "--color=always", "--format=gcc", "--"]
   # mypy
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.11.1
+    rev: v1.11.2
     hooks:
       - id: mypy
         files: (^src/|^tests/)
@@ -141,7 +143,7 @@ repos:
         - "--"
   # pyright
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.374
+    rev: v1.1.383
     hooks:
       - id: pyright
         files: (^src/|^tests/)
