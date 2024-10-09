@@ -59,10 +59,10 @@ pyproject-check-unmaintained = "assorted_hooks.scripts.pyproject_check_unmaintai
 # region development dependencies ------------------------------------------------------
 [tool.pdm.dev-dependencies]
 dev = [
-    "pre-commit>=4.0.0",
+    "pre-commit>=4.0.1",
     "ruff>=0.6.9",
     "ruff-lsp>=0.0.57",
-    "pyright>=1.1.383",
+    "pyright>=1.1.384",
     "mypy>=1.11.2",
 ]
 test = [
