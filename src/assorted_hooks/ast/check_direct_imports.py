@@ -30,7 +30,7 @@ from assorted_hooks.utils import get_python_files
 __logger__ = logging.getLogger(__name__)
 
 
-def check_direct_imports(tree: ast.AST, /, *fname: str, debug: bool = False) -> int:
+def check_direct_imports(tree: ast.AST, fname: str, /, *, debug: bool = False) -> int:
     violations = 0
 
     # find all violations
