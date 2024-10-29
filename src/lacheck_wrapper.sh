@@ -8,13 +8,14 @@ PATTERN='^"(.*?)",\s*line\s*(\d+):\s*(.*?)$'
 line='$1'
 col='$2'
 error='$3'
+EXCLUDED_PATTERN="Do not use @ in LaTeX macro names"
 
 check_file() {
     path=$(dirname "$1")
     fname=$(basename "$1")
     cd "$path" || exit 1
     lacheck "$fname" | perl -ne "
-      if (m/$PATTERN/) {
+      if (/$PATTERN/ && $3 !~ /$EXCLUDED_PATTERN/) {
         print \"${CYAN}${path}/${line}:${col}:${RESET} ${error}\n\"
       }"
 }
