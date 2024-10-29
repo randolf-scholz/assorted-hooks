@@ -6,7 +6,7 @@ default_language_version:
 repos:
   # test with pre-commit try-repo ../assorted-hooks --verbose --all-files
   - repo: https://github.com/randolf-scholz/assorted-hooks
-    rev: v0.3.7
+    rev: v0.3.72
     hooks:
     # pygrep-based hooks
     - id: check-separator-length
@@ -101,7 +101,7 @@ repos:
         files: (^src/|^tests/)
   # ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.9
+    rev: v0.7.1
     hooks:
       - id: ruff
         files: (^src/|^tests/)
@@ -129,7 +129,7 @@ repos:
       args: ["-x", "--shell=bash", "--color=always", "--format=gcc", "--"]
   # mypy
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.11.2
+    rev: v1.13.0
     hooks:
       - id: mypy
         files: (^src/|^tests/)
@@ -143,13 +143,13 @@ repos:
         - "--"
   # pyright
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.384
+    rev: v1.1.386
     hooks:
       - id: pyright
         files: (^src/|^tests/)
   # pydeps
   - repo: https://github.com/thebjorn/pydeps
-    rev: v1.12.20
+    rev: v2.0.1
     hooks:
       - id: pydeps
         pass_filenames: false

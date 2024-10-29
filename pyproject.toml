@@ -29,7 +29,7 @@ classifiers = [
 # dependencies
 requires-python = ">=3.12"
 dependencies = [
-    "aiohttp>=3.10.9",
+    "aiohttp>=3.10.10",
     "pygithub>=2.4.0",
 ]
 
@@ -60,14 +60,13 @@ pyproject-check-unmaintained = "assorted_hooks.scripts.pyproject_check_unmaintai
 [tool.pdm.dev-dependencies]
 dev = [
     "pre-commit>=4.0.1",
-    "ruff>=0.6.9",
-    "ruff-lsp>=0.0.57",
-    "pyright>=1.1.384",
-    "mypy>=1.11.2",
+    "ruff>=0.7.1",
+    "pyright>=1.1.386",
+    "mypy>=1.13.0",
 ]
 test = [
     "pytest>=8.3.3",
-    "pytest-benchmark>=4.0.0",
+    "pytest-benchmark>=5.0.0",
     "pytest-cov>=5.0.0",
     "pytest-rerunfailures>=14.0",
     "pytest-xdist>=3.6.1",
