@@ -65,7 +65,7 @@ def check_file(filepath: str | Path, /) -> int:
     with path.open() as file:
         config = yaml.safe_load(file)
 
-    git = Github()
+    git = Github(timeout=3)
     repos = get_repo_urls(config)
     violations = 0
 
