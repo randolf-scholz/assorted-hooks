@@ -4,14 +4,17 @@ r"""Checks if referenced issues are closed."""
 __all__ = [
     # Constants
     "EXCLUDED",
+    "REPO_REGEX",
     # Functions
     "check_file",
+    "get_fullname",
     "get_repo_urls",
     "main",
     "repo_is_archived",
 ]
 
 import argparse
+import re
 from pathlib import Path
 from typing import Any, Final
 
@@ -20,6 +23,11 @@ from github import Github
 
 EXCLUDED: Final[frozenset[str]] = frozenset({"local", "META"})
 r"""Excluded repositories."""
+
+REPO_REGEX: Final[re.Pattern] = re.compile(
+    r"github\.com/(?P<name>(?:[\w-]+/)*[\w-]+)(?:\.git)?"
+)
+r"""Regular expression to extract the repository name."""
 
 
 def get_repo_urls(pre_commit_config: dict, /) -> list[str]:
@@ -31,14 +39,22 @@ def get_repo_urls(pre_commit_config: dict, /) -> list[str]:
     return urls
 
 
+def get_fullname(url: str, /) -> str:
+    r"""Extract the relevant information from a repository URL."""
+    match = REPO_REGEX.search(url)
+    if not match:
+        raise ValueError(f"Could not extract repository information from {url!r}")
+    return match.group("name")
+
+
 def repo_is_archived(git: Github, url: str, /) -> bool:
     r"""Check if a repository is archived."""
-    org, repo = url.split("/")[-2:]
+    name = get_fullname(url)
     try:
-        repository = git.get_repo(f"{org}/{repo}")
+        repository = git.get_repo(name)
     except Exception as exc:
-        exc.add_note(f"Could not get repository {org}/{repo}!")
-        raise
+        raise RuntimeError(f"Could not get repository {name!r}!") from exc
+
     return repository.archived
 
 
