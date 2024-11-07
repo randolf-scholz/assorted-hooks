@@ -164,6 +164,15 @@
   types: [toml]
   entry: pyproject-check-unmaintained
   additional_dependencies: [aiohttp]
+- id: check-archived-hooks
+  name: check-archived-hooks
+  description: "Check for references to archived hooks."
+  entry: check-archived-hooks
+  require_serial: true
+  language: python
+  types: [ yaml ]
+  files: ^\.pre-commit-config\.yaml$
+  stages: [ manual ]
 - id: check-resolved-github-issues
   name: check-resolved-github-issues
   description: "Check for references to resolved GitHub issues."

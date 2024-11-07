@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 # region project configuration ---------------------------------------------------------
 [project]
 name = "assorted-hooks"
-version = "0.3.74"
+version = "0.3.75"
 authors = [{name="Randolf Scholz", email="randolf.scholz@gmail.com"}]
 description = "Custom pre-commit hooks"
 
@@ -31,6 +31,7 @@ requires-python = ">=3.12"
 dependencies = [
     "aiohttp>=3.10.10",
     "pygithub>=2.5.0",
+    "pyyaml>=6.0.2",
 ]
 
 [project.urls]
@@ -41,6 +42,7 @@ repository = "https://github.com/randolf-scholz/assorted-hooks"
 [project.scripts]
 # regex hooks
 check-github-issues = "assorted_hooks.check_github_issues:main"
+check-archived-hooks = "assorted_hooks.check_archived_hooks:main"
 # ast hooks
 check-dunder-all = "assorted_hooks.ast.check_dunder_all:main"
 check-direct-imports = "assorted_hooks.ast.check_direct_imports:main"

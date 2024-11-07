@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 r"""Checks if referenced issues are closed."""
 
 __all__ = [
@@ -203,7 +204,7 @@ def main() -> None:
         __logger__.debug("args: %s", vars(args))
 
     # authenticate
-    git = authenticate(args.auth)
+    git = Github()  # authenticate(args.auth)
 
     # find all files
     files: list[Path] = get_python_files(args.files)
