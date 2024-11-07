@@ -6,6 +6,10 @@
 
 ## Misc. Hooks
 
+### `check-archived-hooks`
+
+Checks if any of the repositories listed in the `.pre-commit-config.yaml` are archived.
+
 ### `check-resolved-github-issues`
 
 Checks code for references to GitHub issues. Queries the GitHub API to check if the issues are resolved.
