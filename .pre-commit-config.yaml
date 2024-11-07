@@ -6,7 +6,7 @@ default_language_version:
 repos:
   # test with pre-commit try-repo ../assorted-hooks --verbose --all-files
   - repo: https://github.com/randolf-scholz/assorted-hooks
-    rev: v0.3.75
+    rev: v0.3.76
     hooks:
     # pygrep-based hooks
     - id: check-separator-length

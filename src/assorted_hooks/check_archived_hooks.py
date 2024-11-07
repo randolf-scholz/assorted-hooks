@@ -15,11 +15,14 @@ from typing import Any
 import yaml
 from github import Github
 
+EXCLUDED: set[str] = {"local", "META"}
+r"""Excluded repositories."""
+
 
 def get_repo_urls(pre_commit_config: dict, /) -> list[str]:
     r"""Get the urls of repositories from the pre-commit configuration."""
     repos: list[dict[str, Any]] = pre_commit_config["repos"]
-    urls = [spec["repo"] for spec in repos]
+    urls = [url for spec in repos if (url := spec["repo"]) not in EXCLUDED]
     if not urls:
         raise ValueError("No repositories found in the pre-commit configuration.")
     return urls
@@ -28,7 +31,11 @@ def get_repo_urls(pre_commit_config: dict, /) -> list[str]:
 def repo_is_archived(git: Github, url: str, /) -> bool:
     r"""Check if a repository is archived."""
     org, repo = url.split("/")[-2:]
-    repository = git.get_repo(f"{org}/{repo}")
+    try:
+        repository = git.get_repo(f"{org}/{repo}")
+    except Exception as exc:
+        exc.add_note(f"Could not get repository {org}/{repo}!")
+        raise
     return repository.archived
 
 
