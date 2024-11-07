@@ -2,6 +2,9 @@
 r"""Checks if referenced issues are closed."""
 
 __all__ = [
+    # Constants
+    "EXCLUDED",
+    # Functions
     "check_file",
     "get_repo_urls",
     "main",
@@ -10,12 +13,12 @@ __all__ = [
 
 import argparse
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 
 import yaml
 from github import Github
 
-EXCLUDED: set[str] = {"local", "META"}
+EXCLUDED: Final[frozenset[str]] = frozenset({"local", "META"})
 r"""Excluded repositories."""
 
 
