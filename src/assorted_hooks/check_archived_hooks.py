@@ -53,6 +53,7 @@ def repo_is_archived(git: Github, url: str, /) -> bool:
     try:
         repository = git.get_repo(name)
     except RateLimitExceededException:
+        # TODO: Ask user for credentials and retry
         print("Rate limit exceeded!")
         raise SystemExit(1) from None
     except Exception as exc:

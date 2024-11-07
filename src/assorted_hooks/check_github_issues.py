@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from github import Auth, Github
-from github.GithubException import BadCredentialsException
+from github.GithubException import BadCredentialsException, RateLimitExceededException
 
 from assorted_hooks.utils import get_python_files
 
@@ -96,33 +96,14 @@ def find_issues_in_file(path: Path, /) -> Iterator[IssueMatch]:
 
 def is_closed_issue(match: IssueMatch, /, *, git: Github) -> bool:
     r"""Check if the issue is closed."""
-    repo = git.get_repo(f"{match.org}/{match.repo}")
-    issue = repo.get_issue(number=match.number)
+    try:
+        repo = git.get_repo(f"{match.org}/{match.repo}")
+        issue = repo.get_issue(number=match.number)
+    except RateLimitExceededException:
+        # TODO: Ask user for credentials and retry
+        print("Rate limit exceeded!")
+        raise SystemExit(1) from None
     return issue.state == "closed"
-
-
-def check_file(
-    filepath: str | Path,
-    /,
-    *,
-    git: Github,
-    ignore_comments: bool = True,
-) -> int:
-    r"""Check if issues are closed."""
-    # Get the AST
-    violations = 0
-    path = Path(filepath)
-    fname = str(path)
-    text = path.read_text(encoding="utf8")
-
-    for issue in find_issues(text):
-        if ignore_comments and issue.comment is not None:
-            continue
-        if is_closed_issue(issue, git=git):
-            violations += 1
-            print(f"{fname}:{issue.line}:{issue.col}: Issue {issue.url} is resolved.")
-
-    return violations
 
 
 def authenticate_query() -> Github:
@@ -163,6 +144,30 @@ def authenticate(auth: str | None, /) -> Github:
     if auth is None:
         return authenticate_query()
     return authenticate_token(auth)
+
+
+def check_file(
+    filepath: str | Path,
+    /,
+    *,
+    git: Github,
+    ignore_comments: bool = True,
+) -> int:
+    r"""Check if issues are closed."""
+    # Get the AST
+    violations = 0
+    path = Path(filepath)
+    fname = str(path)
+    text = path.read_text(encoding="utf8")
+
+    for issue in find_issues(text):
+        if ignore_comments and issue.comment is not None:
+            continue
+        if is_closed_issue(issue, git=git):
+            violations += 1
+            print(f"{fname}:{issue.line}:{issue.col}: Issue {issue.url} is resolved.")
+
+    return violations
 
 
 def main() -> None:
