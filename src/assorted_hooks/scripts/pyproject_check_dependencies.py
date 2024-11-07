@@ -11,8 +11,6 @@ References:
 # TODO: add support for extras.
 
 __all__ = [
-    # Type Aliases
-    "Config",
     # Constants
     "STDLIB_MODULES",
     "NAME",
@@ -26,35 +24,34 @@ __all__ = [
     "calculate_dependencies",
     "check_file",
     "detect_dependencies",
+    "extract_names",
     "get_module_dir",
     "get_deps_from_file",
     "get_deps_from_module",
-    "get_deps_pyproject_project",
-    "get_deps_pyproject_section",
-    "get_deps_pyproject_tests",
     "get_name_pyproject",
+    "get_main_deps_from_pyproject",
+    "get_test_deps_from_pyproject",
     "group_dependencies",
     "main",
-    "normalize",
+    "normalize_name",
 ]
 
 import argparse
 import ast
 import importlib
-import itertools
 import os
 import pkgutil
 import re
 import sys
 import tomllib
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass, field
 from functools import cache
 from importlib.util import find_spec
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Optional, Self, TypeAlias
+from typing import Any, Optional, Self
 
 # NOTE: importlib.metadata is bugged in 3.10: https://github.com/python/cpython/issues/94113#issuecomment-1164678873
 if sys.version_info >= (3, 11):  # noqa: UP036
@@ -83,16 +80,143 @@ assert RE_NAME_GROUP.groups == 1, f"{RE_NAME_GROUP.groups=}."  # noqa: S101
 PACKAGES: dict[str, list[str]] = dict(metadata.packages_distributions())
 r"""A dictionary that maps module names to their pip-package names."""
 
-Config: TypeAlias = dict[str, Any]
-
 # NOTE: illogical type hint in stdlib, maybe open issue.
 # https://github.com/python/cpython/blob/608927b01447b110de5094271fbc4d49c60130b0/Lib/importlib/metadata/__init__.py#L933-L947C29
 # https://github.com/python/typeshed/blob/d82a8325faf35aa0c9d03d9e9d4a39b7fcb78f8e/stdlib/importlib/metadata/__init__.pyi#L32
 
 
-def normalize(dep: str, /) -> str:
-    r"""Normalize a dependency name."""
-    return dep.lower().replace("-", "_")
+def normalize_name(name: str, /) -> str:
+    r"""Replace non-word characters with underscores and make lowercase."""
+    return re.sub(r"\W", "_", name).lower()
+
+
+def extract_names(deps: Iterable[str], /, *, normalize_names: bool = True) -> list[str]:
+    r"""Simplify the dependencies by removing the version, duplicates, and normalizing."""
+    # We are only interested in the name, not the version.
+    # https://packaging.python.org/en/latest/specifications/dependency-specifiers/#names
+    name_regex = re.compile(r"^([A-Z0-9](?:[A-Z0-9._-]*[A-Z0-9])?)", re.IGNORECASE)
+
+    processed_deps = []
+    for dep in deps:
+        if match := name_regex.match(dep):
+            processed_deps.append(match.group())
+        else:
+            raise ValueError(f"Invalid dependency name: {dep!r}")
+
+    if normalize_names:
+        processed_deps = [normalize_name(dep) for dep in processed_deps]
+
+    # remove duplicates and sort
+    return sorted(set(processed_deps))
+
+
+def get_main_deps_from_pyproject(
+    pyproject: dict, /, *, normalize: bool = True, error_on_missing: bool = False
+) -> list[str]:
+    r"""Extracts the dependencies from the pyproject.toml file.
+
+    Args:
+        pyproject (dict): The parsed pyproject.toml file.
+        normalize (bool, optional):
+            If true, normalizes the package names (lowercase, underscores).
+            Defaults to True.
+        error_on_missing (bool=False):
+            If true, raises an error if the optional-dependencies key is missing.
+    """
+    # TODO: Add consistency check if multiple sections are realized
+    deps: list[str] = []
+
+    if main_deps := pyproject.get("project", {}).get("dependencies", {}):
+        deps += list(main_deps)
+
+    if poetry_cfg := pyproject.get("tool", {}).get("poetry", {}):
+        try:  # obtain dependencies from [tool.poetry.dependencies]
+            poetry_deps: dict[str, Any] = poetry_cfg["dependencies"]
+        except KeyError as exc:
+            if error_on_missing:
+                exc.add_note("Cannot find poetry dependencies in pyproject.toml.")
+                raise
+        else:
+            # remove python from the dependencies
+            if "python" in poetry_deps:
+                poetry_deps.pop("python")
+            deps += list(poetry_deps)
+
+    if not deps:
+        raise ValueError("No dependencies found in pyproject.toml.")
+
+    # remove duplicates and sort
+    deps = sorted(set(deps))
+    return extract_names(deps, normalize_names=normalize)
+
+
+def get_test_deps_from_pyproject(
+    pyproject: dict, /, *, normalize: bool = True, error_on_missing: bool = False
+) -> list[str]:
+    r"""Extracts the tests dependencies from the pyproject.toml file.
+
+    Checks the following sections:
+
+    - `dev-dependencies.test*`
+    - `project.optional-dependencies.test*`
+    - `tool.poetry.group.test*.dependencies`
+    - `tool.pdm.dev-dependencies.test*`
+
+    Args:
+        pyproject (dict): The parsed pyproject.toml file.
+        normalize (bool, optional):
+            If true, normalizes the package names (lowercase, underscores).
+            Defaults to True.
+        error_on_missing (bool, optional):
+            If true, raises an error if the optional-dependencies key is missing.
+            Defaults to False.
+    """
+    # TODO: Add consistency check if multiple sections are realized
+    deps: list[str] = []
+
+    if dep_groups := pyproject.get("dependency-groups", {}):
+        for key in dep_groups:
+            if key.startswith("test"):
+                deps += dep_groups[key]
+
+    if opt_deps := pyproject.get("project", {}).get("optional-dependencies", {}):
+        for key in opt_deps:
+            if key.startswith("test"):
+                deps += opt_deps[key]
+
+    if pdm_opts := pyproject.get("tool", {}).get("pdm", {}):
+        try:  # obtain dependencies from [tool.pdm.dev-dependencies]
+            pdm_deps: dict[str, list[str]] = pdm_opts["dev-dependencies"]
+        except KeyError as exc:
+            if error_on_missing:
+                exc.add_note("Cannot find development-dependencies in pyproject.toml.")
+                raise
+        else:
+            for key in pdm_deps:
+                if key.startswith("test"):
+                    deps += pdm_deps[key]
+
+    if poetry_opts := pyproject.get("tool", {}).get("poetry", {}):
+        try:  # obtain dependencies from [tool.poetry.group.*.dependencies]
+            poetry_groups: dict[str, dict] = poetry_opts["group"]
+        except KeyError as exc:
+            if error_on_missing:
+                exc.add_note("Cannot find optional-dependencies in pyproject.toml.")
+                raise
+        else:
+            for key, group in poetry_groups.items():
+                if key.startswith("test"):
+                    deps += list(group["dependencies"])
+
+    if not deps:
+        raise ValueError(
+            "No optional/development dependencies found in pyproject.toml."
+            "If there are none, use with option --no-check-optional."
+        )
+
+    # remove duplicates and sort
+    deps = sorted(set(deps))
+    return extract_names(deps, normalize_names=normalize)
 
 
 @cache
@@ -109,7 +233,7 @@ def get_module_dir(name: str, /) -> Path:
     return path.parent
 
 
-def get_name_pyproject(config: Config, /) -> str:
+def get_name_pyproject(config: dict, /) -> str:
     r"""Get the name of the project from pyproject.toml."""
     try:
         project_name = config["project"]["name"]
@@ -135,126 +259,6 @@ def get_name_pyproject(config: Config, /) -> str:
             return b
         case _:
             raise ValueError("No project name found in [project] or [tool.poetry].")
-
-
-def get_deps_pyproject_section(config: Config, /, *, section: str) -> set[str]:
-    r"""Get the dependencies from a section of pyproject.toml.
-
-    Looking up the section must either result in a list of strings or a dict.
-    """
-    conf: Any = config  # otherwise typing errors...
-
-    try:  # recursively get the section
-        for key in section.split("."):
-            conf = conf[key]
-    except KeyError:
-        return NotImplemented
-
-    match conf:
-        # assume format `"package<comparator>version"`
-        case list(lst):
-            matches: set[str] = set()
-            for dep in lst:
-                match = re.search(RE_NAME, dep)
-                if match is None:
-                    raise ValueError(f"Invalid dependency: {dep!r}")
-                matches.add(match.group())
-            return matches
-        # assume format `package = "<comparator>version"`
-        case dict(dct):  # poetry
-            return set(dct) - {"python"}
-        case _:
-            raise TypeError(f"Unexpected type: {type(config)}")
-
-
-def get_deps_pyproject_project(config: Config, /) -> set[str]:
-    r"""Extract the dependencies from a pyproject.toml file.
-
-    There are 6 sections we check:
-    - `pyproject.dependencies`
-    - `pyproject.optional-dependencies.test(s)`
-    - `tool.poetry.dependencies`
-    - `tool.poetry.group.test(s).dependencies`
-
-    If dependencies are specified in multiple sections, it is validated that they are
-    the same.
-    """
-    dependencies = {
-        key: get_deps_pyproject_section(config, section=key)
-        for key in (
-            "project.dependencies",
-            "tool.poetry.dependencies",
-        )
-    }
-
-    match (
-        dependencies["project.dependencies"],
-        dependencies["tool.poetry.dependencies"],
-    ):
-        case set(a), set(b):
-            if (left := a - b) | (right := b - a):
-                raise ValueError(
-                    "Found inconsistent dependencies in [project] and [tool.poetry]."
-                    f"\n [project]     is missing: {right}, "
-                    f"\n [tool.poetry] is missing: {left}."
-                )
-            project_dependencies = a
-        case set(a), _:
-            project_dependencies = a
-        case _, set(b):
-            project_dependencies = b
-        case _:
-            project_dependencies = set()
-
-    return project_dependencies
-
-
-def get_deps_pyproject_tests(config: Config, /) -> set[str]:
-    r"""Extract the test dependencies from a pyproject.toml file."""
-    groups: dict[str, tuple[str, str]] = {
-        "optional-dependencies": (
-            "project.optional-dependencies.test",
-            "project.optional-dependencies.tests",
-        ),
-        "poetry": (
-            "tool.poetry.group.test.dependencies",
-            "tool.poetry.group.tests.dependencies",
-        ),
-        "pdm": (
-            "tool.pdm.dev-dependencies.test",
-            "tool.pdm.dev-dependencies.tests",
-        ),
-    }
-
-    dependencies = {  # NOTE: NotImplemented is used to indicate missing sections.
-        section: get_deps_pyproject_section(config, section=section)
-        for group in groups.values()
-        for section in group
-    }
-
-    deps: dict[str, set[str]] = {}
-    for group_name, (test_key, tests_key) in groups.items():
-        match dependencies[test_key], dependencies[tests_key]:
-            case set(), set():
-                raise ValueError(f"Found both {test_key} and {tests_key}.")
-            case set(left), _:
-                deps[group_name] = left
-            case _, set(right):
-                deps[group_name] = right
-            case _:
-                pass
-
-    # make sure test dependencies are consistent
-    # iterate over all pairs:
-    for (l_key, l_val), (r_key, r_val) in itertools.combinations(deps.items(), 2):
-        if (missing_right := l_val - r_val) | (missing_left := r_val - l_val):
-            raise ValueError(
-                f"Found inconsistent test dependencies in pyproject.toml."
-                f"\n {l_key:<20s} is missing, {missing_left=}."
-                f"\n {r_key:<20s} is missing, {missing_right=}."
-            )
-
-    return set().union(*deps.values())
 
 
 @dataclass
@@ -444,16 +448,16 @@ def calculate_dependencies(
         actual_deps.add(mapped_deps.pop())
 
     # normalize the dependencies
-    excluded_deps = set(map(normalize, excluded_deps))
-    excluded_imported_deps = set(map(normalize, excluded_imported_deps))
-    excluded_declared_deps = set(map(normalize, excluded_declared_deps))
-    declared_deps = set(map(normalize, declared_deps)) - (
+    excluded_deps = set(map(normalize_name, excluded_deps))
+    excluded_imported_deps = set(map(normalize_name, excluded_imported_deps))
+    excluded_declared_deps = set(map(normalize_name, excluded_declared_deps))
+    declared_deps = set(map(normalize_name, declared_deps)) - (
         excluded_declared_deps | excluded_deps
     )
-    actual_deps = set(map(normalize, actual_deps)) - (
+    actual_deps = set(map(normalize_name, actual_deps)) - (
         excluded_imported_deps | excluded_deps
     )
-    missing_deps = set(map(normalize, missing_deps)) - excluded_deps
+    missing_deps = set(map(normalize_name, missing_deps)) - excluded_deps
 
     # check if all imported dependencies are listed in pyproject.toml
     undeclared_deps = actual_deps - declared_deps
@@ -488,11 +492,11 @@ def check_file(
         config = tomllib.load(file)
 
     # get the normalized project name
-    project_name = normalize(get_name_pyproject(config))
+    project_name = normalize_name(get_name_pyproject(config))
     # get dependencies from pyproject.toml
-    declared_deps = get_deps_pyproject_project(config) | {project_name}
+    declared_deps = set(get_main_deps_from_pyproject(config)) | {project_name}
     # get test dependencies from pyproject.toml
-    declared_test_deps = get_deps_pyproject_tests(config) | {project_name}
+    declared_test_deps = set(get_test_deps_from_pyproject(config)) | {project_name}
     # get superfluous test dependencies
     superfluous_test_deps = (declared_deps & declared_test_deps) - {project_name}
     # setup ignored dependencies

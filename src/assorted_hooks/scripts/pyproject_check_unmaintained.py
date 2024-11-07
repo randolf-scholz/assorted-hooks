@@ -10,7 +10,7 @@ __all__ = [
     "check_pyproject",
     "extract_names",
     "get_all_pypi_json",
-    "get_dependencies_from_pyproject",
+    "get_main_deps_from_pyproject",
     "get_latest_release",
     "get_local_packages",
     "get_optional_deps_from_pyproject",
@@ -21,6 +21,7 @@ __all__ = [
     "get_release_version",
     "is_canonical",
     "main",
+    "normalize_name",
 ]
 
 import argparse
@@ -79,9 +80,132 @@ def is_canonical(version: str, /) -> bool:
     return re.match(VERSION_REGEX, version) is not None
 
 
-def _normalize(name: str, /) -> str:
+def normalize_name(name: str, /) -> str:
     r"""Replace non-word characters with underscores and make lowercase."""
     return re.sub(r"\W", "_", name).lower()
+
+
+def extract_names(deps: Iterable[str], /, *, normalize_names: bool = True) -> list[str]:
+    r"""Simplify the dependencies by removing the version, duplicates, and normalizing."""
+    # We are only interested in the name, not the version.
+    # https://packaging.python.org/en/latest/specifications/dependency-specifiers/#names
+    name_regex = re.compile(r"^([A-Z0-9](?:[A-Z0-9._-]*[A-Z0-9])?)", re.IGNORECASE)
+
+    processed_deps = []
+    for dep in deps:
+        if match := name_regex.match(dep):
+            processed_deps.append(match.group())
+        else:
+            raise ValueError(f"Invalid dependency name: {dep!r}")
+
+    if normalize_names:
+        processed_deps = [normalize_name(dep) for dep in processed_deps]
+
+    # remove duplicates and sort
+    return sorted(set(processed_deps))
+
+
+def get_main_deps_from_pyproject(
+    pyproject: dict, /, *, normalize: bool = True, error_on_missing: bool = False
+) -> list[str]:
+    r"""Extracts the dependencies from the pyproject.toml file.
+
+    Args:
+        pyproject (dict): The parsed pyproject.toml file.
+        normalize (bool, optional):
+            If true, normalizes the package names (lowercase, underscores).
+            Defaults to True.
+        error_on_missing (bool=False):
+            If true, raises an error if the optional-dependencies key is missing.
+    """
+    # TODO: Add consistency check if multiple sections are realized
+    deps: list[str] = []
+
+    if main_deps := pyproject.get("project", {}).get("dependencies", {}):
+        deps += list(main_deps)
+
+    if poetry_cfg := pyproject.get("tool", {}).get("poetry", {}):
+        try:  # obtain dependencies from [tool.poetry.dependencies]
+            poetry_deps: dict[str, Any] = poetry_cfg["dependencies"]
+        except KeyError as exc:
+            if error_on_missing:
+                exc.add_note("Cannot find poetry dependencies in pyproject.toml.")
+                raise
+        else:
+            # remove python from the dependencies
+            if "python" in poetry_deps:
+                poetry_deps.pop("python")
+            deps += list(poetry_deps)
+
+    if not deps:
+        raise ValueError("No dependencies found in pyproject.toml.")
+
+    # remove duplicates and sort
+    deps = sorted(set(deps))
+    return extract_names(deps, normalize_names=normalize)
+
+
+def get_optional_deps_from_pyproject(
+    pyproject: dict,
+    /,
+    *,
+    normalize: bool = True,
+    error_on_missing: bool = False,
+) -> list[str]:
+    r"""Extracts the optional dependencies from the pyproject.toml file.
+
+    Args:
+        pyproject (dict): The parsed pyproject.toml file.
+        normalize (bool, optional):
+            If true, normalizes the package names (lowercase, underscores).
+            Defaults to True.
+        error_on_missing (bool=False):
+            If true, raises an error if the optional-dependencies key is missing.
+    """
+    # TODO: Add consistency check if multiple sections are realized
+    deps: list[str] = []
+
+    if dep_groups := pyproject.get("dependency-groups", {}):
+        for key in dep_groups:
+            if key.startswith("test"):
+                deps += dep_groups[key]
+
+    if opt_deps := pyproject.get("project", {}).get("optional-dependencies", {}):
+        for group in opt_deps.values():
+            deps += list(group)
+
+    if pdm_opts := pyproject.get("tool", {}).get("pdm", {}):
+        try:  # obtain dependencies from [tool.pdm.dev-dependencies]
+            pdm_deps: dict[str, list[str]] = pdm_opts["dev-dependencies"]
+        except KeyError as exc:
+            if error_on_missing:
+                exc.add_note("Cannot find development-dependencies in pyproject.toml.")
+                raise
+        else:
+            # concatenate the lists
+            for pdm_group in pdm_deps.values():
+                deps += list(pdm_group)
+
+    if poetry_opts := pyproject.get("tool", {}).get("poetry", {}):
+        try:  # obtain dependencies from [tool.poetry.group.*.dependencies]
+            poetry_groups: dict[str, dict] = poetry_opts["group"]
+        except KeyError as exc:
+            if error_on_missing:
+                exc.add_note("Cannot find optional-dependencies in pyproject.toml.")
+                raise
+        else:
+            for dep_group in poetry_groups.values():
+                deps += list(dep_group["dependencies"])
+
+    if not deps:
+        raise ValueError(
+            "No optional/development dependencies found in pyproject.toml."
+            "If there are none, use with option --no-check-optional."
+        )
+
+    # remove duplicates and sort
+    deps = sorted(set(deps))
+    return extract_names(deps, normalize_names=normalize)
 
 
 async def get_pypi_json(pkg: str, /, *, session: Any) -> JSON:
@@ -157,26 +281,6 @@ def get_latest_release(metadata: JSON, /) -> tuple[str, datetime]:
     return latest_release, upload_dates[latest_release]
 
 
-def extract_names(deps: Iterable[str], /, *, normalize_names: bool = True) -> list[str]:
-    r"""Simplify the dependencies by removing the version, duplicates, and normalizing."""
-    # We are only interested in the name, not the version.
-    # https://packaging.python.org/en/latest/specifications/dependency-specifiers/#names
-    name_regex = re.compile(r"^([A-Z0-9](?:[A-Z0-9._-]*[A-Z0-9])?)", re.IGNORECASE)
-
-    processed_deps = []
-    for dep in deps:
-        if match := name_regex.match(dep):
-            processed_deps.append(match.group())
-        else:
-            raise ValueError(f"Invalid dependency name: {dep!r}")
-
-    if normalize_names:
-        processed_deps = [_normalize(dep) for dep in processed_deps]
-
-    # remove duplicates and sort
-    return sorted(set(processed_deps))
-
-
 def get_project_name_from_pyproject(
     pyproject: dict, /, *, normalize: bool = True
 ) -> str:
@@ -188,114 +292,14 @@ def get_project_name_from_pyproject(
         raise
 
     if normalize:
-        return _normalize(project_name)
+        return normalize_name(project_name)
 
     return project_name
 
 
-def get_dependencies_from_pyproject(
-    pyproject: dict, /, *, normalize: bool = True
-) -> list[str]:
-    r"""Extracts the dependencies from the pyproject.toml file.
-
-    Args:
-        pyproject (dict): The parsed pyproject.toml file.
-        normalize (bool, optional):
-            If true, normalizes the package names (lowercase, underscores).
-            Defaults to True.
-    """
-    deps: list[str] = []
-
-    if "dependencies" in pyproject.get("project", {}):
-        try:  # obtain dependencies from [project.dependencies]
-            dependencies = pyproject["project"]["dependencies"]
-        except KeyError as exc:
-            exc.add_note("Cannot find dependencies in pyproject.toml.")
-            raise
-        else:
-            deps += dependencies
-
-    if "poetry" in pyproject.get("tool", {}):
-        try:  # obtain dependencies from [tool.poetry.dependencies]
-            dependencies = list(pyproject["tool"]["poetry"]["dependencies"])
-        except KeyError as exc:
-            exc.add_note("Cannot find dependencies in pyproject.toml.")
-            raise
-        else:
-            # remove python from the dependencies
-            if "python" in dependencies:
-                dependencies.remove("python")
-            deps += dependencies
-
-    if not deps:
-        raise ValueError("No dependencies found in pyproject.toml.")
-
-    return extract_names(deps, normalize_names=normalize)
-
-
-def get_optional_deps_from_pyproject(
-    pyproject: dict, /, *, normalize: bool = True, error_on_missing: bool = False
-) -> list[str]:
-    r"""Extracts the optional dependencies from the pyproject.toml file.
-
-    Args:
-        pyproject (dict): The parsed pyproject.toml file.
-        normalize (bool, optional):
-            If true, normalizes the package names (lowercase, underscores).
-            Defaults to True.
-        error_on_missing (bool, optional):
-            If true, raises an error if the optional-dependencies key is missing.
-            Defaults to False.
-    """
-    deps: list[str] = []
-
-    if "optional-dependencies" in pyproject.get("project", {}):
-        try:  # obtain dependencies from [project.optional-dependencies]
-            optional_deps = pyproject["project"]["optional-dependencies"]
-        except KeyError as exc:
-            if error_on_missing:
-                exc.add_note("Cannot find optional-dependencies in pyproject.toml.")
-                raise
-        else:
-            # concatenate the lists
-            deps += list(set().union(*optional_deps.values()))
-
-    if "pdm" in pyproject.get("tool", {}):
-        try:  # obtain dependencies from [tool.pdm.dev-dependencies]
-            optional_deps = pyproject["tool"]["pdm"]["dev-dependencies"]
-        except KeyError as exc:
-            if error_on_missing:
-                exc.add_note("Cannot find development-dependencies in pyproject.toml.")
-                raise
-        else:
-            # concatenate the lists
-            deps += list(set().union(*optional_deps.values()))
-
-    if "poetry" in pyproject.get("tool", {}):
-        try:  # obtain dependencies from [tool.poetry.group.*.dependencies]
-            dep_groups = pyproject["tool"]["poetry"]["group"]
-        except KeyError as exc:
-            if error_on_missing:
-                exc.add_note("Cannot find optional-dependencies in pyproject.toml.")
-                raise
-        else:
-            optional_deps = []
-            for dep_group in dep_groups.values():
-                optional_deps += list(dep_group["dependencies"])
-            deps += optional_deps
-
-    if not deps:
-        raise ValueError(
-            "No optional/development dependencies found in pyproject.toml."
-            "If there are none, use with option --no-check-optional."
-        )
-
-    return extract_names(deps, normalize_names=normalize)
-
-
 def get_local_packages(*, normalize: bool = True) -> dict[str, tuple[str, str, str]]:
     r"""Get the packages installed in the current environment."""
-    name_fn = _normalize if normalize else lambda x: x
+    name_fn = normalize_name if normalize else lambda x: x
     packages = {
         name_fn(x.name): (
             x.version,
@@ -320,7 +324,7 @@ def check_pyproject(
 
     # extract project name and dependencies (normalizing names)
     project_name = get_project_name_from_pyproject(pyproject)
-    project_dependencies: list[str] = get_dependencies_from_pyproject(pyproject)
+    project_dependencies: list[str] = get_main_deps_from_pyproject(pyproject)
     project_optional_deps: list[str] = get_optional_deps_from_pyproject(pyproject)
 
     # get local packages

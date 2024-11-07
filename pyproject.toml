@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 # region project configuration ---------------------------------------------------------
 [project]
 name = "assorted-hooks"
-version = "0.3.73"
+version = "0.3.74"
 authors = [{name="Randolf Scholz", email="randolf.scholz@gmail.com"}]
 description = "Custom pre-commit hooks"
 
@@ -30,7 +30,7 @@ classifiers = [
 requires-python = ">=3.12"
 dependencies = [
     "aiohttp>=3.10.10",
-    "pygithub>=2.4.0",
+    "pygithub>=2.5.0",
 ]
 
 [project.urls]
@@ -53,28 +53,14 @@ pyproject-check-deps = "assorted_hooks.scripts.pyproject_check_dependencies:main
 pyproject-update-deps = "assorted_hooks.scripts.pyproject_update_dependencies:main"
 pyproject-validate-version = "assorted_hooks.scripts.pyproject_validate_version:main"
 pyproject-check-unmaintained = "assorted_hooks.scripts.pyproject_check_unmaintained:main"
+
+[dependency-groups]
+dev = ["pre-commit>=4.0.1", "ruff>=0.7.2", "pyright>=1.1.388", "mypy>=1.13.0"]
+test = ["pytest>=8.3.3", "pytest-benchmark>=5.1.0", "pytest-cov>=6.0.0", "pytest-rerunfailures>=14.0", "pytest-xdist>=3.6.1"]
 # endregion project configuration ------------------------------------------------------
 
 
 # region development dependencies ------------------------------------------------------
-[tool.pdm.dev-dependencies]
-dev = [
-    "pre-commit>=4.0.1",
-    "ruff>=0.7.1",
-    "pyright>=1.1.386",
-    "mypy>=1.13.0",
-]
-test = [
-    "pytest>=8.3.3",
-    "pytest-benchmark>=5.0.0",
-    "pytest-cov>=5.0.0",
-    "pytest-rerunfailures>=14.0",
-    "pytest-xdist>=3.6.1",
-]
-# endregion development dependencies ---------------------------------------------------
-
-
-# region ruff configuration ------------------------------------------------------------
 [tool.ruff]
 src = ["src/", "tests/"]
 indent-width = 4
