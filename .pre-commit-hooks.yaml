@@ -172,15 +172,14 @@
   language: python
   types: [ yaml ]
   files: ^\.pre-commit-config\.yaml$
-  stages: [ manual ]
 - id: check-resolved-github-issues
   name: check-resolved-github-issues
   description: "Check for references to resolved GitHub issues."
   entry: check-github-issues
   require_serial: true
   language: python
-  stages: [manual]
-  types: [text]
+  stages: [ manual ]
+  types: [ text ]
 # endregion misc -----------------------------------------------------------------------
 
 

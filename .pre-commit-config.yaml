@@ -6,7 +6,7 @@ default_language_version:
 repos:
   # test with pre-commit try-repo ../assorted-hooks --verbose --all-files
   - repo: https://github.com/randolf-scholz/assorted-hooks
-    rev: v0.3.74
+    rev: v0.3.75
     hooks:
     # pygrep-based hooks
     - id: check-separator-length
@@ -32,6 +32,7 @@ repos:
       files: '^src/'
     # other hooks
     - id: check-resolved-github-issues
+    - id: check-archived-hooks
     # latex hooks
     - id: chktex
     - id: lacheck
@@ -77,12 +78,6 @@ repos:
         description: "sorts entries in requirements.txt"
       - id: trailing-whitespace
         description: "trims trailing whitespace."
-  # absolufy-imports
-  - repo: https://github.com/MarcoGorelli/absolufy-imports
-    rev: v0.3.1
-    hooks:
-      - id: absolufy-imports
-        files: (^src/|^tests/)
   # ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.7.2
