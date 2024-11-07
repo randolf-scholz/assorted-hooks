@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any, Final
 
 import yaml
-from github import Github
+from github import Github, RateLimitExceededException
 
 EXCLUDED: Final[frozenset[str]] = frozenset({"local", "META"})
 r"""Excluded repositories."""
@@ -52,6 +52,9 @@ def repo_is_archived(git: Github, url: str, /) -> bool:
     name = get_fullname(url)
     try:
         repository = git.get_repo(name)
+    except RateLimitExceededException:
+        print("Rate limit exceeded!")
+        raise SystemExit(1) from None
     except Exception as exc:
         raise RuntimeError(f"Could not get repository {name!r}!") from exc
 
@@ -65,7 +68,7 @@ def check_file(filepath: str | Path, /) -> int:
     with path.open() as file:
         config = yaml.safe_load(file)
 
-    git = Github(timeout=3)
+    git = Github(timeout=5, retry=False)
     repos = get_repo_urls(config)
     violations = 0
 
