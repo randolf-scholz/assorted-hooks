@@ -1,0 +1,8 @@
+{
+  "launch": {
+
+    "configurations": [],
+    "compounds": []
+  },
+  "python.terminal.activateEnvironment": false
+}

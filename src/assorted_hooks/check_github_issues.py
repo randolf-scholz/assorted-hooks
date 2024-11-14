@@ -209,7 +209,7 @@ def main() -> None:
         __logger__.debug("args: %s", vars(args))
 
     # authenticate
-    git = Github()  # authenticate(args.auth)
+    git = Github(timeout=5, retry=False)  # authenticate(args.auth)
 
     # find all files
     files: list[Path] = get_python_files(args.files)

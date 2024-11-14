@@ -8,59 +8,199 @@ __all__ = [
     "BUILTIN_CONSTANTS",
     "BUILTIN_SITE_CONSTANTS",
     "BUILTIN_EXCEPTIONS",
-    "VERSION_REGEX",
+    "REPO_REGEX",
     # Protocols
     "FileCheck",
     # Functions
     "check_all_files",
-    "is_canonical_version",
     "get_python_files",
+    "get_repository",
+    "get_gitname_from_url",
+    "get_requirements_from_pyproject",
+    "get_dev_requirements_from_pyproject",
+    "get_canonical_names",
 ]
 
 import argparse
 import re
-from collections.abc import Iterable
+import warnings
+from collections.abc import Iterable, Iterator
 from pathlib import Path
-from typing import Optional, Protocol
+from re import Pattern
+from typing import Any, Optional, Protocol
 
-# https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
-VERSION_REGEX = re.compile(
-    r"""(?ix:                                       # case-insensitive, verbose
-        v?(?:
-            (?:(?P<epoch>[0-9]+)!)?                           # epoch
-            (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
-            (?P<pre>                                          # pre-release
-                [-_.]?
-                (?P<pre_l>(?:a|b|c|rc|alpha|beta|pre|preview))
-                [-_.]?
-                (?P<pre_n>[0-9]+)?
-            )?
-            (?P<post>                                         # post release
-                (?:-(?P<post_n1>[0-9]+))
-                |
-                (?:
-                    [-_.]?
-                    (?P<post_l>post|rev|r)
-                    [-_.]?
-                    (?P<post_n2>[0-9]+)?
-                )
-            )?
-            (?P<dev>                                          # dev release
-                [-_.]?
-                (?P<dev_l>dev)
-                [-_.]?
-                (?P<dev_n>[0-9]+)?
-            )?
-        )
-        (?:\+(?P<local>[a-z0-9]+(?:[-_.][a-z0-9]+)*))?        # local version
-    )"""
-)
-r"""Regular expression for parsing version strings."""
+from github import Github, RateLimitExceededException
+from github.Repository import Repository
+from packaging.requirements import InvalidRequirement, Requirement
+from packaging.utils import NormalizedName, canonicalize_name
+
+REPO_REGEX = re.compile(r"github\.com/(?P<name>(?:[\w-]+/)*[\w-]+)(?:\.git)?")
+r"""Regular expression to extract the repository name."""
 
 
-def is_canonical_version(version: str, /) -> bool:
-    r"""Check if the given version string is canonical."""
-    return re.match(VERSION_REGEX, version) is not None
+def _iter_poetry_group(group: dict[str, Any], /) -> Iterator[str]:
+    r"""Extracts the dependencies from a poetry group."""
+    for key, value in group.items():
+        if key == "python":
+            continue
+        match value:
+            case str(spec):
+                yield f"{key}{spec}"
+            case {"version": str(version)}:
+                yield f"{key}{version}"
+            case _:
+                yield key
+
+
+def _yield_deps(pyproject: dict, pattern: str | Pattern = "", /) -> Iterator[str]:
+    r"""Yield the dependencies from the pyproject.toml file.
+
+    Args:
+        pyproject (dict): The parsed pyproject.toml file.
+        pattern (str, optional):
+            A regular expression pattern to match the group names.
+            Applies to `[project.optional-dependencies]`.
+            Pass impossible regex `(?!)` to not match any group.
+    """
+    # TODO: Add consistency check if multiple sections are realized
+    regex = re.compile(pattern)
+
+    # parse [project.dependencies]
+    main_deps = pyproject.get("project", {}).get("dependencies", [])
+    yield from main_deps
+
+    # parse [project.optional-dependencies]
+    optional_deps = pyproject.get("project", {}).get("optional-dependencies", {})
+    for key, optional_group in optional_deps.items():
+        if regex.match(key):
+            yield from optional_group
+
+    # parse [tool.poetry.dependencies]
+    poetry_deps = pyproject.get("tool", {}).get("poetry", {}).get("dependencies", {})
+    yield from _iter_poetry_group(poetry_deps)
+
+
+def _yield_dev_deps(pyproject: dict, pattern: str | Pattern = "", /) -> Iterator[str]:
+    r"""Yield the development dependencies from the pyproject.toml file.
+
+    Args:
+        pyproject (dict): The parsed pyproject.toml file.
+        pattern (str, optional):
+            A regular expression pattern to match the group names.
+
+    Extracts the dependencies from the following sections:
+    - `dependency-groups`
+    - `tool.pdm.dev-dependencies`
+    - `tool.poety.group.*.dependencies`
+    """
+    regex = re.compile(pattern)
+
+    # parse [dependency-groups]
+    dev_deps = pyproject.get("dependency-groups", {})
+    for key, dep_group in dev_deps.items():
+        if regex.match(key):
+            yield from dep_group
+
+    # parse [tool.pdm.dev-dependencies]
+    pdm_deps = pyproject.get("tool", {}).get("pdm", {}).get("dev-dependencies", {})
+    for key, pdm_group in pdm_deps.items():
+        if regex.match(key):
+            yield from pdm_group
+
+    # parse [tool.poetry.group.*.dependencies]
+    poetry_groups = pyproject.get("tool", {}).get("poetry", {}).get("group", {})
+    for key, poetry_group in poetry_groups.items():
+        if regex.match(key):
+            poetry_deps = poetry_group.get("dependencies", {})
+            yield from _iter_poetry_group(poetry_deps)
+
+
+def get_requirements_from_pyproject(
+    pyproject: dict, pattern: str | Pattern = "", /
+) -> set[Requirement]:
+    r"""Extracts the requirements from the pyproject.toml file.
+
+    Args:
+        pyproject (dict): The parsed pyproject.toml file.
+        pattern (str, optional): A regex pattern to match the group names.
+    """
+    reqs: set[Requirement] = set()
+    errors: dict[str, InvalidRequirement] = {}
+
+    for dep in _yield_deps(pyproject, pattern):
+        try:
+            req = Requirement(dep)
+        except InvalidRequirement as exc:
+            errors[dep] = exc
+        else:
+            reqs.add(req)
+
+    if errors:
+        raise RuntimeError("The following requirements are invalid:", list(errors))
+
+    if not reqs:
+        warnings.warn("No requirements found in the pyproject.toml file.")
+
+    return reqs
+
+
+def get_dev_requirements_from_pyproject(
+    pyproject: dict, pattern: str | Pattern = "", /
+) -> set[Requirement]:
+    r"""Extracts the requirements from the pyproject.toml file.
+
+    Args:
+        pyproject (dict): The parsed pyproject.toml file.
+        pattern (str, optional): A regex pattern to match the group names.
+    """
+    reqs: set[Requirement] = set()
+    errors: dict[str, InvalidRequirement] = {}
+
+    for dep in _yield_dev_deps(pyproject, pattern):
+        try:
+            req = Requirement(dep)
+        except InvalidRequirement as exc:
+            errors[dep] = exc
+        else:
+            reqs.add(req)
+
+    if errors:
+        raise RuntimeError("The following requirements are invalid:", list(errors))
+
+    if not reqs:
+        warnings.warn("No development requirements found in the pyproject.toml file.")
+
+    return reqs
+
+
+def get_canonical_names(reqs: Iterable[str | Requirement], /) -> set[NormalizedName]:
+    r"""Get the canonical names from a list of requirements."""
+    return {
+        canonicalize_name(req if isinstance(req, str) else req.name) for req in reqs
+    }
+
+
+def get_gitname_from_url(url: str, /) -> str:
+    r"""Extract the relevant information from a repository URL."""
+    match = REPO_REGEX.search(url)
+    if not match:
+        raise ValueError(f"Could not extract repository information from {url!r}")
+    return match.group("name")
+
+
+def get_repository(git: Github, url: str, /) -> Repository:
+    r"""Check if a repository is archived."""
+    name = get_gitname_from_url(url)
+    try:
+        repository = git.get_repo(name)
+    except RateLimitExceededException:
+        # TODO: Ask user for credentials and retry
+        print("Rate limit exceeded!")
+        raise SystemExit(1) from None
+    except Exception as exc:
+        raise RuntimeError(f"Could not get repository {name!r}!") from exc
+
+    return repository
 
 
 class FileCheck(Protocol):

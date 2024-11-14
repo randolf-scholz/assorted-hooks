@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 # region project configuration ---------------------------------------------------------
 [project]
 name = "assorted-hooks"
-version = "0.3.80"
+version = "0.4.0"
 authors = [{ name = "Randolf Scholz", email = "randolf.scholz@gmail.com" }]
 description = "Custom pre-commit hooks"
 
@@ -28,7 +28,12 @@ classifiers = [
 
 # dependencies
 requires-python = ">=3.12"
-dependencies = ["aiohttp>=3.11.0", "pygithub>=2.5.0", "pyyaml>=6.0.2"]
+dependencies = [
+    "aiohttp>=3.11.1",
+    "packaging>=24.2",
+    "pygithub>=2.5.0",
+    "pyyaml>=6.0.2",
+]
 
 [project.urls]
 homepage = "https://github.com/randolf-scholz/assorted-hooks"
@@ -36,36 +41,37 @@ documentation = "https://github.com/randolf-scholz/assorted-hooks"
 repository = "https://github.com/randolf-scholz/assorted-hooks"
 
 [project.scripts]
-# regex hooks
-check-github-issues = "assorted_hooks.check_github_issues:main"
-check-archived-hooks = "assorted_hooks.check_archived_hooks:main"
 # ast hooks
 check-dunder-all = "assorted_hooks.ast.check_dunder_all:main"
 check-direct-imports = "assorted_hooks.ast.check_direct_imports:main"
 check-no-mixed-args = "assorted_hooks.ast.check_no_mixed_args:main"
 check-standard-generics = "assorted_hooks.ast.check_standard_generics:main"
 check-typing = "assorted_hooks.ast.check_typing:main"
+pyproject-check-deps = "assorted_hooks.ast.pyproject_check_dependencies:main"
 # script hooks
 python-check-clean-interface = "assorted_hooks.scripts.check_clean_interface:main"
-pyproject-check-deps = "assorted_hooks.scripts.pyproject_check_dependencies:main"
 pyproject-update-deps = "assorted_hooks.scripts.pyproject_update_dependencies:main"
-pyproject-validate-version = "assorted_hooks.scripts.pyproject_validate_version:main"
-pyproject-check-unmaintained = "assorted_hooks.scripts.pyproject_check_unmaintained:main"
+# other hooks
+check-archived-hooks = "assorted_hooks.check_archived_hooks:main"
+check-github-issues = "assorted_hooks.check_github_issues:main"
+pyproject-check-unmaintained = "assorted_hooks.pyproject_check_unmaintained:main"
+pyproject-validate-version = "assorted_hooks.pyproject_validate_version:main"
 
 [dependency-groups]
 dev = [
-    "pre-commit>=4.0.1",
-    "ruff>=0.7.3",
-    "pyright>=1.1.389",
     "mypy>=1.13.0",
+    "pre-commit>=4.0.1",
+    "pyright>=1.1.389",
+    "ruff>=0.7.3",
+    "types-pyyaml>=6.0.12.20240917",
     { include-group = "test" },
 ]
 test = [
     "pytest>=8.3.3",
-    "pytest-benchmark>=5.1.0",
-    "pytest-cov>=6.0.0",
-    "pytest-rerunfailures>=14.0",
     "pytest-xdist>=3.6.1",
+    "pytest-rerunfailures>=14.0",
+    "pytest-cov>=6.0.0",
+    "pytest-benchmark>=5.1.0",
 ]
 # endregion project configuration ------------------------------------------------------
 
@@ -259,17 +265,16 @@ generated-members = ["numpy.*", "torch.*"]
 
 # region mypy configuration ------------------------------------------------------------
 [tool.mypy]
-# platform = "linux"
-# platform configuration
-enable_incomplete_feature = "NewGenericSyntax"
 files = ["src/", "tests/"]
+platform = "linux"
 plugins = []
 python_version = "3.12"
 
 disable_error_code = [
-    "func-returns-value", # REF: https://github.com/python/mypy/issues/6549
-    "overload-overlap",   # REF: https://mypy.readthedocs.io/en/stable/more_types.html#type-checking-the-variants
-    "method-assign",      # REF: https://github.com/python/mypy/issues/2427#issuecomment-1419206807
+    "func-returns-value", # SEE: https://github.com/python/mypy/issues/6549
+    # "overload-overlap",  # SEE: https://mypy.readthedocs.io/en/stable/more_types.html#type-checking-the-variants
+    "method-assign",    # SEE: https://github.com/python/mypy/issues/2427#issuecomment-1419206807
+    "no-overload-impl", # SEE: https://github.com/python/mypy/issues/17618
 ]
 
 # warnings
@@ -337,6 +342,7 @@ venvPath = "."
 pythonVersion = "3.12"
 pythonPlatform = "Linux"
 include = ["src/", "tests/"]
+typeCheckingMode = "standard"
 # endregion pyright Configuration ------------------------------------------------------
 
 
@@ -349,7 +355,9 @@ minversion = "8.0"
 testpaths = ["src/", "tests/"]
 addopts = [
     "--doctest-modules",
-    "--junit-xml=reports/pytest.xml",
+    # "--junit-xml=reports/pytest.xml",
+    # xdists options
+    "--numprocesses=0", # number of parallel processes
     # rerunfailures options
     #    "--reruns=",          # number of times to re-run failed tests. defaults to 0.
     #    "--reruns-delay=",    # add time (seconds) delay between reruns.
@@ -364,24 +372,11 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "serial",
 ]
-required_plugins = ["pytest-cov", "pytest-rerunfailures"]
-# endregion pytest configuration -------------------------------------------------------
-
-
-# region coverage configuration --------------------------------------------------------
-[tool.coverage]
-
-[tool.coverage.paths]
-source = ["src/assorted_hooks/"]
-
-[tool.coverage.report]
-exclude_lines = [
-    "@abstractmethod",
-    "@abc.abstractmethod",
-    "@overload",
-    "@typing.overload",
+required_plugins = [
+    "pytest-benchmark",
+    "pytest-cov",
+    "pytest-repeat",
+    "pytest-rerunfailures",
+    "pytest-xdist",
 ]
-
-[tool.coverage.run]
-source = ["src/"]
-# endregion coverage configuration -----------------------------------------------------
+# endregion pytest configuration -------------------------------------------------------

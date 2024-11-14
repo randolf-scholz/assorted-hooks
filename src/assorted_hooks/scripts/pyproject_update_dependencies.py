@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-r"""Updates the pyproject.toml dependencies to the currently installed versions.
+r"""Update dependencies in pyproject.toml to the currently installed versions.
+
+Note:
+    Needs to be run as script since it needs to execute `pip` from the target environment.
 
 References:
     - (Final) PEP 440 – Version Identification and dependency Specification

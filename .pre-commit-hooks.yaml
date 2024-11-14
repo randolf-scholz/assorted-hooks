@@ -1,53 +1,105 @@
 # Custom hooks for pre-commit.
 
 
-# region scripts -----------------------------------------------------------------------
-- id: pyproject-validate-version
-  name: pyproject-validate-version
-  description: "Validate python version (PEP-440)."
-  entry: "./src/assorted_hooks/scripts/pyproject_validate_version.py"
+# region ast-based ---------------------------------------------------------------------
+- id: python-direct-imports
+  name: python-direct-imports
+  description: "Checks that Bar is used instead of foo.Bar if both foo and Bar are imported."
+  entry: check-direct-imports
+  language: python
+  types: [python]
+- id: python-no-mixed-args
+  name: python-no-mixed-args
+  description: "Check for disallowing positional_or_keyword arguments."
+  entry: check-no-mixed-args
+  language: python
+  types: [python]
+- id: python-standard-generics
+  name: python-standard-generics
+  description: "Use standard generics (PEP-585): typing.Sequence -> abc.Sequence, typing.List -> list."
+  entry: check-standard-generics
+  language: python
+  types: [python]
+- id: python-check-dunder-all
+  name: python-check-dunder-all
+  description: "Check that __all__ exists. `test_*.py` files are excluded by default."
+  entry: check-dunder-all
+  exclude: '^(.*\/)?test_.*\.py$'
+  language: python
+  types: [python]
+- id: python-check-typing
+  name: python-check-typing
+  description: "AST-based linting rule for type-hints."
+  entry: check-typing
+  language: python
+  types: [python]
+- id: pyproject-check-deps
+  name: pyproject-check-deps
+  description: "Check that listed dependencies are used in code and vice-versa."
+  entry: pyproject-check-deps
   files: ^pyproject\.toml$
   language: script
   types: [toml]
+# endregion ast-based ------------------------------------------------------------------
+
+# region scripts -----------------------------------------------------------------------
+- id: python-check-clean-interface
+  name: python-check-clean-interface
+  description: "Check that __all__ holds all exported variables."
+  entry: python-check-clean-interface
+  language: script
+  require_serial: true # otherwise module is loaded multiple times
+  types: [python]
 - id: pyproject-update-deps
   name: pyproject-update-deps
   description: "Update dependencies to >=currently_installed. (default: manual)"
-  entry: "./src/assorted_hooks/scripts/pyproject_update_dependencies.py"
+  entry: pyproject-update-deps
   files: ^pyproject\.toml$
   language: script
   stages: [manual]
   types: [toml]
-- id: pyproject-check-deps
-  name: pyproject-check-deps
-  description: "Check that listed dependencies are used in code and vice-versa."
-  entry: "./src/assorted_hooks/scripts/pyproject_check_dependencies.py"
+# endregion scripts --------------------------------------------------------------------
+
+# region misc --------------------------------------------------------------------------
+- id: pyproject-validate-version
+  name: pyproject-validate-version
+  description: "Validate python version (PEP-440)."
+  entry: pyproject-validate-version
   files: ^pyproject\.toml$
   language: script
   types: [toml]
+- id: pyproject-check-unmaintained
+  name: pyproject-check-unmaintained
+  description: "Check for unmaintained dependencies"
+  files: ^pyproject\.toml$
+  language: python
+  types: [toml]
+  entry: pyproject-check-unmaintained
 - id: pyproject-check-unmaintained-local
   name: pyproject-check-unmaintained-local
   description: "Check for unmaintained dependencies"
   files: ^pyproject\.toml$
   language: script
   types: [toml]
-  entry: "./src/assorted_hooks/scripts/pyproject_check_unmaintained.py"
+  entry: pyproject-check-unmaintained
   args: ["--check-unlisted"]
-- id: python-check-clean-interface
-  name: python-check-clean-interface
-  description: "Check that __all__ holds all exported variables."
-  entry: "./src/assorted_hooks/scripts/check_clean_interface.py"
-  language: script
-  require_serial: true # otherwise module is loaded multiple times
-  types: [python]
-- id: pyright-concise
-  name: pyright-concise
-  description: 'Wrapper that produces more concise output for pyright.'
-  entry: sh -c '! script -c "pyright $*" /dev/null | grep --color=never -Po "(?<=$PWD/)(.*:.*)"' --
-  language: script
-  'types_or': [python, pyi]
+- id: check-archived-hooks
+  name: check-archived-hooks
+  description: "Check for references to archived hooks."
+  entry: check-archived-hooks
   require_serial: true
-  additional_dependencies: []
-# endregion scripts --------------------------------------------------------------------
+  language: python
+  types: [ yaml ]
+  files: ^\.pre-commit-config\.yaml$
+- id: check-resolved-github-issues
+  name: check-resolved-github-issues
+  description: "Check for references to resolved GitHub issues."
+  entry: check-github-issues
+  require_serial: true
+  language: python
+  stages: [ manual ]
+  types: [ text ]
+# endregion misc -----------------------------------------------------------------------
 
 
 # region pygrep ------------------------------------------------------------------------
@@ -120,69 +172,6 @@
 # endregion pygrep ---------------------------------------------------------------------
 
 
-# region ast-based ---------------------------------------------------------------------
-- id: python-direct-imports
-  name: python-direct-imports
-  description: "Checks that Bar is used instead of foo.Bar if both foo and Bar are imported."
-  entry: check-direct-imports
-  language: python
-  types: [python]
-- id: python-no-mixed-args
-  name: python-no-mixed-args
-  description: "Check for disallowing positional_or_keyword arguments."
-  entry: check-no-mixed-args
-  language: python
-  types: [python]
-- id: python-standard-generics
-  name: python-standard-generics
-  description: "Use standard generics (PEP-585): typing.Sequence -> abc.Sequence, typing.List -> list."
-  entry: check-standard-generics
-  language: python
-  types: [python]
-- id: python-check-dunder-all
-  name: python-check-dunder-all
-  description: "Check that __all__ exists. `test_*.py` files are excluded by default."
-  entry: check-dunder-all
-  exclude: '^(.*\/)?test_.*\.py$'
-  language: python
-  types: [python]
-- id: python-check-typing
-  name: python-check-typing
-  description: "AST-based linting rule for type-hints."
-  entry: check-typing
-  language: python
-  types: [python]
-# endregion ast-based ------------------------------------------------------------------
-
-
-# region misc --------------------------------------------------------------------------
-- id: pyproject-check-unmaintained
-  name: pyproject-check-unmaintained
-  description: "Check for unmaintained dependencies"
-  files: ^pyproject\.toml$
-  language: python
-  types: [toml]
-  entry: pyproject-check-unmaintained
-  additional_dependencies: [aiohttp]
-- id: check-archived-hooks
-  name: check-archived-hooks
-  description: "Check for references to archived hooks."
-  entry: check-archived-hooks
-  require_serial: true
-  language: python
-  types: [ yaml ]
-  files: ^\.pre-commit-config\.yaml$
-- id: check-resolved-github-issues
-  name: check-resolved-github-issues
-  description: "Check for references to resolved GitHub issues."
-  entry: check-github-issues
-  require_serial: true
-  language: python
-  stages: [ manual ]
-  types: [ text ]
-# endregion misc -----------------------------------------------------------------------
-
-
 # region latex -------------------------------------------------------------------------
 - id: chktex
   name: chktex
@@ -226,6 +215,5 @@
   language: python
   types_or: [ python, pyi ]
   require_serial: true
-  additional_dependencies: [ ]
   minimum_pre_commit_version: '2.9.2'
 # endregion pyright-wrapper ------------------------------------------------------------

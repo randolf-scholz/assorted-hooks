@@ -4,30 +4,23 @@ r"""Checks if referenced issues are closed."""
 __all__ = [
     # Constants
     "EXCLUDED",
-    "REPO_REGEX",
     # Functions
     "check_file",
-    "get_fullname",
     "get_repo_urls",
     "main",
-    "repo_is_archived",
 ]
 
 import argparse
-import re
 from pathlib import Path
 from typing import Any, Final
 
 import yaml
-from github import Github, RateLimitExceededException
+from github import Github
+
+from assorted_hooks.utils import get_repository
 
 EXCLUDED: Final[frozenset[str]] = frozenset({"local", "META"})
 r"""Excluded repositories."""
-
-REPO_REGEX: Final[re.Pattern] = re.compile(
-    r"github\.com/(?P<name>(?:[\w-]+/)*[\w-]+)(?:\.git)?"
-)
-r"""Regular expression to extract the repository name."""
 
 
 def get_repo_urls(pre_commit_config: dict, /) -> list[str]:
@@ -37,29 +30,6 @@ def get_repo_urls(pre_commit_config: dict, /) -> list[str]:
     if not urls:
         raise ValueError("No repositories found in the pre-commit configuration.")
     return urls
-
-
-def get_fullname(url: str, /) -> str:
-    r"""Extract the relevant information from a repository URL."""
-    match = REPO_REGEX.search(url)
-    if not match:
-        raise ValueError(f"Could not extract repository information from {url!r}")
-    return match.group("name")
-
-
-def repo_is_archived(git: Github, url: str, /) -> bool:
-    r"""Check if a repository is archived."""
-    name = get_fullname(url)
-    try:
-        repository = git.get_repo(name)
-    except RateLimitExceededException:
-        # TODO: Ask user for credentials and retry
-        print("Rate limit exceeded!")
-        raise SystemExit(1) from None
-    except Exception as exc:
-        raise RuntimeError(f"Could not get repository {name!r}!") from exc
-
-    return repository.archived
 
 
 def check_file(filepath: str | Path, /) -> int:
@@ -73,8 +43,9 @@ def check_file(filepath: str | Path, /) -> int:
     repos = get_repo_urls(config)
     violations = 0
 
-    for repo in repos:
-        if repo_is_archived(git, repo):
+    for url in repos:
+        repo = get_repository(git, url)
+        if repo.archived:
             violations += 1
             print(f"{fname!s} Repository {repo} is archived.")
 

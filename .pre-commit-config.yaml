@@ -57,13 +57,13 @@ repos:
     rev: v0.7.3
     hooks:
       - id: ruff-format
-        files: (^src/|^tests/)
+        files: "^src/|^tests/"
       - id: ruff
         name: ruff-isort
-        files: (^src/|^tests/)
+        files: "^src/|^tests/"
         args: ["--select", "I", "--fix"]
       - id: ruff
-        files: (^src/|^tests/)
+        files: "^src/|^tests/"
   # uv
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.5.1
@@ -89,23 +89,24 @@ repos:
     hooks:
       - id: shellcheck
         args: ["-x", "--shell=bash", "--color=always", "--format=gcc", "--"]
-  # mypy
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.13.0
-    hooks:
-      - id: mypy
-        files: (^src/|^tests/)
-        additional_dependencies: [types-all-latest, aiohttp, pytest]
-        args:
-          - "--scripts-are-modules"
-          - "--hide-error-context"
-          - "--hide-error-end"
-          - "--no-pretty"
-          # - "--no-error-summary"
-          - "--"
   # pyright
   - repo: https://github.com/RobertCraigie/pyright-python
     rev: v1.1.389
     hooks:
       - id: pyright
-        files: (^src/|^tests/)
+        files: "^src/|^tests/"
+  # mypy
+  - repo: local
+    hooks:
+    - id: mypy
+      name: mypy
+      language: system
+      require_serial: true
+      types_or: [python, pyi]
+      files: '^src/|^tests/'
+      entry: mypy
+      args:
+        - "--hide-error-context"
+        - "--hide-error-end"
+        - "--no-pretty"
+        - "--"

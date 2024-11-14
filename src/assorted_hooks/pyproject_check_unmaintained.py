@@ -1,211 +1,56 @@
 #!/usr/bin/env python
 r"""Detects unmaintained dependencies."""
 
+# TODO: add check if repo is archived
+
 __all__ = [
     # Constants
-    "VERSION_REGEX",
     "TIMEOUT",
+    # Classes
+    "Spec",
     # Functions
     "check_file",
     "check_pyproject",
-    "extract_names",
     "get_all_pypi_json",
-    "get_main_deps_from_pyproject",
     "get_latest_release",
     "get_local_packages",
-    "get_optional_deps_from_pyproject",
     "get_project_name_from_pyproject",
     "get_pypi_fallback",
     "get_pypi_json",
     "get_release_date",
-    "get_release_version",
-    "is_canonical",
     "main",
-    "normalize_name",
 ]
 
 import argparse
 import asyncio
 import importlib.metadata as importlib_metadata
 import json
-import re
 import tomllib
 import warnings
 from collections.abc import Iterable
 from datetime import datetime, timedelta
 from functools import partial
-from typing import Any, TypeAlias
+from typing import Any, NamedTuple, TypeAlias
 from urllib.request import urlopen
+
+from packaging.utils import NormalizedName, canonicalize_name
+
+from assorted_hooks.utils import (
+    get_canonical_names,
+    get_dev_requirements_from_pyproject,
+    get_requirements_from_pyproject,
+)
 
 JSON: TypeAlias = dict[str, Any]
 TIMEOUT = 3  # seconds
 
-# https://peps.python.org/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
-VERSION_REGEX = re.compile(
-    r"""(?ix:                                       # case-insensitive, verbose
-        v?(?:
-            (?:(?P<epoch>[0-9]+)!)?                           # epoch
-            (?P<release>[0-9]+(?:\.[0-9]+)*)                  # release segment
-            (?P<pre>                                          # pre-release
-                [-_.]?
-                (?P<pre_l>(?:a|b|c|rc|alpha|beta|pre|preview))
-                [-_.]?
-                (?P<pre_n>[0-9]+)?
-            )?
-            (?P<post>                                         # post release
-                (?:-(?P<post_n1>[0-9]+))
-                |
-                (?:
-                    [-_.]?
-                    (?P<post_l>post|rev|r)
-                    [-_.]?
-                    (?P<post_n2>[0-9]+)?
-                )
-            )?
-            (?P<dev>                                          # dev release
-                [-_.]?
-                (?P<dev_l>dev)
-                [-_.]?
-                (?P<dev_n>[0-9]+)?
-            )?
-        )
-        (?:\+(?P<local>[a-z0-9]+(?:[-_.][a-z0-9]+)*))?        # local version
-    )"""
-)
-r"""Regular expression for parsing version strings."""
 
+class Spec(NamedTuple):
+    r"""Package specification."""
 
-def is_canonical(version: str, /) -> bool:
-    r"""Check if the given version is a canonical version."""
-    return re.match(VERSION_REGEX, version) is not None
-
-
-def normalize_name(name: str, /) -> str:
-    r"""Replace non-word characters with underscores and make lowercase."""
-    return re.sub(r"\W", "_", name).lower()
-
-
-def extract_names(deps: Iterable[str], /, *, normalize_names: bool = True) -> list[str]:
-    r"""Simplify the dependencies by removing the version, duplicates, and normalizing."""
-    # We are only interested in the name, not the version.
-    # https://packaging.python.org/en/latest/specifications/dependency-specifiers/#names
-    name_regex = re.compile(r"^([A-Z0-9](?:[A-Z0-9._-]*[A-Z0-9])?)", re.IGNORECASE)
-
-    processed_deps = []
-    for dep in deps:
-        if match := name_regex.match(dep):
-            processed_deps.append(match.group())
-        else:
-            raise ValueError(f"Invalid dependency name: {dep!r}")
-
-    if normalize_names:
-        processed_deps = [normalize_name(dep) for dep in processed_deps]
-
-    # remove duplicates and sort
-    return sorted(set(processed_deps))
-
-
-def get_main_deps_from_pyproject(
-    pyproject: dict, /, *, normalize: bool = True, error_on_missing: bool = False
-) -> list[str]:
-    r"""Extracts the dependencies from the pyproject.toml file.
-
-    Args:
-        pyproject (dict): The parsed pyproject.toml file.
-        normalize (bool, optional):
-            If true, normalizes the package names (lowercase, underscores).
-            Defaults to True.
-        error_on_missing (bool=False):
-            If true, raises an error if the optional-dependencies key is missing.
-    """
-    # TODO: Add consistency check if multiple sections are realized
-    deps: list[str] = []
-
-    if main_deps := pyproject.get("project", {}).get("dependencies", {}):
-        deps += list(main_deps)
-
-    if poetry_cfg := pyproject.get("tool", {}).get("poetry", {}):
-        try:  # obtain dependencies from [tool.poetry.dependencies]
-            poetry_deps: dict[str, Any] = poetry_cfg["dependencies"]
-        except KeyError as exc:
-            if error_on_missing:
-                exc.add_note("Cannot find poetry dependencies in pyproject.toml.")
-                raise
-        else:
-            # remove python from the dependencies
-            if "python" in poetry_deps:
-                poetry_deps.pop("python")
-            deps += list(poetry_deps)
-
-    if not deps:
-        warnings.warn("No dependencies found in pyproject.toml.")
-
-    # remove duplicates and sort
-    deps = sorted(set(deps))
-    return extract_names(deps, normalize_names=normalize)
-
-
-def get_optional_deps_from_pyproject(
-    pyproject: dict,
-    /,
-    *,
-    normalize: bool = True,
-    error_on_missing: bool = False,
-) -> list[str]:
-    r"""Extracts the optional dependencies from the pyproject.toml file.
-
-    Args:
-        pyproject (dict): The parsed pyproject.toml file.
-        normalize (bool, optional):
-            If true, normalizes the package names (lowercase, underscores).
-            Defaults to True.
-        error_on_missing (bool=False):
-            If true, raises an error if the optional-dependencies key is missing.
-    """
-    # TODO: Add consistency check if multiple sections are realized
-    deps: list[str] = []
-
-    if dep_groups := pyproject.get("dependency-groups", {}):
-        for key in dep_groups:
-            if key.startswith("test"):
-                deps += dep_groups[key]
-
-    if opt_deps := pyproject.get("project", {}).get("optional-dependencies", {}):
-        for group in opt_deps.values():
-            deps += list(group)
-
-    if pdm_opts := pyproject.get("tool", {}).get("pdm", {}):
-        try:  # obtain dependencies from [tool.pdm.dev-dependencies]
-            pdm_deps: dict[str, list[str]] = pdm_opts["dev-dependencies"]
-        except KeyError as exc:
-            if error_on_missing:
-                exc.add_note("Cannot find development-dependencies in pyproject.toml.")
-                raise
-        else:
-            # concatenate the lists
-            for pdm_group in pdm_deps.values():
-                deps += list(pdm_group)
-
-    if poetry_opts := pyproject.get("tool", {}).get("poetry", {}):
-        try:  # obtain dependencies from [tool.poetry.group.*.dependencies]
-            poetry_groups: dict[str, dict] = poetry_opts["group"]
-        except KeyError as exc:
-            if error_on_missing:
-                exc.add_note("Cannot find optional-dependencies in pyproject.toml.")
-                raise
-        else:
-            for dep_group in poetry_groups.values():
-                deps += list(dep_group["dependencies"])
-
-    if not deps:
-        warnings.warn(
-            "No optional/development dependencies found in pyproject.toml."
-            "If there are none, use with option --no-check-optional."
-        )
-
-    # remove duplicates and sort
-    deps = sorted(set(deps))
-    return extract_names(deps, normalize_names=normalize)
+    version: str
+    summary: str
+    license: str
 
 
 async def get_pypi_json(pkg: str, /, *, session: Any) -> JSON:
@@ -251,15 +96,6 @@ async def get_all_pypi_json(packages: Iterable[str], /) -> dict[str, JSON]:
     return dict(zip(packages, responses, strict=True))
 
 
-def get_release_version(version: str, /) -> tuple[int, ...]:
-    r"""Get the release version as a tuple of integers."""
-    match = re.match(VERSION_REGEX, version)
-    if match is None:
-        warnings.warn(f"Invalid version: {version}", stacklevel=2)
-        return (0,)
-    return tuple(int(x) for x in match.group("release").split("."))
-
-
 def get_release_date(releases: list[JSON], /) -> datetime:
     r"""Get the upload date of the earliest release."""
     uploads = [datetime.fromisoformat(release["upload_time"]) for release in releases]
@@ -281,34 +117,26 @@ def get_latest_release(metadata: JSON, /) -> tuple[str, datetime]:
     return latest_release, upload_dates[latest_release]
 
 
-def get_project_name_from_pyproject(
-    pyproject: dict, /, *, normalize: bool = True
-) -> str:
+def get_project_name_from_pyproject(pyproject: dict, /) -> NormalizedName:
     r"""Extracts the project name from the pyproject.toml file."""
     try:
         project_name = pyproject["project"]["name"]
     except KeyError as exc:
         exc.add_note("Cannot find project name in pyproject.toml.")
         raise
-
-    if normalize:
-        return normalize_name(project_name)
-
-    return project_name
+    return canonicalize_name(project_name)
 
 
-def get_local_packages(*, normalize: bool = True) -> dict[str, tuple[str, str, str]]:
+def get_local_packages() -> dict[NormalizedName, tuple[str, str, str]]:
     r"""Get the packages installed in the current environment."""
-    name_fn = normalize_name if normalize else lambda x: x
-    packages = {
-        name_fn(x.name): (
+    return {
+        canonicalize_name(x.name): (
             x.version,
             x.metadata["Summary"],
             x.metadata["License"],
         )
         for x in importlib_metadata.distributions()
     }
-    return packages
 
 
 def check_pyproject(
@@ -324,17 +152,24 @@ def check_pyproject(
 
     # extract project name and dependencies (normalizing names)
     project_name = get_project_name_from_pyproject(pyproject)
-    project_dependencies: list[str] = get_main_deps_from_pyproject(pyproject)
-    project_optional_deps: list[str] = get_optional_deps_from_pyproject(pyproject)
+    project_main_deps: list[NormalizedName] = sorted(
+        canonicalize_name(req.name)
+        for req in get_requirements_from_pyproject(pyproject)
+    )
+    project_dev_deps: list[NormalizedName] = sorted(
+        canonicalize_name(req.name)
+        for req in get_dev_requirements_from_pyproject(pyproject)
+    )
+    local_packages: list[NormalizedName]
 
     # get local packages
     if check_unlisted:
-        local_packages: list[str] = sorted(get_local_packages())
+        local_packages = sorted(get_local_packages())
         # exclude the project itself
         if project_name in local_packages:
             local_packages.remove(project_name)
         # add missing declared dependencies
-        for dep in project_dependencies + project_optional_deps:
+        for dep in project_main_deps + project_dev_deps:
             if dep not in local_packages:
                 warnings.warn(
                     f"Dependency {dep!r} appears to not be installed.",
@@ -342,34 +177,36 @@ def check_pyproject(
                 )
                 local_packages.append(dep)
     else:
-        local_packages = project_dependencies + project_optional_deps
+        local_packages = project_main_deps + project_dev_deps
 
     # get the latest versions of all packages
-    pypi_packages = asyncio.run(get_all_pypi_json(local_packages))
-    latest_releases: dict[str, tuple[str, datetime]] = {}
+    pypi_packages: dict[str, JSON] = asyncio.run(get_all_pypi_json(local_packages))
+    latest_releases: dict[NormalizedName, tuple[str, datetime]] = {}
     for pkg, pkg_metadata in pypi_packages.items():
         try:
-            latest_releases[pkg] = get_latest_release(pkg_metadata)
+            latest_release = get_latest_release(pkg_metadata)
         except Exception as exc:
             exc.add_note(
                 f"Failed to get latest release for {pkg!r}"
                 f"\n{local_packages=}"
                 f"\n{project_name=}"
-                f"\n{project_dependencies=}"
-                f"\n{project_optional_deps=}"
+                f"\n{project_main_deps=}"
+                f"\n{project_dev_deps=}"
             )
             raise
+        name = canonicalize_name(pkg)
+        latest_releases[name] = latest_release
 
     # check which packages are unmaintained
-    unmaintained_packages: set[str] = {
+    unmaintained_packages: set[NormalizedName] = {
         pkg
         for pkg, (_, upload_date) in latest_releases.items()
         if upload_date < threshold_date
     }
     # normalize the names
-    unmaintained_packages = set(extract_names(unmaintained_packages))
-    bad_direct_deps = unmaintained_packages & set(project_dependencies)
-    bad_optional_deps = unmaintained_packages & set(project_optional_deps)
+    unmaintained_packages = get_canonical_names(unmaintained_packages)
+    bad_direct_deps = unmaintained_packages & set(project_main_deps)
+    bad_optional_deps = unmaintained_packages & set(project_dev_deps)
     bad_unlisted_deps = unmaintained_packages - (bad_direct_deps | bad_optional_deps)
 
     # Split unmaintained packages into 3 groups:

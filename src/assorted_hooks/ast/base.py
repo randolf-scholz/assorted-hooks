@@ -20,12 +20,12 @@ class Violation:
     r"""The line number of the violation."""
 
     @abstractmethod
-    def trigger(self, node: ast.AST) -> bool:
+    def trigger(self, node: ast.AST, /) -> bool:
         r"""Trigger the violation."""
         ...
 
     @abstractmethod
-    def check_disabled(self, node: ast.AST) -> bool:
+    def check_disabled(self, node: ast.AST, /) -> bool:
         r"""Check if the violation is disabled.
 
         We look for comments like `# noqa: {self.CODE}`.
