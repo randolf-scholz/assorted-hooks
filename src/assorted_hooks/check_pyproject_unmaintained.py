@@ -146,6 +146,7 @@ def check_pyproject(
     check_optional: bool = True,
     check_unlisted: bool = False,
     threshold: int = 1000,
+    debug: bool = False,
 ) -> int:
     r"""Check the pyproject.toml file for unmaintained dependencies."""
     threshold_date = datetime.now() - timedelta(days=threshold)
@@ -242,6 +243,12 @@ def check_pyproject(
                 f"(latest release: {latest_version} from {upload_date})"
             )
 
+    if debug:
+        print(f"Checked {len(local_packages)} packages.")
+        for pkg in local_packages:
+            version, upload_date = latest_releases[pkg]
+            print(f"  {pkg!r:<32}: {version!r:<32} from {upload_date!s}")
+
     return violations
 
 
@@ -304,6 +311,7 @@ def main() -> None:
             check_optional=args.check_optional,
             check_unlisted=args.check_unlisted,
             threshold=args.threshold,
+            debug=args.debug,
         )
     except Exception as exc:
         exc.add_note(f'Checking file "{args.pyproject_file!s}" failed!')

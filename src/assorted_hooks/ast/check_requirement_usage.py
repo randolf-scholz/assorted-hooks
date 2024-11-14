@@ -21,7 +21,7 @@ __all__ = [
     # Classes
     "GroupedRequirements",
     # Functions
-    "calculate_dependencies",
+    "resolve_dependencies",
     "check_file",
     "detect_dependencies",
     "get_module",
@@ -309,7 +309,7 @@ def detect_dependencies(filename: str | Path, /) -> GroupedRequirements:
     return grouped_deps
 
 
-def calculate_dependencies(
+def resolve_dependencies(
     *,
     imported_deps: set[NormalizedName],
     declared_deps: set[NormalizedName],
@@ -377,6 +377,7 @@ def check_file(
     error_on_undeclared_test_deps: bool = True,
     error_on_unused_deps: bool = True,
     error_on_unused_test_deps: bool = False,
+    debug: bool = False,
 ) -> int:
     r"""Check a single file."""
     violations = 0
@@ -405,13 +406,25 @@ def check_file(
     imported_deps = get_canonical_names(detected_deps.third_party)
     first_party_deps = get_canonical_names(detected_deps.first_party)
     # get the normalized project name
-    undeclared_deps, unused_deps, missing_deps = calculate_dependencies(
+    undeclared_deps, unused_deps, missing_deps = resolve_dependencies(
         imported_deps=imported_deps,
         declared_deps=declared_deps,
         excluded_deps=excluded_deps,
         excluded_declared_deps=get_canonical_names(known_unused_deps),
         excluded_imported_deps=get_canonical_names(known_undeclared_deps),
     )
+
+    if debug:
+        print(
+            f"Resolved dependencies:"
+            f"\n\tdeclared_deps={sorted(declared_deps)}"
+            f"\n\timported_deps={sorted(imported_deps)}"
+            f"\n\texcluded_deps={sorted(excluded_deps)}"
+            f"\n\tfirst_party_deps={sorted(first_party_deps)}"
+            f"\n\tundeclared_deps={sorted(undeclared_deps)}"
+            f"\n\tunused_deps={sorted(unused_deps)}"
+            f"\n\tmissing_deps={sorted(missing_deps)}"
+        )
 
     if undeclared_deps and error_on_undeclared_deps:
         violations += 1
@@ -442,7 +455,7 @@ def check_file(
     # we can safely ignore any undeclared dependencies, if they are part of the declared
     # project dependencies.
 
-    undeclared_test_deps, unused_test_deps, missing_test_deps = calculate_dependencies(
+    undeclared_test_deps, unused_test_deps, missing_test_deps = resolve_dependencies(
         imported_deps=imported_test_deps,
         declared_deps=declared_test_deps,
         excluded_deps=excluded_deps,
@@ -613,6 +626,8 @@ def main() -> None:
             error_on_undeclared_deps=args.error_on_undeclared_deps,
             error_on_undeclared_test_deps=args.error_on_undeclared_test_deps,
             error_on_missing_test_deps=args.error_on_missing_test_deps,
+            # debug
+            debug=args.debug,
         )
     except Exception as exc:
         exc.add_note(f"Checking file {args.pyproject_file!s} failed!")

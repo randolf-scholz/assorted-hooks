@@ -4,7 +4,7 @@ import tomllib
 from contextlib import redirect_stdout
 from io import BytesIO, StringIO
 
-from assorted_hooks.pyproject_check_unmaintained import check_pyproject
+from assorted_hooks.check_pyproject_unmaintained import check_pyproject
 
 # NOTE: need bytes for `tomllib.load`.
 TEST_PYPROJECT_TOML = rb"""

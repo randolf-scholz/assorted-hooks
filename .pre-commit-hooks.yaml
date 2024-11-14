@@ -33,10 +33,10 @@
   entry: check-typing
   language: python
   types: [python]
-- id: pyproject-check-deps
-  name: pyproject-check-deps
+- id: check-requirement-usage
+  name: check-requirement-usage
   description: "Check that listed dependencies are used in code and vice-versa."
-  entry: pyproject-check-deps
+  entry: check-requirement-usage
   files: ^pyproject\.toml$
   language: script
   types: [toml]
@@ -61,27 +61,27 @@
 # endregion scripts --------------------------------------------------------------------
 
 # region misc --------------------------------------------------------------------------
-- id: pyproject-validate-version
-  name: pyproject-validate-version
-  description: "Validate python version (PEP-440)."
-  entry: pyproject-validate-version
+- id: check-pyproject-requirements
+  name: check-pyproject-requirements
+  description: "Check that requirements are well-formed."
+  entry: check-pyproject-requirements
   files: ^pyproject\.toml$
   language: script
   types: [toml]
-- id: pyproject-check-unmaintained
-  name: pyproject-check-unmaintained
+- id: check-pyproject-unmaintained
+  name: check-pyproject-unmaintained
   description: "Check for unmaintained dependencies"
   files: ^pyproject\.toml$
   language: python
   types: [toml]
-  entry: pyproject-check-unmaintained
-- id: pyproject-check-unmaintained-local
-  name: pyproject-check-unmaintained-local
+  entry: check-pyproject-unmaintained
+- id: check-pyproject-unmaintained-local
+  name: check-pyproject-unmaintained
   description: "Check for unmaintained dependencies"
   files: ^pyproject\.toml$
   language: script
   types: [toml]
-  entry: pyproject-check-unmaintained
+  entry: check-pyproject-unmaintained
   args: ["--check-unlisted"]
 - id: check-archived-hooks
   name: check-archived-hooks

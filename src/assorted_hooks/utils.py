@@ -19,6 +19,8 @@ __all__ = [
     "get_requirements_from_pyproject",
     "get_dev_requirements_from_pyproject",
     "get_canonical_names",
+    "yield_deps",
+    "yield_dev_deps",
 ]
 
 import argparse
@@ -52,7 +54,17 @@ def _iter_poetry_group(group: dict[str, Any], /) -> Iterator[str]:
                 yield key
 
 
-def _yield_deps(pyproject: dict, pattern: str | Pattern = "", /) -> Iterator[str]:
+def _iter_dep_group(group: Iterable[str | dict[str, Any]], /) -> Iterator[str]:
+    """Iterate over the dependencies in a group.
+
+    Note: [dependency-groups] allows {include-group = "group"} entries that we need to skip
+    """
+    for dep in group:
+        if isinstance(dep, str):
+            yield dep
+
+
+def yield_deps(pyproject: dict, pattern: str | Pattern = "", /) -> Iterator[str]:
     r"""Yield the dependencies from the pyproject.toml file.
 
     Args:
@@ -80,7 +92,7 @@ def _yield_deps(pyproject: dict, pattern: str | Pattern = "", /) -> Iterator[str
     yield from _iter_poetry_group(poetry_deps)
 
 
-def _yield_dev_deps(pyproject: dict, pattern: str | Pattern = "", /) -> Iterator[str]:
+def yield_dev_deps(pyproject: dict, pattern: str | Pattern = "", /) -> Iterator[str]:
     r"""Yield the development dependencies from the pyproject.toml file.
 
     Args:
@@ -99,7 +111,7 @@ def _yield_dev_deps(pyproject: dict, pattern: str | Pattern = "", /) -> Iterator
     dev_deps = pyproject.get("dependency-groups", {})
     for key, dep_group in dev_deps.items():
         if regex.match(key):
-            yield from dep_group
+            yield from _iter_dep_group(dep_group)
 
     # parse [tool.pdm.dev-dependencies]
     pdm_deps = pyproject.get("tool", {}).get("pdm", {}).get("dev-dependencies", {})
@@ -127,7 +139,7 @@ def get_requirements_from_pyproject(
     reqs: set[Requirement] = set()
     errors: dict[str, InvalidRequirement] = {}
 
-    for dep in _yield_deps(pyproject, pattern):
+    for dep in yield_deps(pyproject, pattern):
         try:
             req = Requirement(dep)
         except InvalidRequirement as exc:
@@ -156,7 +168,7 @@ def get_dev_requirements_from_pyproject(
     reqs: set[Requirement] = set()
     errors: dict[str, InvalidRequirement] = {}
 
-    for dep in _yield_dev_deps(pyproject, pattern):
+    for dep in yield_dev_deps(pyproject, pattern):
         try:
             req = Requirement(dep)
         except InvalidRequirement as exc:
