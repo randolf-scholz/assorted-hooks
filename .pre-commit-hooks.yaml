@@ -38,27 +38,9 @@
   description: "Check that listed dependencies are used in code and vice-versa."
   entry: check-requirement-usage
   files: ^pyproject\.toml$
-  language: script
+  language: python
   types: [toml]
 # endregion ast-based ------------------------------------------------------------------
-
-# region scripts -----------------------------------------------------------------------
-- id: python-check-clean-interface
-  name: python-check-clean-interface
-  description: "Check that __all__ holds all exported variables."
-  entry: python-check-clean-interface
-  language: script
-  require_serial: true # otherwise module is loaded multiple times
-  types: [python]
-- id: pyproject-update-deps
-  name: pyproject-update-deps
-  description: "Update dependencies to >=currently_installed. (default: manual)"
-  entry: pyproject-update-deps
-  files: ^pyproject\.toml$
-  language: script
-  stages: [manual]
-  types: [toml]
-# endregion scripts --------------------------------------------------------------------
 
 # region misc --------------------------------------------------------------------------
 - id: check-pyproject-requirements
@@ -66,7 +48,7 @@
   description: "Check that requirements are well-formed."
   entry: check-pyproject-requirements
   files: ^pyproject\.toml$
-  language: script
+  language: python
   types: [toml]
 - id: check-pyproject-unmaintained
   name: check-pyproject-unmaintained
@@ -79,7 +61,7 @@
   name: check-pyproject-unmaintained
   description: "Check for unmaintained dependencies"
   files: ^pyproject\.toml$
-  language: script
+  language: python
   types: [toml]
   entry: check-pyproject-unmaintained
   args: ["--check-unlisted"]
@@ -170,6 +152,25 @@
   language: pygrep
   types: [python]
 # endregion pygrep ---------------------------------------------------------------------
+
+
+# region scripts -----------------------------------------------------------------------
+- id: check-clean-interface
+  name: check-clean-interface
+  description: "Check that __all__ holds all exported variables."
+  entry: './src/assorted_hooks/scripts/check_clean_interface.py'
+  language: script
+  require_serial: true # otherwise module is loaded multiple times
+  types: [python]
+- id: update-pyproject-requirements
+  name: update-pyproject-requirements
+  description: "Update dependencies to >=currently_installed. (default: manual)"
+  entry: './src/assorted_hooks/scripts/update_pyproject_requirements.py'
+  files: ^pyproject\.toml$
+  language: script
+  stages: [manual]
+  types: [toml]
+# endregion scripts --------------------------------------------------------------------
 
 
 # region latex -------------------------------------------------------------------------
