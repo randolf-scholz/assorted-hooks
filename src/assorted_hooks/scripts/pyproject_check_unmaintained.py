@@ -138,7 +138,7 @@ def get_main_deps_from_pyproject(
             deps += list(poetry_deps)
 
     if not deps:
-        raise ValueError("No dependencies found in pyproject.toml.")
+        warnings.warn("No dependencies found in pyproject.toml.")
 
     # remove duplicates and sort
     deps = sorted(set(deps))
@@ -198,7 +198,7 @@ def get_optional_deps_from_pyproject(
                 deps += list(dep_group["dependencies"])
 
     if not deps:
-        raise ValueError(
+        warnings.warn(
             "No optional/development dependencies found in pyproject.toml."
             "If there are none, use with option --no-check-optional."
         )

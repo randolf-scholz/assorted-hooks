@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 # region project configuration ---------------------------------------------------------
 [project]
 name = "assorted-hooks"
-version = "0.3.79"
-authors = [{name="Randolf Scholz", email="randolf.scholz@gmail.com"}]
+version = "0.3.80"
+authors = [{ name = "Randolf Scholz", email = "randolf.scholz@gmail.com" }]
 description = "Custom pre-commit hooks"
 
 # package content
-license = {file="LICENSE"}
+license = { file = "LICENSE" }
 readme = "README.md"
 
 # meta-information
@@ -28,11 +28,7 @@ classifiers = [
 
 # dependencies
 requires-python = ">=3.12"
-dependencies = [
-    "aiohttp>=3.10.10",
-    "pygithub>=2.5.0",
-    "pyyaml>=6.0.2",
-]
+dependencies = ["aiohttp>=3.11.0", "pygithub>=2.5.0", "pyyaml>=6.0.2"]
 
 [project.urls]
 homepage = "https://github.com/randolf-scholz/assorted-hooks"
@@ -57,8 +53,20 @@ pyproject-validate-version = "assorted_hooks.scripts.pyproject_validate_version:
 pyproject-check-unmaintained = "assorted_hooks.scripts.pyproject_check_unmaintained:main"
 
 [dependency-groups]
-dev = ["pre-commit>=4.0.1", "ruff>=0.7.2", "pyright>=1.1.388", "mypy>=1.13.0"]
-test = ["pytest>=8.3.3", "pytest-benchmark>=5.1.0", "pytest-cov>=6.0.0", "pytest-rerunfailures>=14.0", "pytest-xdist>=3.6.1"]
+dev = [
+    "pre-commit>=4.0.1",
+    "ruff>=0.7.3",
+    "pyright>=1.1.389",
+    "mypy>=1.13.0",
+    { include-group = "test" },
+]
+test = [
+    "pytest>=8.3.3",
+    "pytest-benchmark>=5.1.0",
+    "pytest-cov>=6.0.0",
+    "pytest-rerunfailures>=14.0",
+    "pytest-xdist>=3.6.1",
+]
 # endregion project configuration ------------------------------------------------------
 
 
@@ -76,102 +84,103 @@ fixable = ["ALL"]
 unfixable = []
 
 select = [
-    "A",     # builtins
-    "ARG",   # unused-arguments
-    "B",     # bugbear
-    "C4",    # comprehensions
-    "D",     # pydocstyle
-    "E",     # pycodestyle
-    "EXE",   # executable
-    "F",     # pyflakes
-    "FBT",   # boolean-trap
-    "FURB",  # refurb
-    "I",     # import-order
-    "ICN",   # import-conventions
-    "ISC",   # implicit-str-concat
-    "NPY",   # numpy
-    "N",     # naming
-    "PERF",  # performance related
-    "PIE",   # pie
-    "PL",    # pylint
-    "PT",    # pytest
+    "A",    # builtins
+    "ARG",  # unused-arguments
+    "B",    # bugbear
+    "C4",   # comprehensions
+    "D",    # pydocstyle
+    "E",    # pycodestyle
+    "EXE",  # executable
+    "F",    # pyflakes
+    "FBT",  # boolean-trap
+    "FURB", # refurb
+    "I",    # import-order
+    "ICN",  # import-conventions
+    "ISC",  # implicit-str-concat
+    "NPY",  # numpy
+    "N",    # naming
+    "PERF", # performance related
+    "PIE",  # pie
+    "PL",   # pylint
+    "PT",   # pytest
     # "PTH",   # path
-    "PYI",   # pyi
+    "PYI", # pyi
     # "RET",   # return
-    "RUF",   # ruff specific
-    "S101",  # use of `assert`
-    "SIM",   # simplify
-    "TCH",   # type-checking
-    "TRY",   # tryceratops
-    "UP",    # pyupgrade
-    "W",     # warnings
+    "RUF",  # ruff specific
+    "S101", # use of `assert`
+    "SIM",  # simplify
+    "TCH",  # type-checking
+    "TRY",  # tryceratops
+    "UP",   # pyupgrade
+    "W",    # warnings
 ]
 ignore = [
     # annotations
-    "ANN",      # missing-annotations
+    "ANN",  # missing-annotations
+    "B028", # no-explicit-stacklevel
     # unused-arguments
-    "ARG003",   # Unused class method argument
+    "ARG003", # Unused class method argument
     # commas
-    "COM",      # comma
+    "COM", # comma
     # copyright
-    "CPY",      # missing-copyright
+    "CPY", # missing-copyright
     # pydocstyle
-    "D102",     # Missing docstring in public method
-    "D103",     # Missing docstring in public function
-    "D105",     # Missing docstring in magic method
-    "D107",     # Missing docstring in __init__
+    "D102", # Missing docstring in public method
+    "D103", # Missing docstring in public function
+    "D105", # Missing docstring in magic method
+    "D107", # Missing docstring in __init__
     # pycodestyle
-    "E201",     # Whitespace after '('
-    "E202",     # Whitespace before ')'
-    "E203",     # Whitespace before ':'
-    "E221",     # Multiple spaces before operator
+    "E201", # Whitespace after '('
+    "E202", # Whitespace before ')'
+    "E203", # Whitespace before ':'
+    "E221", # Multiple spaces before operator
     # "E226",   # Missing whitespace around arithmetic operator
     # "E231",   # Missing whitespace after ','
-    "E241",     # Multiple spaces after comma
-    "E271",     # Multiple spaces after keyword
-    "E272",     # Multiple spaces before keyword
+    "E241", # Multiple spaces after comma
+    "E271", # Multiple spaces after keyword
+    "E272", # Multiple spaces before keyword
     # error-messages
-    "EM",       # error-messages
+    "EM", # error-messages
     # fixme
-    "FIX",      # fixme
+    "FIX", # fixme
     # refurb
-    "FURB140",  # reimplemented-starmap (less efficient than comprehension)
+    "FURB140", # reimplemented-starmap (less efficient than comprehension)
     # naming
-    "N801",     # class names should use CapWords convention
-    "N806",     # variable in function should be lowercase
-    "N812",     # lowercase imported as non-lowercase
+    "N801", # class names should use CapWords convention
+    "N806", # variable in function should be lowercase
+    "N812", # lowercase imported as non-lowercase
     # pylint
-    "PLC2401",  # non-ascii-name
-    "PLC2801",  # unnecessary-dunder-call
-    "PLR0124",  # Name compared with itself
-    "PLR2004",  # Magic value used in comparison
-    "PLR6104",  # non-augmented-assignment
-    "PLR6301",  # no-self-use
+    "PLC2401", # non-ascii-name
+    "PLC2801", # unnecessary-dunder-call
+    "PLR0124", # Name compared with itself
+    "PLR2004", # Magic value used in comparison
+    "PLR6104", # non-augmented-assignment
+    "PLR6301", # no-self-use
     # pylint "too-many-*" rules
-    "PLR0904",  # Too many public methods
-    "PLR0911",  # Too many return statements
-    "PLR0912",  # Too many branches
-    "PLR0913",  # Too many arguments in function definition
-    "PLR0914",  # Too many local variables
-    "PLR0915",  # Too many statements
-    "PLR0916",  # Too many boolean expressions
-    "PLR0917",  # Too many positional arguments
+    "PLR0904", # Too many public methods
+    "PLR0911", # Too many return statements
+    "PLR0912", # Too many branches
+    "PLR0913", # Too many arguments in function definition
+    "PLR0914", # Too many local variables
+    "PLR0915", # Too many statements
+    "PLR0916", # Too many boolean expressions
+    "PLR0917", # Too many positional arguments
     # PYI
-    "PYI019",   # Methods like ... should return typing.Self instead of custom TypeVar
+    "PYI019", # Methods like ... should return typing.Self instead of custom TypeVar
     # RUFF
-    "RUF001",   # ambiguous-unicode-character-string
-    "RUF002",   # ambiguous-unicode-character-docstring
-    "RUF003",   # ambiguous-unicode-character-comment
-    "RUF012",   # Mutable class attributes should be annotated with typing.ClassVar # FIXME: PEP 603
-    "RUF013",   # PEP 484 prohibits implicit Optional
-    "RUF022",   # __all__ not sorted
+    "RUF001", # ambiguous-unicode-character-string
+    "RUF002", # ambiguous-unicode-character-docstring
+    "RUF003", # ambiguous-unicode-character-comment
+    "RUF012", # Mutable class attributes should be annotated with typing.ClassVar # FIXME: PEP 603
+    "RUF013", # PEP 484 prohibits implicit Optional
+    "RUF022", # __all__ not sorted
     # todo
-    "TD",       # todo
+    "TD", # todo
     # tryceratops
-    "TRY003",   # Avoid specifying long messages outside the exception class
+    "TRY003", # Avoid specifying long messages outside the exception class
     # pyupgrade
-    "UP007",    # Use `X | Y` for type annotations
-    "UP035",    # deprecated-import
+    "UP007", # Use `X | Y` for type annotations
+    "UP035", # deprecated-import
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -207,29 +216,29 @@ docstring-code-line-length = "dynamic"
 [tool.pylint."MESSAGES CONTROL"]
 enable = ["useless-suppression"]
 disable = [
-    "C0103",  # invalid-name
-    "C0144",  # non-ascii-name
-    "C0204",  # bad-mcs-classmethod-argument
-    "C0415",  # import-outside-toplevel
-    "E0611",  # no-name-in-module
-    "E1101",  # no-member  # FIXME: too many false positives
-    "E1121",  # too-many-function-args  # too many false positives
-    "E1123",  # unexpected-keyword-arg  # too many false positives
-    "E1130",  # invalid-unary-operand-type
-    "R0801",  # similar lines
-    "R0902",  # too-many-instance-attributes
-    "R0903",  # too-few-public-methods
-    "R0911",  # too-many-return-statements
-    "R0913",  # too-many-arguments
-    "R0914",  # too-many-locals
-    "R0915",  # too-many-statements
+    "C0103", # invalid-name
+    "C0144", # non-ascii-name
+    "C0204", # bad-mcs-classmethod-argument
+    "C0415", # import-outside-toplevel
+    "E0611", # no-name-in-module
+    "E1101", # no-member  # FIXME: too many false positives
+    "E1121", # too-many-function-args  # too many false positives
+    "E1123", # unexpected-keyword-arg  # too many false positives
+    "E1130", # invalid-unary-operand-type
+    "R0801", # similar lines
+    "R0902", # too-many-instance-attributes
+    "R0903", # too-few-public-methods
+    "R0911", # too-many-return-statements
+    "R0913", # too-many-arguments
+    "R0914", # too-many-locals
+    "R0915", # too-many-statements
     # "W0221",  # arguments-differ
     # "W0511",  # (fixme) (todos)
-    "W1113",  # keyword-arg-before-vararg
-    "W2301",  # unnecessary-ellipsis
+    "W1113", # keyword-arg-before-vararg
+    "W2301", # unnecessary-ellipsis
 ]
 fail-on = [
-    "C0116",  # missing-function-docstring
+    "C0116", # missing-function-docstring
 ]
 fail-under = 9.0
 
@@ -258,9 +267,9 @@ plugins = []
 python_version = "3.12"
 
 disable_error_code = [
-    "func-returns-value",  # REF: https://github.com/python/mypy/issues/6549
-    "overload-overlap",  # REF: https://mypy.readthedocs.io/en/stable/more_types.html#type-checking-the-variants
-    "method-assign",  # REF: https://github.com/python/mypy/issues/2427#issuecomment-1419206807
+    "func-returns-value", # REF: https://github.com/python/mypy/issues/6549
+    "overload-overlap",   # REF: https://mypy.readthedocs.io/en/stable/more_types.html#type-checking-the-variants
+    "method-assign",      # REF: https://github.com/python/mypy/issues/2427#issuecomment-1419206807
 ]
 
 # warnings
@@ -342,23 +351,20 @@ addopts = [
     "--doctest-modules",
     "--junit-xml=reports/pytest.xml",
     # rerunfailures options
-#    "--reruns=",          # number of times to re-run failed tests. defaults to 0.
-#    "--reruns-delay=",    # add time (seconds) delay between reruns.
-#    "--only-rerun=",      # If passed, only rerun errors matching the regex provided.
+    #    "--reruns=",          # number of times to re-run failed tests. defaults to 0.
+    #    "--reruns-delay=",    # add time (seconds) delay between reruns.
+    #    "--only-rerun=",      # If passed, only rerun errors matching the regex provided.
     # coverage options
-#    "--cov=assorted_hooks",  # Path or package name to measure during execution (multi-allowed).
-#    "--cov-report=term:skip-covered",
-#    "--cov-report=xml:reports/coverage.xml",
-#    "--cov-report=annotate:reports/coverage",
+    #    "--cov=assorted_hooks",  # Path or package name to measure during execution (multi-allowed).
+    #    "--cov-report=term:skip-covered",
+    #    "--cov-report=xml:reports/coverage.xml",
+    #    "--cov-report=annotate:reports/coverage",
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "serial",
 ]
-required_plugins = [
-    "pytest-cov",
-    "pytest-rerunfailures",
-]
+required_plugins = ["pytest-cov", "pytest-rerunfailures"]
 # endregion pytest configuration -------------------------------------------------------
 
 
