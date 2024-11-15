@@ -1,6 +1,5 @@
 # Custom hooks for pre-commit.
 
-
 # region ast-based ---------------------------------------------------------------------
 - id: python-direct-imports
   name: python-direct-imports
@@ -71,7 +70,7 @@
   entry: check-archived-hooks
   require_serial: true
   language: python
-  types: [ yaml ]
+  types: [yaml]
   files: ^\.pre-commit-config\.yaml$
 - id: check-resolved-github-issues
   name: check-resolved-github-issues
@@ -79,15 +78,13 @@
   entry: check-github-issues
   require_serial: true
   language: python
-  stages: [ manual ]
-  types: [ text ]
+  stages: [manual]
+  types: [text]
 # endregion misc -----------------------------------------------------------------------
-
-
 # region pygrep ------------------------------------------------------------------------
 - id: check-separator-length
   name: check-separator-length
-  description: "Check that 'line-break'-comments are the right length (default: 88)."
+  description: "Check that 'horizontal rule' comments are the right length (88)."
   entry: ^(\#.|\%.|\/\/)(.{0,82}|.{84,})([-=—─═])\3{2}$
   language: pygrep
   types: [text]
@@ -103,6 +100,21 @@
   # `—` (U+2014: Em Dash)
   # `═` (U+2550: Box Drawings Double Horizontal)
   # `─` (U+2500: Box Drawings Light Horizontal)
+- id: check-separator-length-80
+  name: check-separator-length-80
+  description: "Check that 'horizontal rule' comments are the right length (80)."
+  language: pygrep
+  entry: ^(\#.|\%.|\/\/)(.{0,74}|.{76,})([-=—─═])\3{2}$
+- id: check-separator-length-100
+  name: check-separator-length-100
+  description: "Check that 'horizontal rule' comments are the right length (100)."
+  language: pygrep
+  entry: ^(\#.|\%.|\/\/)(.{0,94}|.{96,})([-=—─═])\3{2}$
+- id: check-separator-length-120
+  name: check-separator-length-120
+  description: "Check that 'horizontal rule' comments are the right length (120)."
+  language: pygrep
+  entry: ^(\#.|\%.|\/\/)(.{0,114}|.{116,})([-=—─═])\3{2}$
 - id: python-no-blanket-type-ignore
   name: python-no-blanket-type-ignore
   description: "Enforce that `# type: ignore` annotations always specify codes."
@@ -153,25 +165,23 @@
   types: [python]
 # endregion pygrep ---------------------------------------------------------------------
 
-
 # region scripts -----------------------------------------------------------------------
 - id: check-clean-interface
   name: check-clean-interface
   description: "Check that __all__ holds all exported variables."
-  entry: './src/assorted_hooks/scripts/check_clean_interface.py'
+  entry: "./src/assorted_hooks/scripts/check_clean_interface.py"
   language: script
   require_serial: true # otherwise module is loaded multiple times
   types: [python]
 - id: update-pyproject-requirements
   name: update-pyproject-requirements
   description: "Update dependencies to >=currently_installed. (default: manual)"
-  entry: './src/assorted_hooks/scripts/update_pyproject_requirements.py'
+  entry: "./src/assorted_hooks/scripts/update_pyproject_requirements.py"
   files: ^pyproject\.toml$
   language: script
   stages: [manual]
   types: [toml]
 # endregion scripts --------------------------------------------------------------------
-
 
 # region latex -------------------------------------------------------------------------
 - id: chktex
@@ -180,18 +190,18 @@
   types: [tex]
   description: "ChkTeX, a LaTeX semantic checker."
   entry: "chktex --format='%f:%l:%c %m [%k %n]\n' --quiet"
-  require_serial: true  # Otherwise, we get lot's of warning about failed regex compilations
-  args:  # default configuration
+  require_serial: true # Otherwise, we get lot's of warning about failed regex compilations
+  args: # default configuration
     - "--erroron=all"
-    - "--nowarn=1"   # Command terminated with space.
-    - "--nowarn=3"   # Enclose previous parentheses with `{}`.
-    - "--nowarn=9"   # ‘%s’ expected, found ‘%s’.
-    - "--nowarn=17"  # Number of ‘character’ doesn't match the number of ‘character’.
-    - "--nowarn=19"  # You should use "`’`" (ASCII 39) instead of "`’`" (ASCII 180).
-    - "--nowarn=21"  # This command might not be intended.
-    - "--nowarn=22"  # Comment displayed.
-    - "--nowarn=30"  # Multiple spaces detected in output.
-    - "--nowarn=46"  # Use `\(...\)` instead of `$...$`.
+    - "--nowarn=1" # Command terminated with space.
+    - "--nowarn=3" # Enclose previous parentheses with `{}`.
+    - "--nowarn=9" # ‘%s’ expected, found ‘%s’.
+    - "--nowarn=17" # Number of ‘character’ doesn't match the number of ‘character’.
+    - "--nowarn=19" # You should use "`’`" (ASCII 39) instead of "`’`" (ASCII 180).
+    - "--nowarn=21" # This command might not be intended.
+    - "--nowarn=22" # Comment displayed.
+    - "--nowarn=30" # Multiple spaces detected in output.
+    - "--nowarn=46" # Use `\(...\)` instead of `$...$`.
 - id: lacheck
   name: lacheck
   description: "A consistency checker for LaTeX documents"
@@ -200,21 +210,20 @@
   language: script
   types: [tex]
   files: '\.tex$'
-  entry: './src/lacheck_wrapper.sh'
+  entry: "./src/lacheck_wrapper.sh"
   # NOTE: lacheck only takes a single file at a time, so we need to use xargs
   # NOTE: lacheck always returns 0, so we need to grep for output
   # NOTE: grep has exit code 1 if no matches are found, so we need to invert with `!`
   # NOTE: We add a `--` to the end of the command to ensure that no filenames are interpreted as arguments
 # endregion latex ----------------------------------------------------------------------
 
-
 # region pyright-wrapper ---------------------------------------------------------------
 - id: pyright-wrapper
   name: pyright-wrapper
   description: "Wrapper for pyright that produces more concise output."
-  entry: './src/pyright_wrapper.sh'
+  entry: "./src/pyright_wrapper.sh"
   language: python
-  types_or: [ python, pyi ]
+  types_or: [python, pyi]
   require_serial: true
-  minimum_pre_commit_version: '2.9.2'
+  minimum_pre_commit_version: "2.9.2"
 # endregion pyright-wrapper ------------------------------------------------------------
