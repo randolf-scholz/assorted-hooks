@@ -185,11 +185,9 @@ def get_dev_requirements_from_pyproject(
     return reqs
 
 
-def get_canonical_names(reqs: Iterable[str | Requirement], /) -> set[NormalizedName]:
+def get_canonical_names(rs: Iterable[str | Requirement]) -> frozenset[NormalizedName]:
     r"""Get the canonical names from a list of requirements."""
-    return {
-        canonicalize_name(req if isinstance(req, str) else req.name) for req in reqs
-    }
+    return frozenset(canonicalize_name(r if isinstance(r, str) else r.name) for r in rs)
 
 
 def get_gitname_from_url(url: str, /) -> str:

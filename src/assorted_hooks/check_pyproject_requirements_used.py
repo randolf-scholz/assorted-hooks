@@ -20,17 +20,20 @@ __all__ = [
     "SILENT",
     # Classes
     "GroupedRequirements",
+    "ResolvedDependencies",
     # Functions
-    "resolve_dependencies",
-    "check_file",
+    "check_deps",
+    "check_pyproject",
     "detect_dependencies",
-    "get_module",
     "get_module_path",
+    "get_module",
+    "get_name_pyproject",
     "get_requirement_origin",
     "get_requirements_from_ast",
     "get_requirements_from_module",
-    "get_name_pyproject",
     "main",
+    "resolve_dependencies",
+    "yield_imports",
 ]
 
 import argparse
@@ -41,7 +44,7 @@ import pkgutil
 import sys
 import tomllib
 from ast import Import, ImportFrom
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Sequence, Set as AbstractSet
 from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass, field
 from functools import cache
@@ -49,7 +52,7 @@ from importlib import metadata
 from importlib.util import find_spec
 from pathlib import Path
 from types import ModuleType
-from typing import Optional, Self
+from typing import NamedTuple, Optional, Self
 
 from packaging.requirements import InvalidRequirement, Requirement
 from packaging.utils import NormalizedName, canonicalize_name
@@ -304,6 +307,7 @@ def detect_dependencies(filename: str | Path, /) -> GroupedRequirements:
     r"""Collect the dependencies from files in the given path."""
     path = Path(filename)
     grouped_deps: GroupedRequirements = GroupedRequirements()
+
     if path.is_file():  # Single file
         grouped_deps |= GroupedRequirements.from_file(path)
     elif path.is_dir():  # Directory
@@ -319,14 +323,23 @@ def detect_dependencies(filename: str | Path, /) -> GroupedRequirements:
     return grouped_deps
 
 
+class ResolvedDependencies(NamedTuple):
+    r"""A named tuple containing the resolved dependencies."""
+
+    undeclared_deps: AbstractSet[NormalizedName]
+    unused_deps: AbstractSet[NormalizedName]
+    missing_deps: AbstractSet[NormalizedName]
+
+
 def resolve_dependencies(
     *,
-    imported_deps: set[NormalizedName],
-    declared_deps: set[NormalizedName],
-    excluded_deps: set[NormalizedName],
-    excluded_declared_deps: set[NormalizedName],
-    excluded_imported_deps: set[NormalizedName],
-) -> tuple[set[NormalizedName], set[NormalizedName], set[NormalizedName]]:
+    # Note: use frozenset to ensure immutability.
+    imported_deps: frozenset[NormalizedName],
+    declared_deps: frozenset[NormalizedName],
+    excluded_deps: frozenset[NormalizedName],
+    excluded_declared_deps: frozenset[NormalizedName],
+    excluded_imported_deps: frozenset[NormalizedName],
+) -> ResolvedDependencies:
     r"""Check the dependencies of a module.
 
     Args:
@@ -344,33 +357,90 @@ def resolve_dependencies(
             missing_deps.add(dep)
             continue
 
+        # check that there is a unique match
         mapped_deps = get_canonical_names(PACKAGES[dep])
         if len(mapped_deps) != 1:
             raise ValueError(f"Found multiple pip-packages for {dep!r}: {mapped_deps}.")
 
-        actual_deps.add(mapped_deps.pop())
+        actual_deps.add(next(iter(mapped_deps)))
 
-    # canonicalize the names
-    excluded_reqs = set(map(canonicalize_name, excluded_deps))
-    excluded_imported_reps = set(map(canonicalize_name, excluded_imported_deps))
-    excluded_declared_reps = set(map(canonicalize_name, excluded_declared_deps))
-    declared_reqs = set(map(canonicalize_name, declared_deps)) - (
-        excluded_declared_reps | excluded_reqs
-    )
-    actual_reps = set(map(canonicalize_name, actual_deps)) - (
-        excluded_imported_reps | excluded_reqs
-    )
-    missing_reps = set(map(canonicalize_name, missing_deps)) - excluded_reqs
+    declared_reqs = declared_deps - (excluded_declared_deps | excluded_deps)
+    actual_deps -= excluded_imported_deps | excluded_deps
+    missing_deps -= excluded_deps
 
     # check if all imported dependencies are listed in pyproject.toml
-    undeclared_deps = actual_reps - declared_reqs
-    unused_deps = declared_reqs - actual_reps
+    undeclared_deps = actual_deps - declared_reqs
+    unused_deps = declared_reqs - actual_deps
 
-    return undeclared_deps, unused_deps, missing_reps
+    return ResolvedDependencies(
+        undeclared_deps=undeclared_deps,
+        unused_deps=unused_deps,
+        missing_deps=missing_deps,
+    )
 
 
-def check_file(
-    filename: str | Path,
+def check_deps(
+    detected_deps: GroupedRequirements,
+    *,
+    declared_deps: frozenset[NormalizedName],
+    excluded_deps: frozenset[NormalizedName],
+    known_unused_deps: frozenset[NormalizedName],
+    known_undeclared_deps: frozenset[NormalizedName],
+    superfluous_deps: frozenset[NormalizedName],
+    # flags
+    error_on_missing_deps: bool = True,
+    error_on_undeclared_deps: bool = True,
+    error_on_unused_deps: bool = True,
+    error_on_superfluous_deps: bool = True,
+    debug: bool = False,
+) -> int:
+    # detect the imported dependencies from the source files
+    first_party_deps = get_canonical_names(detected_deps.first_party)
+    third_party_deps = get_canonical_names(detected_deps.third_party)
+    # get the normalized project name
+    resolved_deps = resolve_dependencies(
+        imported_deps=third_party_deps,
+        declared_deps=declared_deps,
+        excluded_deps=excluded_deps,
+        excluded_declared_deps=known_unused_deps,
+        excluded_imported_deps=known_undeclared_deps,
+    )
+    undeclared_deps = resolved_deps.undeclared_deps
+    unused_deps = resolved_deps.unused_deps
+    missing_deps = resolved_deps.missing_deps
+
+    violations = 0
+
+    if undeclared_deps and error_on_undeclared_deps:
+        violations += 1
+        print(f"Detected undeclared dependencies: {undeclared_deps}")
+    if unused_deps and error_on_unused_deps:
+        violations += 1
+        print(f"Detected unused dependencies: {unused_deps}")
+    if missing_deps and error_on_missing_deps:
+        violations += 1
+        print(f"Detected missing dependencies: {missing_deps}")
+    if superfluous_deps and error_on_superfluous_deps:
+        violations += 1
+        print(f"Detected superfluous dependencies: {superfluous_deps}")
+    if violations or debug:
+        print(
+            f"Resolved dependencies:"
+            f"\n\tdeclared_deps={sorted(declared_deps)}"
+            f"\n\timported_deps={sorted(third_party_deps)}"
+            f"\n\texcluded_deps={sorted(excluded_deps)}"
+            f"\n\tfirst_party_deps={sorted(first_party_deps)}"
+            f"\n\tundeclared_deps={sorted(undeclared_deps)}"
+            f"\n\tunused_deps={sorted(unused_deps)}"
+            f"\n\tmissing_deps={sorted(missing_deps)}"
+            f"\n\tsuperfluous_deps={sorted(superfluous_deps)}"
+        )
+    return violations
+    # endregion check project dependencies ---------------------------------------------
+
+
+def check_pyproject(
+    pyproject_file: str | Path,
     /,
     *,
     module_dir: str = "src/",
@@ -392,113 +462,59 @@ def check_file(
     r"""Check a single file."""
     violations = 0
 
-    with open(filename, "rb") as file:
+    with open(pyproject_file, "rb") as file:
         config = tomllib.load(file)
 
     # get the normalized project name
     project_name: NormalizedName = canonicalize_name(get_name_pyproject(config))
-    # get dependencies from pyproject.toml
-    declared_deps: set[NormalizedName] = {project_name} | get_canonical_names(
-        get_requirements_from_pyproject(config)
-    )
-    # get test dependencies from pyproject.toml
-    declared_test_deps: set[NormalizedName] = {project_name} | get_canonical_names(
-        get_dev_requirements_from_pyproject(config, "test")
-    )
-    # get superfluous test dependencies
-    superfluous_test_deps = (declared_deps & declared_test_deps) - {project_name}
-    # setup ignored dependencies
-    excluded_deps = get_canonical_names(exclude)
 
-    # region check project dependencies ------------------------------------------------
-    # detect the imported dependencies from the source files
+    # check project dependencies -------------------------------------------------------
+    requirements = get_requirements_from_pyproject(config)
     detected_deps = detect_dependencies(module_dir)
-    imported_deps = get_canonical_names(detected_deps.third_party)
-    first_party_deps = get_canonical_names(detected_deps.first_party)
-    # get the normalized project name
-    undeclared_deps, unused_deps, missing_deps = resolve_dependencies(
-        imported_deps=imported_deps,
+    declared_deps = frozenset({project_name} | get_canonical_names(requirements))
+    superfluous_deps: frozenset[NormalizedName] = frozenset()
+
+    violations = 0
+
+    violations += check_deps(
+        detected_deps,
         declared_deps=declared_deps,
-        excluded_deps=excluded_deps,
-        excluded_declared_deps=get_canonical_names(known_unused_deps),
-        excluded_imported_deps=get_canonical_names(known_undeclared_deps),
+        excluded_deps=get_canonical_names(exclude),
+        known_unused_deps=get_canonical_names(known_unused_deps),
+        known_undeclared_deps=get_canonical_names(known_undeclared_deps),
+        superfluous_deps=superfluous_deps,
+        error_on_missing_deps=error_on_missing_deps,
+        error_on_undeclared_deps=error_on_undeclared_deps,
+        error_on_unused_deps=error_on_unused_deps,
+        debug=debug,
     )
 
-    if debug:
-        print(
-            f"Resolved dependencies:"
-            f"\n\tdeclared_deps={sorted(declared_deps)}"
-            f"\n\timported_deps={sorted(imported_deps)}"
-            f"\n\texcluded_deps={sorted(excluded_deps)}"
-            f"\n\tfirst_party_deps={sorted(first_party_deps)}"
-            f"\n\tundeclared_deps={sorted(undeclared_deps)}"
-            f"\n\tunused_deps={sorted(unused_deps)}"
-            f"\n\tmissing_deps={sorted(missing_deps)}"
-        )
-
-    if undeclared_deps and error_on_undeclared_deps:
-        violations += 1
-        print(f"Detected undeclared dependencies: {undeclared_deps}")
-    if unused_deps and error_on_unused_deps:
-        violations += 1
-        print(f"Detected unused dependencies: {unused_deps}")
-    if missing_deps and error_on_missing_deps:
-        violations += 1
-        print(f"Detected missing dependencies: {missing_deps}")
-    if violations:
-        print(
-            f"Detected dependencies in project {module_dir!s}:"
-            f"\n\tdeclared_deps={sorted(declared_deps)}"
-            f"\n\timported_deps={sorted(imported_deps)}"
-            f"\n\texcluded_deps={sorted(excluded_deps)}"
-            f"\n\tfirst_party_deps={sorted(first_party_deps)}"
-        )
-    # endregion check project dependencies ----------------------------------------------
-
-    # region check test dependencies ---------------------------------------------------
+    # check test dependencies ----------------------------------------------------------
     if tests_dir is None:
         return violations
 
+    test_requirements = get_dev_requirements_from_pyproject(config, "test")
     detected_test_deps = detect_dependencies(tests_dir)
-    imported_test_deps = get_canonical_names(detected_test_deps.third_party)
-    first_party_test_deps = get_canonical_names(detected_test_deps.first_party)
-    # we can safely ignore any undeclared dependencies, if they are part of the declared
-    # project dependencies.
+    declared_test_deps = frozenset(
+        {project_name} | get_canonical_names(test_requirements)
+    )
+    superfluous_test_deps = (declared_deps & declared_test_deps) - {project_name}
 
-    undeclared_test_deps, unused_test_deps, missing_test_deps = resolve_dependencies(
-        imported_deps=imported_test_deps,
+    violations += check_deps(
+        detected_test_deps,
         declared_deps=declared_test_deps,
-        excluded_deps=excluded_deps,
-        excluded_declared_deps=get_canonical_names(known_unused_test_deps),
-        excluded_imported_deps=declared_deps
-        | get_canonical_names(known_undeclared_test_deps),
+        excluded_deps=get_canonical_names(exclude),
+        known_unused_deps=get_canonical_names(known_unused_test_deps),
+        known_undeclared_deps=get_canonical_names(known_undeclared_test_deps),
+        superfluous_deps=superfluous_test_deps,
+        error_on_missing_deps=error_on_missing_test_deps,
+        error_on_undeclared_deps=error_on_undeclared_test_deps,
+        error_on_unused_deps=error_on_unused_test_deps,
+        error_on_superfluous_deps=error_on_superfluous_test_deps,
+        debug=debug,
     )
 
-    test_violations = 0
-    if undeclared_test_deps and error_on_undeclared_test_deps:
-        test_violations += 1
-        print(f"Detected undeclared test dependencies: {undeclared_test_deps}.")
-    if unused_test_deps and error_on_unused_test_deps:
-        test_violations += 1
-        print(f"Detected unused test dependencies: {unused_test_deps}.")
-    if missing_test_deps and error_on_missing_test_deps:
-        test_violations += 1
-        print(f"Detected missing test dependencies: {missing_test_deps}.")
-    if superfluous_test_deps and error_on_superfluous_test_deps:
-        test_violations += 1
-        print(f"Detected superfluous test dependencies: {superfluous_test_deps}.")
-        print("These are redundant, as they are already project dependencies")
-    if test_violations:
-        print(
-            f"Detected dependencies in tests {tests_dir!s}:"
-            f"\n\tdeclared_test_deps={sorted(declared_test_deps)}"
-            f"\n\timported_test_deps={sorted(imported_test_deps)}"
-            f"\n\texcluded_deps={sorted(excluded_deps)}"
-            f"\n\tfirst_party_test_deps={sorted(first_party_test_deps)}"
-        )
-
-    return violations + test_violations
-    # endregion emit violations --------------------------------------------------------
+    return violations
 
 
 def main() -> None:
@@ -619,7 +635,7 @@ def main() -> None:
     args = parser.parse_args()
 
     try:
-        violations = check_file(
+        violations = check_pyproject(
             args.pyproject_file,
             module_dir=args.module_dir,
             tests_dir=args.tests_dir,

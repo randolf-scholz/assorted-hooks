@@ -199,13 +199,12 @@ def check_pyproject(
         latest_releases[name] = latest_release
 
     # check which packages are unmaintained
-    unmaintained_packages: set[NormalizedName] = {
+    unmaintained_packages: frozenset[NormalizedName] = get_canonical_names(
         pkg
         for pkg, (_, upload_date) in latest_releases.items()
         if upload_date < threshold_date
-    }
+    )
     # normalize the names
-    unmaintained_packages = get_canonical_names(unmaintained_packages)
     bad_direct_deps = unmaintained_packages & set(project_main_deps)
     bad_optional_deps = unmaintained_packages & set(project_dev_deps)
     bad_unlisted_deps = unmaintained_packages - (bad_direct_deps | bad_optional_deps)
