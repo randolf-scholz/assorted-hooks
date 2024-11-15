@@ -47,22 +47,22 @@ check-direct-imports = "assorted_hooks.ast.check_direct_imports:main"
 check-no-mixed-args = "assorted_hooks.ast.check_no_mixed_args:main"
 check-standard-generics = "assorted_hooks.ast.check_standard_generics:main"
 check-typing = "assorted_hooks.ast.check_typing:main"
-check-requirement-usage = "assorted_hooks.ast.check_requirement_usage:main"
 # script hooks
 check-clean-interface = "assorted_hooks.scripts.check_clean_interface:main"
 update-pyproject-requirements = "assorted_hooks.scripts.update_pyproject_requirements:main"
 # other hooks
 check-archived-hooks = "assorted_hooks.check_archived_hooks:main"
 check-github-issues = "assorted_hooks.check_github_issues:main"
-check-pyproject-unmaintained = "assorted_hooks.check_pyproject_unmaintained:main"
-check-pyproject-requirements = "assorted_hooks.check_pyproject_requirements:main"
+check-pyproject-requirements-maintained = "assorted_hooks.check_pyproject_requirements_maintained:main"
+check-pyproject-requirements-valid = "assorted_hooks.check_pyproject_requirements_valid:main"
+check-pyproject-requirements-used = "assorted_hooks.check_pyproject_requirements_used:main"
 
 [dependency-groups]
 dev = [
     "mypy>=1.13.0",
     "pre-commit>=4.0.1",
     "pyright>=1.1.389",
-    "ruff>=0.7.3",
+    "ruff>=0.7.4",
     "types-pyyaml>=6.0.12.20240917",
     { include-group = "test" },
 ]

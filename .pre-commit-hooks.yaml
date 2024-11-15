@@ -32,38 +32,41 @@
   entry: check-typing
   language: python
   types: [python]
-- id: check-requirement-usage
-  name: check-requirement-usage
-  description: "Check that listed dependencies are used in code and vice-versa."
-  entry: check-requirement-usage
-  files: ^pyproject\.toml$
-  language: python
-  types: [toml]
 # endregion ast-based ------------------------------------------------------------------
 
-# region misc --------------------------------------------------------------------------
-- id: check-pyproject-requirements
-  name: check-pyproject-requirements
+# region pyproject-checks --------------------------------------------------------------
+- id: check-pyproject-requirements-valid
+  name: check-pyproject-requirements-valid
   description: "Check that requirements are well-formed."
-  entry: check-pyproject-requirements
+  entry: check-pyproject-requirements-valid
   files: ^pyproject\.toml$
   language: python
   types: [toml]
-- id: check-pyproject-unmaintained
-  name: check-pyproject-unmaintained
-  description: "Check for unmaintained dependencies"
+- id: check-pyproject-requirements-used
+  name: check-pyproject-requirements-used
+  description: "Check that listed dependencies are used in code and vice-versa."
+  entry: check-pyproject-requirements-used
   files: ^pyproject\.toml$
   language: python
   types: [toml]
-  entry: check-pyproject-unmaintained
-- id: check-pyproject-unmaintained-local
-  name: check-pyproject-unmaintained
-  description: "Check for unmaintained dependencies"
+- id: check-pyproject-requirements-maintained
+  name: check-pyproject-requirements-maintained
+  description: "Check that dependencies have been maintained."
   files: ^pyproject\.toml$
   language: python
   types: [toml]
-  entry: check-pyproject-unmaintained
+  entry: check-pyproject-requirements-maintained
+- id: check-pyproject-requirements-maintained-unlisted
+  name: check-pyproject-requirements-maintained-unlisted
+  description: "Check that unlisted (transive) dependencies have been maintained."
+  files: ^pyproject\.toml$
+  language: python
+  types: [toml]
+  entry: check-pyproject-requirements-maintained
   args: ["--check-unlisted"]
+# endregion pyproject-checks -----------------------------------------------------------
+
+# region misc --------------------------------------------------------------------------
 - id: check-archived-hooks
   name: check-archived-hooks
   description: "Check for references to archived hooks."
@@ -81,25 +84,26 @@
   stages: [manual]
   types: [text]
 # endregion misc -----------------------------------------------------------------------
+
 # region pygrep ------------------------------------------------------------------------
+# NOTE: This regex checks comments begin with a `#`, `%`, `//` (padded to length 2)
+#   The first group is 0-82 or 84-unlimited characters
+#   The construction `([-=—─═])\2{2}` checks for a separator character repeated 3 times
+#   If the first group matches ≥84 characters, then the line is overlong (2+84+3=89 characters)
+#   If it matches ≤82 characters, then the line is too short, given that it is detected as a separator.
+#   (2 + 83 characters + separator + separator + separator = 88 characters)
+# NOTE: The second group is a separator character, we consider the characters:
+# `-` (U+002D: Hyphen-Minus)
+# `=` (U+003D: Equals Sign)
+# `—` (U+2014: Em Dash)
+# `═` (U+2550: Box Drawings Double Horizontal)
+# `─` (U+2500: Box Drawings Light Horizontal)
 - id: check-separator-length
   name: check-separator-length
   description: "Check that 'horizontal rule' comments are the right length (88)."
   entry: ^(\#.|\%.|\/\/)(.{0,82}|.{84,})([-=—─═])\3{2}$
   language: pygrep
   types: [text]
-  # NOTE: This regex checks comments begin with a `#`, `%`, `//` (padded to length 2)
-  #   The first group is 0-82 or 84-unlimited characters
-  #   The construction `([-=—─═])\2{2}` checks for a separator character repeated 3 times
-  #   If the first group matches ≥84 characters, then the line is overlong (2+84+3=89 characters)
-  #   If it matches ≤82 characters, then the line is too short, given that it is detected as a separator.
-  #   (2 + 83 characters + separator + separator + separator = 88 characters)
-  # NOTE: The second group is a separator character, we consider the characters:
-  # `-` (U+002D: Hyphen-Minus)
-  # `=` (U+003D: Equals Sign)
-  # `—` (U+2014: Em Dash)
-  # `═` (U+2550: Box Drawings Double Horizontal)
-  # `─` (U+2500: Box Drawings Light Horizontal)
 - id: check-separator-length-80
   name: check-separator-length-80
   description: "Check that 'horizontal rule' comments are the right length (80)."

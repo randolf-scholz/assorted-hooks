@@ -32,7 +32,6 @@ __all__ = [
     "is_typing_union",
     "is_union",
     # Iterators
-    "yield_imports",
     "yield_concrete_classes",
     "yield_aliases",
     "yield_classes",
@@ -565,13 +564,3 @@ def yield_functions_in_context(tree: AST, /) -> Iterator[FunctionContext]:
     # yield function contexts
     for name, (function_defs, overload_defs) in func_map.items():
         yield FunctionContext(name, function_defs, overload_defs, tree)
-
-
-def yield_imports(tree: AST, /) -> Iterator[str]:
-    r"""Yield all imports from the tree."""
-    for node in ast.walk(tree):
-        match node:
-            case Import(names=aliases):
-                yield from (alias.name for alias in aliases)
-            case ImportFrom(module=str(module)):
-                yield module

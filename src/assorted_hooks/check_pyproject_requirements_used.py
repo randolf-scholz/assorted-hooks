@@ -40,7 +40,8 @@ import os
 import pkgutil
 import sys
 import tomllib
-from collections.abc import Sequence
+from ast import Import, ImportFrom
+from collections.abc import Iterator, Sequence
 from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass, field
 from functools import cache
@@ -53,7 +54,6 @@ from typing import Optional, Self
 from packaging.requirements import InvalidRequirement, Requirement
 from packaging.utils import NormalizedName, canonicalize_name
 
-from assorted_hooks.ast.ast_utils import yield_imports
 from assorted_hooks.utils import (
     get_canonical_names,
     get_dev_requirements_from_pyproject,
@@ -77,6 +77,16 @@ r"""Global flag to suppress output."""
 # NOTE: illogical type hint in stdlib, maybe open issue.
 # https://github.com/python/cpython/blob/608927b01447b110de5094271fbc4d49c60130b0/Lib/importlib/metadata/__init__.py#L933-L947C29
 # https://github.com/python/typeshed/blob/d82a8325faf35aa0c9d03d9e9d4a39b7fcb78f8e/stdlib/importlib/metadata/__init__.pyi#L32
+
+
+def yield_imports(tree: ast.AST, /) -> Iterator[str]:
+    r"""Yield all imports from the tree."""
+    for node in ast.walk(tree):
+        match node:
+            case Import(names=aliases):
+                yield from (alias.name for alias in aliases)
+            case ImportFrom(module=str(module)):
+                yield module
 
 
 @cache
