@@ -185,7 +185,9 @@ def get_dev_requirements_from_pyproject(
     return reqs
 
 
-def get_canonical_names(rs: Iterable[str | Requirement]) -> frozenset[NormalizedName]:
+def get_canonical_names(
+    rs: Iterable[str | Requirement], /
+) -> frozenset[NormalizedName]:
     r"""Get the canonical names from a list of requirements."""
     return frozenset(canonicalize_name(r if isinstance(r, str) else r.name) for r in rs)
 

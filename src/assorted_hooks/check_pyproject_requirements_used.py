@@ -381,6 +381,7 @@ def resolve_dependencies(
 
 def check_deps(
     detected_deps: GroupedRequirements,
+    /,
     *,
     declared_deps: frozenset[NormalizedName],
     excluded_deps: frozenset[NormalizedName],
@@ -471,7 +472,7 @@ def check_pyproject(
     # check project dependencies -------------------------------------------------------
     requirements = get_requirements_from_pyproject(config)
     detected_deps = detect_dependencies(module_dir)
-    declared_deps = frozenset({project_name} | get_canonical_names(requirements))
+    declared_deps = get_canonical_names({project_name} | requirements)
     superfluous_deps: frozenset[NormalizedName] = frozenset()
 
     violations = 0
@@ -495,9 +496,7 @@ def check_pyproject(
 
     test_requirements = get_dev_requirements_from_pyproject(config, "test")
     detected_test_deps = detect_dependencies(tests_dir)
-    declared_test_deps = frozenset(
-        {project_name} | get_canonical_names(test_requirements)
-    )
+    declared_test_deps = get_canonical_names({project_name} | test_requirements)
     superfluous_test_deps = (declared_deps & declared_test_deps) - {project_name}
 
     violations += check_deps(
