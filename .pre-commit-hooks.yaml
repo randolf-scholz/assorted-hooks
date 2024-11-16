@@ -42,13 +42,6 @@
   files: ^pyproject\.toml$
   language: python
   types: [toml]
-- id: check-pyproject-requirements-used
-  name: check-pyproject-requirements-used
-  description: "Check that listed dependencies are used in code and vice-versa."
-  entry: check-pyproject-requirements-used
-  files: ^pyproject\.toml$
-  language: python
-  types: [toml]
 - id: check-pyproject-requirements-maintained
   name: check-pyproject-requirements-maintained
   description: "Check that dependencies have been maintained."
@@ -170,21 +163,28 @@
 # endregion pygrep ---------------------------------------------------------------------
 
 # region scripts -----------------------------------------------------------------------
-- id: check-clean-interface
-  name: check-clean-interface
-  description: "Check that __all__ holds all exported variables."
-  entry: "./src/assorted_hooks/scripts/check_clean_interface.py"
+- id: check-pyproject-requirements-used
+  name: check-pyproject-requirements-used
+  description: "Check that listed dependencies are used in code and vice-versa."
+  entry: src/assorted_hooks/scripts/check_pyproject_requirements_used.py
+  files: ^pyproject\.toml$
   language: script
-  require_serial: true # otherwise module is loaded multiple times
-  types: [python]
+  types: [toml]
 - id: update-pyproject-requirements
   name: update-pyproject-requirements
   description: "Update dependencies to >=currently_installed. (default: manual)"
-  entry: "./src/assorted_hooks/scripts/update_pyproject_requirements.py"
+  entry: src/assorted_hooks/scripts/update_pyproject_requirements.py
   files: ^pyproject\.toml$
   language: script
   stages: [manual]
   types: [toml]
+- id: check-clean-interface
+  name: check-clean-interface
+  description: "Check that __all__ holds all exported variables."
+  entry: src/assorted_hooks/scripts/check_clean_interface.py
+  language: script
+  require_serial: true # otherwise module is loaded multiple times
+  types: [python]
 # endregion scripts --------------------------------------------------------------------
 
 # region latex -------------------------------------------------------------------------

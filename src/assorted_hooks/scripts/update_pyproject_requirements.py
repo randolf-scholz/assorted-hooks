@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# /// script
+# requires-python = ">=3.11"
+# ///
 r"""Update dependencies in pyproject.toml to the currently installed versions.
 
 Note:

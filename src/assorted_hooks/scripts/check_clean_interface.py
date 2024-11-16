@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# /// script
+# requires-python = ">=3.11"
+# ///
 r"""Check for clean interface.
 
 By this, we mean that when a module is imported the `dir(mymodule)` should contain
