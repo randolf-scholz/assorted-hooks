@@ -595,8 +595,8 @@ def resolve_dependencies(
     imported_deps: frozenset[ImportName],
     declared_deps: frozenset[PypiName],
     excluded_deps: frozenset[Any],
-    known_unimported_deps: frozenset[Any],
-    known_undeclared_deps: frozenset[Any],
+    known_unimported_deps: frozenset[PypiName],  # PyPIName
+    known_undeclared_deps: frozenset[ImportName],  # ImportName
 ) -> ResolvedDependencies:
     r"""Check the dependencies of a module.
 
@@ -621,14 +621,14 @@ def resolve_dependencies(
     imported_excluded: set[ImportName] = (
         {dep for dep in excluded_deps if dep in PYPI_NAMES}
         | {x for dep in excluded_deps for x in IMPORT_NAMES.get(dep, ())}
-        | {dep for dep in known_unimported_deps if dep in PYPI_NAMES}
-        | {x for dep in known_unimported_deps for x in IMPORT_NAMES.get(dep, ())}
+        | {dep for dep in known_undeclared_deps if dep in PYPI_NAMES}
+        | {x for dep in known_undeclared_deps for x in IMPORT_NAMES.get(dep, ())}  # type: ignore[call-overload]
     )
     declared_excluded: set[PypiName] = (
         {dep for dep in excluded_deps if dep in IMPORT_NAMES}
         | {x for dep in excluded_deps for x in PYPI_NAMES.get(dep, ())}
-        | {dep for dep in known_undeclared_deps if dep in IMPORT_NAMES}
-        | {x for dep in known_undeclared_deps for x in PYPI_NAMES.get(dep, ())}
+        | {dep for dep in known_unimported_deps if dep in IMPORT_NAMES}
+        | {x for dep in known_unimported_deps for x in PYPI_NAMES.get(dep, ())}  # type: ignore[call-overload]
     )
     # map the imported dependencies to their pip-package names
     declared: frozenset[PypiName] = declared_deps - declared_excluded
@@ -679,8 +679,8 @@ def check_deps(
     declared_deps: frozenset[PypiName],
     imported_deps: frozenset[ImportName],
     excluded_deps: frozenset[NormalizedName],
-    known_unimported_deps: frozenset[NormalizedName],
-    known_undeclared_deps: frozenset[NormalizedName],
+    known_unimported_deps: frozenset[PypiName],
+    known_undeclared_deps: frozenset[ImportName],
     # flags
     error_on_undeclared_deps: bool = True,
     error_on_unimported_deps: bool = True,
@@ -726,10 +726,10 @@ def check_pyproject(
     module_dir: str = "src/",
     tests_dir: Optional[str] = "tests/",
     exclude: Sequence[str] = (),
-    known_unimported_deps: Sequence[str] = (),
-    known_unimported_test_deps: Sequence[str] = (),
-    known_undeclared_deps: Sequence[str] = (),
-    known_undeclared_test_deps: Sequence[str] = (),
+    known_unimported: Sequence[str] = (),
+    known_unimported_test: Sequence[str] = (),
+    known_undeclared: Sequence[str] = (),
+    known_undeclared_test: Sequence[str] = (),
     error_on_superfluous_test_deps: bool = True,
     error_on_undeclared_deps: bool = True,
     error_on_undeclared_test_deps: bool = True,
@@ -748,19 +748,22 @@ def check_pyproject(
 
     # get the normalized project name
     project_name: Any = canonicalize_name(get_name_pyproject(config))
+    excluded_deps = get_canonical_names(exclude)
 
     # check project dependencies -------------------------------------------------------
     main_requirements = get_requirements_from_pyproject(config)
     detected_deps = detect_dependencies(module_dir)
     declared_deps = get_pypi_names(main_requirements | {project_name})
     imported_deps = get_import_names(detected_deps.third_party)
+    known_unimported_deps = get_pypi_names(known_unimported)
+    known_undeclared_deps = get_import_names(known_undeclared)
 
     violations = check_deps(
         imported_deps=imported_deps,
         declared_deps=declared_deps,
-        excluded_deps=get_canonical_names(exclude),
-        known_unimported_deps=get_canonical_names(known_unimported_deps),
-        known_undeclared_deps=get_canonical_names(known_undeclared_deps),
+        excluded_deps=excluded_deps,
+        known_unimported_deps=known_unimported_deps,
+        known_undeclared_deps=known_undeclared_deps,
         # flags
         error_on_undeclared_deps=error_on_undeclared_deps,
         error_on_unimported_deps=error_on_unimported_deps,
@@ -776,6 +779,8 @@ def check_pyproject(
     detected_test_deps = detect_dependencies(tests_dir)
     imported_test_deps = get_import_names(detected_test_deps.third_party)
     declared_test_deps = get_pypi_names(test_requirements)
+    known_unimported_test_deps = get_pypi_names(known_unimported_test)
+    known_undeclared_test_deps = get_import_names(known_undeclared_test)
 
     # check for superfluous test dependencies
     superfluous_test_deps = (declared_test_deps & declared_deps) - {project_name}
@@ -784,11 +789,11 @@ def check_pyproject(
         print(f"Detected superfluous dependencies: {sorted(superfluous_test_deps)}")
 
     violations += check_deps(
-        imported_deps=imported_deps | imported_test_deps,  # use both
-        declared_deps=declared_deps | declared_test_deps,  # use both
-        excluded_deps=get_canonical_names(exclude),
-        known_unimported_deps=get_canonical_names(known_unimported_test_deps),
-        known_undeclared_deps=get_canonical_names(known_undeclared_test_deps),
+        imported_deps=imported_test_deps | imported_deps,  # use both
+        declared_deps=declared_test_deps | declared_deps,  # use both
+        excluded_deps=excluded_deps,
+        known_unimported_deps=known_unimported_test_deps | known_unimported_deps,
+        known_undeclared_deps=known_undeclared_test_deps | known_undeclared_deps,
         # flags
         error_on_undeclared_deps=error_on_undeclared_test_deps,
         error_on_unimported_deps=error_on_unimported_test_deps,
@@ -832,28 +837,28 @@ def main() -> None:
         help="List of dependencies to exclude no matter what.",
     )
     parser.add_argument(
-        "--known-unimported-deps",
+        "--known-unimported",
         default=[],
         nargs="*",
         type=str,
         help="List of used project dependencies to ignore.",
     )
     parser.add_argument(
-        "--known-unimported-test-deps",
+        "--known-unimported-test",
         default=[],
         nargs="*",
         type=str,
         help="List of used test dependencies to ignore.",
     )
     parser.add_argument(
-        "--known-undeclared-deps",
+        "--known-undeclared",
         default=[],
         nargs="*",
         type=str,
         help="List of undeclared project dependencies to ignore.",
     )
     parser.add_argument(
-        "--known-undeclared-test-deps",
+        "--known-undeclared-test",
         default=[],
         nargs="*",
         type=str,
@@ -941,10 +946,10 @@ def main() -> None:
             module_dir=args.module_dir,
             tests_dir=args.tests_dir,
             exclude=args.exclude,
-            known_unimported_deps=args.known_unimported_deps,
-            known_unimported_test_deps=args.known_unimported_test_deps,
-            known_undeclared_deps=args.known_undeclared_deps,
-            known_undeclared_test_deps=args.known_undeclared_test_deps,
+            known_unimported=args.known_unimported,
+            known_unimported_test=args.known_unimported_test,
+            known_undeclared=args.known_undeclared,
+            known_undeclared_test=args.known_undeclared_test,
             # error selection
             error_on_unimported_deps=args.error_on_unimported_deps,
             error_on_unimported_test_deps=args.error_on_unimported_test_deps,
