@@ -1,35 +1,29 @@
 # Custom hooks for pre-commit.
 
 # region ast-based ---------------------------------------------------------------------
-- id: python-direct-imports
-  name: python-direct-imports
-  description: "Checks that Bar is used instead of foo.Bar if both foo and Bar are imported."
+- id: check-direct-imports
+  name: check-direct-imports
   entry: check-direct-imports
+  description: "Checks that Bar is used instead of foo.Bar if both foo and Bar are imported."
   language: python
   types: [python]
-- id: python-no-mixed-args
-  name: python-no-mixed-args
-  description: "Check for disallowing positional_or_keyword arguments."
+- id: check-no-mixed-args
+  name: check-no-mixed-args
   entry: check-no-mixed-args
+  description: "Check for disallowing positional_or_keyword arguments."
   language: python
   types: [python]
-- id: python-standard-generics
-  name: python-standard-generics
-  description: "Use standard generics (PEP-585): typing.Sequence -> abc.Sequence, typing.List -> list."
-  entry: check-standard-generics
-  language: python
-  types: [python]
-- id: python-check-dunder-all
-  name: python-check-dunder-all
-  description: "Check that __all__ exists. `test_*.py` files are excluded by default."
+- id: check-dunder-all
+  name: check-dunder-all
   entry: check-dunder-all
+  description: "Check that __all__ exists. `test_*.py` files are excluded by default."
   exclude: '^(.*\/)?test_.*\.py$'
   language: python
   types: [python]
-- id: python-check-typing
-  name: python-check-typing
-  description: "AST-based linting rule for type-hints."
+- id: check-typing
+  name: check-typing
   entry: check-typing
+  description: "AST-based linting rule for type-hints."
   language: python
   types: [python]
 # endregion ast-based ------------------------------------------------------------------
@@ -37,16 +31,16 @@
 # region misc --------------------------------------------------------------------------
 - id: check-archived-hooks
   name: check-archived-hooks
-  description: "Check for references to archived hooks."
   entry: check-archived-hooks
+  description: "Check for references to archived hooks."
   require_serial: true
   language: python
   types: [yaml]
   files: ^\.pre-commit-config\.yaml$
 - id: check-resolved-github-issues
   name: check-resolved-github-issues
-  description: "Check for references to resolved GitHub issues."
   entry: check-github-issues
+  description: "Check for references to resolved GitHub issues."
   require_serial: true
   language: python
   stages: [manual]

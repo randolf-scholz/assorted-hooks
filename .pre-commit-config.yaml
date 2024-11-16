@@ -6,24 +6,23 @@ default_language_version:
 repos:
   # test with pre-commit try-repo ../assorted-hooks --verbose --all-files
   - repo: https://github.com/randolf-scholz/assorted-hooks
-    rev: v0.4.31
+    rev: v0.5.0
     hooks:
       # pygrep-based hooks
       - id: check-separator-length-88
       - id: pyarrow-timestamp-seconds
       - id: python-consider-using-raw-string
+      - id: python-match-case-builtins
       - id: python-no-blanket-type-ignore
       - id: python-no-builtin-eval
       - id: python-rename-axes-axis
       - id: python-system-exit
-      - id: python-match-case-builtins
       # ast-based hooks
-      - id: python-check-dunder-all
-      - id: python-check-typing
-      - id: python-direct-imports
-      - id: python-no-mixed-args
+      - id: check-direct-imports
+      - id: check-dunder-all
+      - id: check-typing
+      - id: check-no-mixed-args
         args: ["--allow-one"]
-      - id: python-standard-generics
       # script-based hooks
       - id: check-clean-interface
         files: "^src/"
