@@ -609,12 +609,12 @@ def resolve_dependencies(
     """
     if DEBUG:
         print(
-            f"Resolving:"
-            f"\n\t{imported_deps=}"
-            f"\n\t{declared_deps=}"
-            f"\n\t{excluded_deps=}"
-            f"\n\t{known_unimported_deps=}"
-            f"\n\t{known_undeclared_deps=}"
+            f"\nResolving:"
+            f"\n\timported_deps={sorted(imported_deps)}"
+            f"\n\tdeclared_deps={sorted(declared_deps)}"
+            f"\n\texcluded_deps={sorted(excluded_deps)}"
+            f"\n\tknown_unimported_deps={sorted(known_unimported_deps)}"
+            f"\n\tknown_undeclared_deps={sorted(known_undeclared_deps)}"
         )
 
     # parse the exclusions
@@ -650,20 +650,20 @@ def resolve_dependencies(
 
     if DEBUG:
         print(
-            f"Resolved:"
-            f"\n\t{imported=}"
-            f"\n\t{imported_known=}"
-            f"\n\t{imported_unknown=}"
-            f"\n\t{imported_excluded=}"
-            f"\n\t{declared_as_imported=}"
-            f"\n\t{declared=}"
-            f"\n\t{declared_known=}"
-            f"\n\t{declared_unknown=}"
-            f"\n\t{declared_excluded=}"
-            f"\n\t{imported_as_declated=}"
+            f"\nResolved dependencies:"
+            f"\n\timported={sorted(imported)}"
+            f"\n\timported_known={sorted(imported_known)}"
+            f"\n\timported_unknown={sorted(imported_unknown)}"
+            f"\n\timported_excluded={sorted(imported_excluded)}"
+            f"\n\tdeclared_as_imported={sorted(declared_as_imported)}"
+            f"\n\tdeclared={sorted(declared)}"
+            f"\n\tdeclared_known={sorted(declared_known)}"
+            f"\n\tdeclared_unknown={sorted(declared_unknown)}"
+            f"\n\tdeclared_excluded={sorted(declared_excluded)}"
+            f"\n\timported_as_declated={sorted(imported_as_declated)}"
             "\n\t------------------------"
-            f"\n\t{undeclared_deps=}"
-            f"\n\t{unimported_deps=}"
+            f"\n\tundeclared_dep={sorted(undeclared_deps)}"
+            f"\n\tunimported_dep={sorted(unimported_deps)}"
         )
 
     return ResolvedDependencies(
@@ -686,7 +686,6 @@ def check_deps(
     error_on_unimported_deps: bool = True,
     error_on_unknown_imports: bool = True,
     error_on_unknown_declars: bool = True,
-    debug: bool = False,
 ) -> int:
     r"""Check the dependencies of a module."""
     resolved_deps = resolve_dependencies(
@@ -715,18 +714,7 @@ def check_deps(
     if unknown_declars and error_on_unknown_declars:
         violations += 1
         print(f"Detected unknown declarations: {unknown_declars}")
-    if violations or debug:
-        print(
-            f"Resolved dependencies:"
-            f"\n\tdeclared_deps={sorted(declared_deps)}"
-            f"\n\timported_deps={sorted(imported_deps)}"
-            f"\n\texcluded_deps={sorted(excluded_deps)}"
-            f"\n\t-------------------------------------"
-            f"\n\tundeclared_deps={sorted(undeclared_deps)}"
-            f"\n\tunimported_deps={sorted(unimported_deps)}"
-            f"\n\tunknown_imports={sorted(unknown_imports)}"
-            f"\n\tunknown_declars={sorted(unknown_declars)}"
-        )
+
     return violations
     # endregion check project dependencies ---------------------------------------------
 
@@ -751,7 +739,6 @@ def check_pyproject(
     error_on_unknown_declars: bool = True,
     error_on_unknown_test_imports: bool = True,
     error_on_unknown_test_declars: bool = True,
-    debug: bool = False,
 ) -> int:
     r"""Check a single file."""
     violations = 0
@@ -763,9 +750,9 @@ def check_pyproject(
     project_name: Any = canonicalize_name(get_name_pyproject(config))
 
     # check project dependencies -------------------------------------------------------
-    requirements = get_requirements_from_pyproject(config)
+    main_requirements = get_requirements_from_pyproject(config)
     detected_deps = detect_dependencies(module_dir)
-    declared_deps = get_pypi_names(requirements | {project_name})
+    declared_deps = get_pypi_names(main_requirements | {project_name})
     imported_deps = get_import_names(detected_deps.third_party)
 
     violations = check_deps(
@@ -779,7 +766,6 @@ def check_pyproject(
         error_on_unimported_deps=error_on_unimported_deps,
         error_on_unknown_imports=error_on_unknown_imports,
         error_on_unknown_declars=error_on_unknown_declars,
-        debug=debug,
     )
 
     # check test dependencies ----------------------------------------------------------
@@ -789,17 +775,17 @@ def check_pyproject(
     test_requirements = get_dev_requirements_from_pyproject(config, "test")
     detected_test_deps = detect_dependencies(tests_dir)
     imported_test_deps = get_import_names(detected_test_deps.third_party)
-    declared_test_deps = get_pypi_names(test_requirements | {project_name})
+    declared_test_deps = get_pypi_names(test_requirements)
 
     # check for superfluous test dependencies
-    superfluous_test_deps = (declared_deps & declared_test_deps) - {project_name}
+    superfluous_test_deps = (declared_test_deps & declared_deps) - {project_name}
     if superfluous_test_deps and error_on_superfluous_test_deps:
         violations += 1
-        print(f"Detected superfluous dependencies: {superfluous_test_deps}")
+        print(f"Detected superfluous dependencies: {sorted(superfluous_test_deps)}")
 
     violations += check_deps(
-        imported_deps=imported_test_deps,
-        declared_deps=declared_test_deps,
+        imported_deps=imported_deps | imported_test_deps,  # use both
+        declared_deps=declared_deps | declared_test_deps,  # use both
         excluded_deps=get_canonical_names(exclude),
         known_unimported_deps=get_canonical_names(known_unimported_test_deps),
         known_undeclared_deps=get_canonical_names(known_undeclared_test_deps),
@@ -808,7 +794,6 @@ def check_pyproject(
         error_on_unimported_deps=error_on_unimported_test_deps,
         error_on_unknown_imports=error_on_unknown_test_imports,
         error_on_unknown_declars=error_on_unknown_test_declars,
-        debug=debug,
     )
 
     return violations
@@ -971,7 +956,6 @@ def main() -> None:
             error_on_unknown_test_declars=args.error_on_unknown_test_declars,
             # debug
             error_on_superfluous_test_deps=args.error_on_superfluous_test_deps,
-            debug=args.debug,
         )
     except Exception as exc:
         exc.add_note(f"Checking file {args.pyproject_file!s} failed!")
