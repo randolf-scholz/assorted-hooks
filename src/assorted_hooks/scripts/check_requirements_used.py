@@ -103,7 +103,8 @@ def get_packages() -> dict[ImportName, PypiName]:
         if not vals:
             raise ValueError(f"Found empty list of distributions for {key!r}.")
         if len(set(vals)) > 1:
-            raise ValueError(f"Found multiple distributions for {key!r}: {vals}.")
+            warnings.warn(f"Ignoring {key!r}: multiple distributions: {vals}.")
+            continue
 
         canonical_key = cast(ImportName, canonicalize_name(key))
         canonical_val = cast(PypiName, canonicalize_name(next(iter(vals))))
