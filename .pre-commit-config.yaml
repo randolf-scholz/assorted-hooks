@@ -6,7 +6,7 @@ default_language_version:
 repos:
   # test with pre-commit try-repo ../assorted-hooks --verbose --all-files
   - repo: https://github.com/randolf-scholz/assorted-hooks
-    rev: v0.4.1
+    rev: v0.4.2
     hooks:
       # pygrep-based hooks
       - id: check-separator-length
@@ -25,12 +25,12 @@ repos:
         args: ["--allow-one"]
       - id: python-standard-generics
       # script-based hooks
-      - id: update-pyproject-requirements
       - id: check-clean-interface
         files: "^src/"
+      - id: update-pyproject-requirements
+      - id: check-pyproject-requirements-used
       # pyproject hooks
       - id: check-pyproject-requirements-valid
-      - id: check-pyproject-requirements-used
       - id: check-pyproject-requirements-maintained
       # other hooks
       - id: check-resolved-github-issues
