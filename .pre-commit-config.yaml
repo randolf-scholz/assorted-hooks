@@ -9,7 +9,7 @@ repos:
     rev: v0.4.2
     hooks:
       # pygrep-based hooks
-      - id: check-separator-length
+      - id: check-separator-length-88
       - id: pyarrow-timestamp-seconds
       - id: python-consider-using-raw-string
       - id: python-no-blanket-type-ignore
