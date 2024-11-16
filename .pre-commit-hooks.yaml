@@ -34,31 +34,6 @@
   types: [python]
 # endregion ast-based ------------------------------------------------------------------
 
-# region pyproject-checks --------------------------------------------------------------
-- id: check-pyproject-requirements-valid
-  name: check-pyproject-requirements-valid
-  description: "Check that requirements are well-formed."
-  entry: check-pyproject-requirements-valid
-  files: ^pyproject\.toml$
-  language: python
-  types: [toml]
-- id: check-pyproject-requirements-maintained
-  name: check-pyproject-requirements-maintained
-  description: "Check that dependencies have been maintained."
-  files: ^pyproject\.toml$
-  language: python
-  types: [toml]
-  entry: check-pyproject-requirements-maintained
-- id: check-pyproject-requirements-maintained-unlisted
-  name: check-pyproject-requirements-maintained-unlisted
-  description: "Check that unlisted (transive) dependencies have been maintained."
-  files: ^pyproject\.toml$
-  language: python
-  types: [toml]
-  entry: check-pyproject-requirements-maintained
-  args: ["--check-unlisted"]
-# endregion pyproject-checks -----------------------------------------------------------
-
 # region misc --------------------------------------------------------------------------
 - id: check-archived-hooks
   name: check-archived-hooks
@@ -76,7 +51,54 @@
   language: python
   stages: [manual]
   types: [text]
+- id: check-requirements-valid
+  name: check-requirements-valid
+  entry: check-requirements-valid
+  description: "Check that requirements are well-formed."
+  files: ^pyproject\.toml$
+  language: python
+  types: [toml]
+- id: check-requirements-maintained
+  name: check-requirements-maintained
+  entry: check-requirements-maintained
+  description: "Check that dependencies have been maintained."
+  files: ^pyproject\.toml$
+  language: python
+  types: [toml]
+- id: check-requirements-maintained-unlisted
+  name: check-requirements-maintained-unlisted
+  entry: check-requirements-maintained
+  args: ["--check-unlisted"]
+  description: "Check that unlisted (transive) dependencies have been maintained."
+  files: ^pyproject\.toml$
+  language: python
+  types: [toml]
 # endregion misc -----------------------------------------------------------------------
+
+# region scripts -----------------------------------------------------------------------
+- id: check-requirements-used
+  name: check-requirements-used
+  description: "Check that listed dependencies are used in code and vice-versa."
+  entry: src/assorted_hooks/scripts/check_requirements_used.py
+  files: ^pyproject\.toml$
+  language: script
+  types: [toml]
+- id: update-requirements
+  name: update-requirements
+  description: "Update dependencies to >=currently_installed. (default: manual)"
+  entry: src/assorted_hooks/scripts/update_requirements.py
+  files: ^pyproject\.toml$
+  language: script
+  stages: [manual]
+  types: [toml]
+- id: check-clean-interface
+  name: check-clean-interface
+  description: "Check that __all__ holds all exported variables."
+  entry: src/assorted_hooks/scripts/check_clean_interface.py
+  language: script
+  require_serial: true # otherwise module is loaded multiple times
+  types: [python]
+# endregion scripts --------------------------------------------------------------------
 
 # region pygrep ------------------------------------------------------------------------
 # NOTE: This regex checks comments begin with a `#`, `%`, `//` (padded to length 2)
@@ -144,7 +166,7 @@
   types: [python]
 - id: pyarrow-timestamp-seconds
   name: pyarrow-timestamp-seconds
-  description: "Check for usage of second resolution timestamps (https://github.com/apache/arrow/issues/41382)."
+  description: "Flags `timestamp('s')` as a potential bug."
   entry: '\b(timestamp\[s\]\[pyarrow\]|timestamp\((unit=)?"s"|datetime64\[s\])'
   language: pygrep
   types: [python]
@@ -161,31 +183,6 @@
   language: pygrep
   types: [python]
 # endregion pygrep ---------------------------------------------------------------------
-
-# region scripts -----------------------------------------------------------------------
-- id: check-pyproject-requirements-used
-  name: check-pyproject-requirements-used
-  description: "Check that listed dependencies are used in code and vice-versa."
-  entry: src/assorted_hooks/scripts/check_pyproject_requirements_used.py
-  files: ^pyproject\.toml$
-  language: script
-  types: [toml]
-- id: update-pyproject-requirements
-  name: update-pyproject-requirements
-  description: "Update dependencies to >=currently_installed. (default: manual)"
-  entry: src/assorted_hooks/scripts/update_pyproject_requirements.py
-  files: ^pyproject\.toml$
-  language: script
-  stages: [manual]
-  types: [toml]
-- id: check-clean-interface
-  name: check-clean-interface
-  description: "Check that __all__ holds all exported variables."
-  entry: src/assorted_hooks/scripts/check_clean_interface.py
-  language: script
-  require_serial: true # otherwise module is loaded multiple times
-  types: [python]
-# endregion scripts --------------------------------------------------------------------
 
 # region latex -------------------------------------------------------------------------
 - id: chktex
@@ -214,7 +211,7 @@
   language: script
   types: [tex]
   files: '\.tex$'
-  entry: "./src/lacheck_wrapper.sh"
+  entry: src/lacheck_wrapper.sh
   # NOTE: lacheck only takes a single file at a time, so we need to use xargs
   # NOTE: lacheck always returns 0, so we need to grep for output
   # NOTE: grep has exit code 1 if no matches are found, so we need to invert with `!`
@@ -222,10 +219,10 @@
 # endregion latex ----------------------------------------------------------------------
 
 # region pyright-wrapper ---------------------------------------------------------------
-- id: pyright-wrapper
-  name: pyright-wrapper
+- id: pyright-concise
+  name: pyright-concise
   description: "Wrapper for pyright that produces more concise output."
-  entry: "./src/pyright_wrapper.sh"
+  entry: src/pyright_wrapper.sh
   language: python
   types_or: [python, pyi]
   require_serial: true

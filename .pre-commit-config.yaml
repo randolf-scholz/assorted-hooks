@@ -27,11 +27,11 @@ repos:
       # script-based hooks
       - id: check-clean-interface
         files: "^src/"
-      - id: update-pyproject-requirements
-      - id: check-pyproject-requirements-used
+      - id: update-requirements
+      - id: check-requirements-used
       # pyproject hooks
-      - id: check-pyproject-requirements-valid
-      - id: check-pyproject-requirements-maintained
+      - id: check-requirements-valid
+      - id: check-requirements-maintained
       # other hooks
       - id: check-resolved-github-issues
       - id: check-archived-hooks

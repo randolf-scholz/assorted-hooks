@@ -63,10 +63,10 @@ ISSUE_REGEX: re.Pattern = re.compile(r"""(?x:  # verbose regex
 r"""Compiled regex for issue references."""
 
 
-def find_issues(text: str, /) -> Iterator[IssueMatch]:
+def find_issues(text: str, /, *, pattern: re.Pattern) -> Iterator[IssueMatch]:
     r"""Find all issues in the text, as dictionary indexed by line/column number."""
     for line_num, line in enumerate(text.splitlines()):
-        for match in ISSUE_REGEX.finditer(line):
+        for match in pattern.finditer(line):
             yield IssueMatch(
                 line=int(line_num + 1),
                 col=match.start() + 1,
@@ -151,6 +151,7 @@ def check_file(
     /,
     *,
     git: Github,
+    prefix: str = r"FIXME:\s*",
     ignore_comments: bool = True,
 ) -> int:
     r"""Check if issues are closed."""
@@ -159,8 +160,9 @@ def check_file(
     path = Path(filepath)
     fname = str(path)
     text = path.read_text(encoding="utf8")
+    pattern = re.compile(rf"{prefix}{ISSUE_REGEX.pattern}")
 
-    for issue in find_issues(text):
+    for issue in find_issues(text, pattern=pattern):
         if ignore_comments and issue.comment is not None:
             continue
         if is_closed_issue(issue, git=git):
@@ -196,6 +198,12 @@ def main() -> None:
         help="Ignore urls that point to comments on issues rather than issues themselves.",
     )
     parser.add_argument(
+        "--prefix",
+        type=str,
+        default=r"FIXME:\s*",
+        help="Regular expression for the prefix of the issue.",
+    )
+    parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,
         type=bool,
@@ -220,7 +228,10 @@ def main() -> None:
         __logger__.debug('Checking "%s:0"', file)
         try:
             violations += check_file(
-                file, git=git, ignore_comments=args.ignore_comments
+                file,
+                git=git,
+                ignore_comments=args.ignore_comments,
+                prefix=args.prefix,
             )
         except Exception as exc:
             raise RuntimeError(f"{file!s}: Checking file failed!") from exc
