@@ -14,7 +14,7 @@ name = "assorted-hooks"
 
 dependencies = ["wget>=3.2"]
 
-[project.optional-dependencies]
+[dependency-groups]
 test = ["unittest"]
 """
 

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 # region project configuration ---------------------------------------------------------
 [project]
 name = "assorted-hooks"
-version = "0.5.4"
+version = "0.5.5"
 authors = [{ name = "Randolf Scholz", email = "randolf.scholz@gmail.com" }]
 description = "Custom pre-commit hooks"
 
@@ -68,10 +68,11 @@ dev = [
 ]
 test = [
     "pytest>=8.3.3",
-    "pytest-xdist>=3.6.1",
-    "pytest-rerunfailures>=14.0",
-    "pytest-cov>=6.0.0",
     "pytest-benchmark>=5.1.0",
+    "pytest-cov>=6.0.0",
+    "pytest-repeat>=0.9.3",
+    "pytest-rerunfailures>=14.0",
+    "pytest-xdist>=3.6.1",
 ]
 # endregion project configuration ------------------------------------------------------
 

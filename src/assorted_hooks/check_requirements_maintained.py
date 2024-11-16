@@ -27,7 +27,7 @@ import importlib.metadata as importlib_metadata
 import json
 import tomllib
 import warnings
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from datetime import datetime, timedelta
 from functools import partial
 from typing import Any, NamedTuple, TypeAlias
@@ -143,6 +143,7 @@ def check_pyproject(
     pyproject: JSON,
     /,
     *,
+    exclude: Sequence[str] = (),
     check_optional: bool = True,
     check_unlisted: bool = False,
     threshold: int = 1000,
@@ -202,7 +203,7 @@ def check_pyproject(
     unmaintained_packages: frozenset[NormalizedName] = get_canonical_names(
         pkg
         for pkg, (_, upload_date) in latest_releases.items()
-        if upload_date < threshold_date
+        if upload_date < threshold_date and pkg not in exclude
     )
     # normalize the names
     bad_direct_deps = unmaintained_packages & set(project_main_deps)
@@ -274,6 +275,14 @@ def main() -> None:
         help="The path to the pyproject.toml file.",
     )
     parser.add_argument(
+        "--exclude",
+        "-e",
+        nargs="+",
+        type=str,
+        default=[],
+        help="List of packages to exclude from the check.",
+    )
+    parser.add_argument(
         "--threshold",
         type=int,
         default=1000,
@@ -307,6 +316,7 @@ def main() -> None:
     try:
         violations = check_file(
             args.pyproject_file,
+            exclude=args.exclude,
             check_optional=args.check_optional,
             check_unlisted=args.check_unlisted,
             threshold=args.threshold,
