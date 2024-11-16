@@ -47,6 +47,7 @@ __all__ = [
     "get_module",
     "get_name_pyproject",
     "get_packages",
+    "get_packages_inverse",
     "get_pypi_names",
     "get_requirement_origin",
     "get_requirements_from_ast",
@@ -69,6 +70,7 @@ import sys
 import tomllib
 import warnings
 from ast import Import, ImportFrom
+from collections import defaultdict
 from collections.abc import Iterable, Iterator, Sequence, Set as AbstractSet
 from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass, field
@@ -96,21 +98,29 @@ def canonicalize_name(name: str, /) -> NormalizedName:
     return cast(NormalizedName, normalized)
 
 
-def get_packages() -> dict[ImportName, PypiName]:
+def get_packages() -> dict[ImportName, frozenset[PypiName]]:
     r"""Get the mapping of module names to their pip-package names."""
-    d: dict[ImportName, PypiName] = {}
+    d: dict[ImportName, frozenset[PypiName]] = {}
     for key, vals in metadata.packages_distributions().items():
         if not vals:
             raise ValueError(f"Found empty list of distributions for {key!r}.")
-        if len(set(vals)) > 1:
-            warnings.warn(f"Ignoring {key!r}: multiple distributions: {vals}.")
-            continue
 
         canonical_key = cast(ImportName, canonicalize_name(key))
-        canonical_val = cast(PypiName, canonicalize_name(next(iter(vals))))
-
-        d[canonical_key] = canonical_val
+        canonical_vals = frozenset(cast(PypiName, canonicalize_name(v)) for v in vals)
+        d[canonical_key] = canonical_vals
     return d
+
+
+def get_packages_inverse() -> dict[PypiName, frozenset[ImportName]]:
+    r"""Get the mapping of pip-package names to their module names."""
+    d: dict[PypiName, set[ImportName]] = defaultdict(set)
+    for key, vals in metadata.packages_distributions().items():
+        canonical_key = cast(ImportName, canonicalize_name(key))
+        for val in vals:
+            canonical_value = cast(PypiName, canonicalize_name(val))
+            d[canonical_value].add(canonical_key)
+    # convert to frozenset
+    return {k: frozenset(v) for k, v in d.items()}
 
 
 class InvalidRequirement(ValueError):  # noqa: N818
@@ -169,9 +179,9 @@ STDLIB_MODULES: frozenset[NormalizedName] = frozenset(
     map(canonicalize_name, sys.stdlib_module_names)
 )
 r"""A set of all standard library modules."""
-PYPI_NAMES: dict[ImportName, PypiName] = get_packages()
+PYPI_NAMES: dict[ImportName, frozenset[PypiName]] = get_packages()
 r"""A dictionary that maps module names to their pip-package names."""
-IMPORT_NAMES: dict[PypiName, ImportName] = {v: k for k, v in PYPI_NAMES.items()}
+IMPORT_NAMES: dict[PypiName, frozenset[ImportName]] = get_packages_inverse()
 r"""A dictionary that maps pip-package names to their module names."""
 SILENT: bool = True
 r"""Global flag to suppress output."""
@@ -573,9 +583,9 @@ class ResolvedDependencies(NamedTuple):
     r"""Dependencies that are imported but not declared."""
     unimported_deps: AbstractSet[PypiName]
     r"""Dependencies that are declared but not imported."""
-    unknown_imports: AbstractSet[ImportName]
+    imported_unknown: AbstractSet[ImportName]
     r"""Dependencies that are imported but not recognized."""
-    unknown_declars: AbstractSet[PypiName]
+    declared_unknown: AbstractSet[PypiName]
     r"""Dependencies that are declared but not recognized."""
 
 
@@ -610,17 +620,16 @@ def resolve_dependencies(
     # parse the exclusions
     imported_excluded: set[ImportName] = (
         {dep for dep in excluded_deps if dep in PYPI_NAMES}
-        | {IMPORT_NAMES[dep] for dep in excluded_deps if dep in IMPORT_NAMES}
+        | {x for dep in excluded_deps for x in IMPORT_NAMES.get(dep, ())}
         | {dep for dep in known_unimported_deps if dep in PYPI_NAMES}
-        | {IMPORT_NAMES[dep] for dep in known_unimported_deps if dep in IMPORT_NAMES}
+        | {x for dep in known_unimported_deps for x in IMPORT_NAMES.get(dep, ())}
     )
     declared_excluded: set[PypiName] = (
         {dep for dep in excluded_deps if dep in IMPORT_NAMES}
-        | {PYPI_NAMES[dep] for dep in excluded_deps if dep in PYPI_NAMES}
+        | {x for dep in excluded_deps for x in PYPI_NAMES.get(dep, ())}
         | {dep for dep in known_undeclared_deps if dep in IMPORT_NAMES}
-        | {PYPI_NAMES[dep] for dep in known_undeclared_deps if dep in PYPI_NAMES}
+        | {x for dep in known_undeclared_deps for x in PYPI_NAMES.get(dep, ())}
     )
-
     # map the imported dependencies to their pip-package names
     declared: frozenset[PypiName] = declared_deps - declared_excluded
     imported: frozenset[ImportName] = imported_deps - imported_excluded
@@ -629,29 +638,29 @@ def resolve_dependencies(
     declared_unknown = declared - IMPORT_NAMES.keys()
     imported_known = imported - imported_unknown
     declared_known = declared - declared_unknown
+    declared_as_imported = {x for dep in declared_known for x in IMPORT_NAMES[dep]}
+    imported_as_declated = {x for dep in imported_known for x in PYPI_NAMES[dep]}
 
     undeclared_deps = imported_known - (
-        {IMPORT_NAMES[dep] for dep in declared_known}
-        | imported_unknown
-        | imported_excluded
+        declared_as_imported | imported_unknown | imported_excluded
     )
     unimported_deps = declared - (
-        {PYPI_NAMES[dep] for dep in imported_known}
-        | declared_unknown
-        | declared_excluded
+        imported_as_declated | declared_unknown | declared_excluded
     )
 
     if DEBUG:
         print(
             f"Resolved:"
             f"\n\t{imported=}"
-            f"\n\t{imported_unknown=}"
             f"\n\t{imported_known=}"
+            f"\n\t{imported_unknown=}"
             f"\n\t{imported_excluded=}"
+            f"\n\t{declared_as_imported=}"
             f"\n\t{declared=}"
             f"\n\t{declared_known=}"
-            f"\n\t{declared_excluded=}"
             f"\n\t{declared_unknown=}"
+            f"\n\t{declared_excluded=}"
+            f"\n\t{imported_as_declated=}"
             "\n\t------------------------"
             f"\n\t{undeclared_deps=}"
             f"\n\t{unimported_deps=}"
@@ -660,8 +669,8 @@ def resolve_dependencies(
     return ResolvedDependencies(
         undeclared_deps=undeclared_deps,
         unimported_deps=unimported_deps,
-        unknown_imports=imported_unknown,
-        unknown_declars=declared_unknown,
+        imported_unknown=imported_unknown,
+        declared_unknown=declared_unknown,
     )
 
 
@@ -689,8 +698,8 @@ def check_deps(
     )
     undeclared_deps = resolved_deps.undeclared_deps
     unimported_deps = resolved_deps.unimported_deps
-    unknown_imports = resolved_deps.unknown_imports
-    unknown_declars = resolved_deps.unknown_declars
+    unknown_imports = resolved_deps.imported_unknown
+    unknown_declars = resolved_deps.declared_unknown
 
     violations = 0
 
