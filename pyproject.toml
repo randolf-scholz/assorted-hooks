@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 # region project configuration ---------------------------------------------------------
 [project]
 name = "assorted-hooks"
-version = "0.5.5"
+version = "0.5.51"
 authors = [{ name = "Randolf Scholz", email = "randolf.scholz@gmail.com" }]
 description = "Custom pre-commit hooks"
 
@@ -29,7 +29,7 @@ classifiers = [
 # dependencies
 requires-python = ">=3.12"
 dependencies = [
-    "aiohttp>=3.11.2",
+    "aiohttp>=3.11.11",
     "packaging>=24.2",
     "pygithub>=2.5.0",
     "pyyaml>=6.0.2",
@@ -59,19 +59,19 @@ update-requirements = "assorted_hooks.scripts.update_requirements:main"
 
 [dependency-groups]
 dev = [
-    "mypy>=1.13.0",
+    "mypy>=1.14.0",
     "pre-commit>=4.0.1",
-    "pyright>=1.1.389",
-    "ruff>=0.7.4",
-    "types-pyyaml>=6.0.12.20240917",
+    "pyright>=1.1.391",
+    "ruff>=0.8.4",
+    "types-pyyaml>=6.0.12.20241221",
     { include-group = "test" },
 ]
 test = [
-    "pytest>=8.3.3",
+    "pytest>=8.3.4",
     "pytest-benchmark>=5.1.0",
     "pytest-cov>=6.0.0",
     "pytest-repeat>=0.9.3",
-    "pytest-rerunfailures>=14.0",
+    "pytest-rerunfailures>=15.0",
     "pytest-xdist>=3.6.1",
 ]
 # endregion project configuration ------------------------------------------------------

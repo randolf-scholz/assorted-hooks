@@ -323,8 +323,7 @@ def main() -> None:
             debug=args.debug,
         )
     except Exception as exc:
-        exc.add_note(f'Checking file "{args.pyproject_file!s}" failed!')
-        raise
+        raise RuntimeError(f"{args.pyproject_file!s}: failed due to {exc!r}") from None
 
     if violations:
         print(f"{'-' * 79}\nFound {violations} violations.")
