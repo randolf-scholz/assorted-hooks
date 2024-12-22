@@ -82,12 +82,11 @@
   types: [toml]
 - id: update-requirements
   name: update-requirements
-  description: "Update dependencies to >=currently_installed. (Requires network access)"
+  description: "Update dependencies to >=currently_installed."
   entry: src/assorted_hooks/scripts/update_requirements.py
   files: ^pyproject\.toml$
   language: script
   types: [toml]
-  stages: [ manual ]
 - id: check-clean-interface
   name: check-clean-interface
   description: "Check that __all__ holds all exported variables."
