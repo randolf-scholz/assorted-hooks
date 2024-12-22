@@ -58,8 +58,12 @@ __all__ = [
     "RE_VERSION_GROUP",
     "RE_VERSION_NUMERIC",
     "RE_VERSION_NUMERIC_GROUP",
+    # CONSTANTS
+    "PKG_DICT",
+    # Types
+    "PypiName",
     # Functions
-    "get_pip_package_dict",
+    "canonicalize_name",
     "ignore_subgroups",
     "is_dependency_pattern",
     "main",
@@ -69,12 +73,30 @@ __all__ = [
 ]
 
 import argparse
-import json
+import logging
 import re
-import subprocess
-from functools import cache
+from importlib.metadata import distributions
 from pathlib import Path
 from re import Pattern
+from typing import NewType, cast
+
+_LOGGER = logging.getLogger(__name__)
+
+
+PypiName = NewType("PypiName", str)
+r"""A type hint for PyPI package names."""
+
+
+def canonicalize_name(name: str, /) -> PypiName:
+    r"""Normalize the name of a package (PEP 503)."""
+    normalized = re.sub(r"[-_.]+", "-", name).lower()
+    return cast(PypiName, normalized)
+
+
+PKG_DICT: dict[PypiName, str] = {
+    canonicalize_name(dist.metadata["Name"]): dist.version for dist in distributions()
+}
+r"""A dictionary of installed packages."""
 
 
 def ignore_subgroups(pattern: str | Pattern, /) -> str:
@@ -223,14 +245,6 @@ REGEXPS: dict[str, Pattern] = {
 # endregion Patterns -------------------------------------------------------------------
 
 
-@cache
-def get_pip_package_dict() -> dict[str, str]:
-    r"""Construct dictionary package -> version."""
-    output = subprocess.check_output(["pip", "list", "--format=json"])
-    pip_list: list[dict[str, str]] = json.loads(output)
-    return {pkg["name"].lower(): pkg["version"] for pkg in pip_list}
-
-
 def strip_version(version: str, /) -> str:
     r"""Strip the version string to the first three parts."""
     # get numeric part of version
@@ -253,9 +267,6 @@ def update_versions(
             f" Got {dependency_pattern.groupindex=} instead."
         )
 
-    # get the installed packages
-    installed_versions = get_pip_package_dict()
-
     # collect the new dependencies
     new_dependencies: dict[str, str] = {}
     # match all dependencies in the file
@@ -263,18 +274,11 @@ def update_versions(
         # extract the dependency, name, and version from the match
         groups = match.groupdict()
         dep: str = groups["dependency"]
-        pkg_name: str = groups["name"]
+        pkg_name: PypiName = canonicalize_name(groups["name"])
         old_version: str = groups["version"]
 
         # get the new version from the pip list
-        new_version = installed_versions.get(pkg_name)
-        # try replacing underscores with dashes and vice versa
-        if new_version is None:
-            new_version = installed_versions.get(pkg_name.replace("_", "-"))
-        if new_version is None:
-            new_version = installed_versions.get(pkg_name.replace("-", "_"))
-        if new_version is None:
-            new_version = installed_versions.get(pkg_name, old_version)
+        new_version: str = PKG_DICT.get(pkg_name, old_version)
 
         # strip the version to the first three parts
         new_version = strip_version(new_version)
@@ -307,7 +311,7 @@ def check_file(
 
     if debug:
         print(f"Processing {fname!r}")
-        print(f"Installed packages: {get_pip_package_dict()}")
+        print(f"Installed packages: {PKG_DICT}")
 
     # update [project.dependencies] and [project.optional-dependencies]
     pyproject = update_versions(pyproject, dependency_pattern=RE_PROJECT_DEP_GROUP)
@@ -351,6 +355,9 @@ def main() -> None:
         help="Print debug information.",
     )
     args = parser.parse_args()
+
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
 
     if args.autofix:
         print("Updating dependencies...")
