@@ -32,11 +32,12 @@
 - id: check-archived-hooks
   name: check-archived-hooks
   entry: check-archived-hooks
-  description: "Check for references to archived hooks."
+  description: "Check for references to archived hooks. (Requires network access)"
   require_serial: true
   language: python
   types: [yaml]
   files: ^\.pre-commit-config\.yaml$
+  stages: [pre-push]
 - id: check-resolved-github-issues
   name: check-resolved-github-issues
   entry: check-github-issues
@@ -55,18 +56,20 @@
 - id: check-requirements-maintained
   name: check-requirements-maintained
   entry: check-requirements-maintained
-  description: "Check that dependencies have been maintained."
+  description: "Check that dependencies have been maintained. (Requires network access)"
   files: ^pyproject\.toml$
   language: python
   types: [toml]
+  stages: [pre-push]
 - id: check-requirements-maintained-unlisted
   name: check-requirements-maintained-unlisted
   entry: check-requirements-maintained
   args: ["--check-unlisted"]
-  description: "Check that unlisted (transive) dependencies have been maintained."
+  description: "Check that unlisted (transitive) dependencies have been maintained."
   files: ^pyproject\.toml$
   language: python
   types: [toml]
+  stages: [ pre-push ]
 # endregion misc -----------------------------------------------------------------------
 
 # region scripts -----------------------------------------------------------------------
@@ -79,12 +82,12 @@
   types: [toml]
 - id: update-requirements
   name: update-requirements
-  description: "Update dependencies to >=currently_installed. (default: manual)"
+  description: "Update dependencies to >=currently_installed. (Requires network access)"
   entry: src/assorted_hooks/scripts/update_requirements.py
   files: ^pyproject\.toml$
   language: script
-  stages: [manual]
   types: [toml]
+  stages: [ manual ]
 - id: check-clean-interface
   name: check-clean-interface
   description: "Check that __all__ holds all exported variables."
