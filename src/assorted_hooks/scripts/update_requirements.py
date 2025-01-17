@@ -148,7 +148,7 @@ RE_VERSION = re.compile(
 VERSION = RE_VERSION.pattern
 RE_VERSION_GROUP = re.compile(rf"""(?P<version>{VERSION})""")
 VERSION_GROUP = RE_VERSION_GROUP.pattern
-assert "version" in RE_VERSION_GROUP.groupindex, f"{RE_VERSION_GROUP.groupindex=}."  # noqa: S101
+assert "version" in RE_VERSION_GROUP.groupindex, f"{RE_VERSION_GROUP.groupindex=}."
 
 RE_VERSION_NUMERIC = re.compile(r"""[0-9]+(?:[.][0-9]+)*""")
 VERSION_NUMERIC = RE_VERSION_NUMERIC.pattern
@@ -161,14 +161,14 @@ RE_NAME = re.compile(r"""\b[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?\b""")
 NAME = RE_NAME.pattern
 RE_NAME_GROUP = re.compile(rf"""(?P<name>{NAME})""")
 NAME_GROUP = RE_NAME_GROUP.pattern
-assert RE_NAME_GROUP.groups == 1, f"{RE_NAME_GROUP.groups=}."  # noqa: S101
+assert RE_NAME_GROUP.groups == 1, f"{RE_NAME_GROUP.groups=}."
 
 # NOTE: to get a list of extras, match NAME_PATTERN with EXTRAS_PATTERN
 RE_EXTRAS = re.compile(rf"""(?:\[\s*)(?:{NAME})(?:\s*,{NAME})*(?:\s*\])""")
 EXTRAS = RE_EXTRAS.pattern
 RE_EXTRAS_GROUP = re.compile(rf"""(?P<extras>{EXTRAS})""")
 EXTRAS_GROUP = RE_EXTRAS_GROUP.pattern
-assert RE_EXTRAS_GROUP.groups == 1, f"{RE_EXTRAS_GROUP.groups=}."  # noqa: S101
+assert RE_EXTRAS_GROUP.groups == 1, f"{RE_EXTRAS_GROUP.groups=}."
 
 # for dependencies like ``name [fred,bar] @ http://foo.com ; python_version=='2.7'``
 RE_URL = re.compile(r"""\b[\w:/-]+\b""")
@@ -187,9 +187,9 @@ RE_PROJECT_DEP = re.compile(
 PROJECT_DEP = RE_PROJECT_DEP.pattern
 RE_PROJECT_DEP_GROUP = re.compile(rf"""(?P<dependency>{PROJECT_DEP})""")
 PROJECT_DEP_GROUP = RE_PROJECT_DEP_GROUP.pattern
-assert is_dependency_pattern(  # noqa: S101
-    RE_PROJECT_DEP_GROUP
-), f"{RE_PROJECT_DEP_GROUP.groupindex=}."
+assert is_dependency_pattern(RE_PROJECT_DEP_GROUP), (
+    f"{RE_PROJECT_DEP_GROUP.groupindex=}."
+)
 
 RE_POETRY_DEP = re.compile(rf"""(?x:
         {NAME_GROUP}
@@ -201,9 +201,9 @@ RE_POETRY_DEP = re.compile(rf"""(?x:
 POETRY_DEP = RE_POETRY_DEP.pattern
 RE_POETRY_DEP_GROUP = re.compile(rf"""(?P<dependency>{POETRY_DEP})""")
 POETRY_DEP_GROUP = RE_POETRY_DEP_GROUP.pattern
-assert is_dependency_pattern(  # noqa: S101
-    RE_POETRY_DEP_GROUP
-), f"{RE_PROJECT_DEP_GROUP.groupindex=}."
+assert is_dependency_pattern(RE_POETRY_DEP_GROUP), (
+    f"{RE_PROJECT_DEP_GROUP.groupindex=}."
+)
 
 PATTERNS: dict[str, str] = {
     "EXTRAS": EXTRAS,

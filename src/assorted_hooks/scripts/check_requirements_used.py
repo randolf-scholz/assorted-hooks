@@ -80,7 +80,7 @@ from importlib.util import find_spec
 from pathlib import Path
 from re import Pattern
 from types import ModuleType
-from typing import Any, NamedTuple, NewType, Optional, Self, cast
+from typing import Any, Final, NamedTuple, NewType, Optional, Self, cast
 
 # region pypa.packaging ----------------------------------------------------------------
 # NOTE: Manual implementation instead of pypa.packaging to avoid dependency.
@@ -90,6 +90,8 @@ ImportName = NewType("ImportName", NormalizedName)
 r"""A type hint for PyPI package names."""
 PypiName = NewType("PypiName", NormalizedName)
 r"""A type hint for PyPI package names."""
+_EMPTY_SET: Final[AbstractSet[Any]] = frozenset()
+r"""An empty frozenset."""
 
 
 def canonicalize_name(name: str, /) -> NormalizedName:
@@ -556,10 +558,18 @@ def get_name_pyproject(config: dict, /) -> str:
             raise ValueError("No project name found in [project] or [tool.poetry].")
 
 
-def detect_dependencies(filename: str | Path, /) -> GroupedRequirements:
+def detect_dependencies(
+    filename: str | Path, /, *, excluded: AbstractSet[str] = _EMPTY_SET
+) -> GroupedRequirements:
     r"""Collect the dependencies from files in the given path."""
     path = Path(filename)
+    assert path.exists(), f"Invalid path: {path}"
+
     grouped_deps: GroupedRequirements = GroupedRequirements()
+
+    # skip if any part of the path is excluded
+    if any(part in excluded for part in path.parts):
+        return grouped_deps
 
     if path.is_file():  # Single file
         grouped_deps |= GroupedRequirements.from_file(path)
@@ -741,7 +751,11 @@ def check_pyproject(
     error_on_unknown_test_declars: bool = True,
 ) -> int:
     r"""Check a single file."""
-    violations = 0
+    violations: int
+    assert Path(module_dir).is_dir(), f"Invalid module directory: {module_dir}"
+    assert tests_dir is None or Path(tests_dir).is_dir(), (
+        f"Invalid tests directory: {tests_dir}"
+    )
 
     with open(pyproject_file, "rb") as file:
         config = tomllib.load(file)
@@ -749,10 +763,12 @@ def check_pyproject(
     # get the normalized project name
     project_name: Any = canonicalize_name(get_name_pyproject(config))
     excluded_deps = get_canonical_names(exclude)
+    # exclude "tests" within module directory
+    excluded_subdirs = set() if tests_dir is None else {Path(tests_dir).stem}
 
     # check project dependencies -------------------------------------------------------
     main_requirements = get_requirements_from_pyproject(config)
-    detected_deps = detect_dependencies(module_dir)
+    detected_deps = detect_dependencies(module_dir, excluded=excluded_subdirs)
     declared_deps = get_pypi_names(main_requirements | {project_name})
     imported_deps = get_import_names(detected_deps.third_party)
     known_unimported_deps = get_pypi_names(known_unimported)
