@@ -603,6 +603,7 @@ def resolve_dependencies(
     imported_deps: frozenset[ImportName],
     declared_deps: frozenset[PypiName],
     excluded_deps: frozenset[Any],
+    local_deps: frozenset[Any],
     known_unimported_deps: frozenset[PypiName],  # PyPIName
     known_undeclared_deps: frozenset[ImportName],  # ImportName
 ) -> ResolvedDependencies:
@@ -612,6 +613,7 @@ def resolve_dependencies(
         imported_deps: The imported dependencies.
         declared_deps: The declared dependencies.
         excluded_deps: Dependencies to exclude, no matter what.
+        local_deps: The local dependencies.
         known_unimported_deps: Dependencies to exclude from the declared dependencies.
         known_undeclared_deps: Dependencies to exclude from the imported dependencies.
     """
@@ -621,6 +623,7 @@ def resolve_dependencies(
             f"\n\timported_deps={sorted(imported_deps)}"
             f"\n\tdeclared_deps={sorted(declared_deps)}"
             f"\n\texcluded_deps={sorted(excluded_deps)}"
+            f"\n\tlocal_deps={sorted(local_deps)}"
             f"\n\tknown_unimported_deps={sorted(known_unimported_deps)}"
             f"\n\tknown_undeclared_deps={sorted(known_undeclared_deps)}"
         )
@@ -641,37 +644,44 @@ def resolve_dependencies(
     # map the imported dependencies to their pip-package names
     declared: frozenset[PypiName] = declared_deps - declared_excluded
     imported: frozenset[ImportName] = imported_deps - imported_excluded
+    local: frozenset[Any] = local_deps
 
-    imported_unknown = imported - PYPI_NAMES.keys()
-    declared_unknown = declared - IMPORT_NAMES.keys()
-    imported_known = imported - imported_unknown
-    declared_known = declared - declared_unknown
-    declared_as_imported = {x for dep in declared_known for x in IMPORT_NAMES[dep]}
-    imported_as_declated = {x for dep in imported_known for x in PYPI_NAMES[dep]}
+    imported_known = imported & PYPI_NAMES.keys()
+    declared_known = declared & IMPORT_NAMES.keys()
 
-    undeclared_deps = imported_known - (
-        declared_as_imported | imported_unknown | imported_excluded
+    imported_unknown = imported - (imported_known | local)
+    declared_unknown = declared - (declared_known | local)
+
+    # NOTE: one name can have multiple results, as multiple PyPI packages can map to the same module.
+    pypi_names_of_imported = {x for dep in imported_known for x in PYPI_NAMES[dep]}
+    import_names_of_declared = {x for dep in declared_known for x in IMPORT_NAMES[dep]}
+
+    undeclared_deps = imported - (
+        import_names_of_declared | imported_excluded | local_deps
     )
     unimported_deps = declared - (
-        imported_as_declated | declared_unknown | declared_excluded
+        pypi_names_of_imported | declared_excluded | local_deps
     )
 
     if DEBUG:
         print(
             f"\nResolved dependencies:"
-            f"\n\timported={sorted(imported)}"
-            f"\n\timported_known={sorted(imported_known)}"
-            f"\n\timported_unknown={sorted(imported_unknown)}"
-            f"\n\timported_excluded={sorted(imported_excluded)}"
-            f"\n\tdeclared_as_imported={sorted(declared_as_imported)}"
-            f"\n\tdeclared={sorted(declared)}"
-            f"\n\tdeclared_known={sorted(declared_known)}"
-            f"\n\tdeclared_unknown={sorted(declared_unknown)}"
-            f"\n\tdeclared_excluded={sorted(declared_excluded)}"
-            f"\n\timported_as_declated={sorted(imported_as_declated)}"
-            "\n\t------------------------"
-            f"\n\tundeclared_dep={sorted(undeclared_deps)}"
-            f"\n\tunimported_dep={sorted(unimported_deps)}"
+            f"\n\tlocal:                   {sorted(local)}"
+            "\n\t---------------------------"
+            f"\n\timported:                {sorted(imported)}"
+            f"\n\timported and known:      {sorted(imported_known)}"
+            f"\n\timported and excluded:   {sorted(imported_excluded)}"
+            f"\n\tdeclared packages:       {sorted(import_names_of_declared)}"
+            "\n\t---------------------------"
+            f"\n\tdeclared:                {sorted(declared)}"
+            f"\n\tdeclared and known:      {sorted(declared_known)}"
+            f"\n\tdeclared and excluded:   {sorted(declared_excluded)}"
+            f"\n\timported packages:       {sorted(pypi_names_of_imported)}"
+            "\n\t---------------------------"
+            f"\n\timported but undeclared: {sorted(undeclared_deps)}"
+            f"\n\tdeclared but unimported: {sorted(unimported_deps)}"
+            f"\n\tdeclared but unknown:    {sorted(declared_unknown)}"
+            f"\n\timported but unknown:    {sorted(imported_unknown)}"
         )
 
     return ResolvedDependencies(
@@ -687,6 +697,7 @@ def check_deps(
     declared_deps: frozenset[PypiName],
     imported_deps: frozenset[ImportName],
     excluded_deps: frozenset[NormalizedName],
+    local_deps: frozenset[NormalizedName],
     known_unimported_deps: frozenset[PypiName],
     known_undeclared_deps: frozenset[ImportName],
     # flags
@@ -700,6 +711,7 @@ def check_deps(
         declared_deps=declared_deps,
         imported_deps=imported_deps,
         excluded_deps=excluded_deps,
+        local_deps=local_deps,
         known_undeclared_deps=known_undeclared_deps,
         known_unimported_deps=known_unimported_deps,
     )
@@ -760,15 +772,20 @@ def check_pyproject(
 
     # get the normalized project name
     project_name: Any = canonicalize_name(get_name_pyproject(config))
+    testdir_name: Any = canonicalize_name(Path(tests_dir).stem) if tests_dir else None
+
     excluded_deps = get_canonical_names(exclude)
-    # exclude "tests" within module directory
-    excluded_subdirs = set() if tests_dir is None else {Path(tests_dir).stem}
+    excluded_subdirs = set() if testdir_name is None else {testdir_name}
 
     # check project dependencies -------------------------------------------------------
+    if DEBUG:
+        print(f"----- Checking MODULE DIR {module_dir} -----")
+
     main_requirements = get_requirements_from_pyproject(config)
     detected_deps = detect_dependencies(module_dir, excluded=excluded_subdirs)
-    declared_deps = get_pypi_names(main_requirements | {project_name})
+    declared_deps = get_pypi_names(main_requirements)
     imported_deps = get_import_names(detected_deps.third_party)
+    local_deps = frozenset({project_name})
     known_unimported_deps = get_pypi_names(known_unimported)
     known_undeclared_deps = get_import_names(known_undeclared)
 
@@ -776,6 +793,7 @@ def check_pyproject(
         imported_deps=imported_deps,
         declared_deps=declared_deps,
         excluded_deps=excluded_deps,
+        local_deps=local_deps,
         known_unimported_deps=known_unimported_deps,
         known_undeclared_deps=known_undeclared_deps,
         # flags
@@ -789,10 +807,14 @@ def check_pyproject(
     if tests_dir is None:
         return violations
 
+    if DEBUG:
+        print(f"----- Checking TEST DIR {testdir_name} -----")
+
     test_requirements = get_dev_requirements_from_pyproject(config, "test")
     detected_test_deps = detect_dependencies(tests_dir, excluded=set())
     imported_test_deps = get_import_names(detected_test_deps.third_party)
     declared_test_deps = get_pypi_names(test_requirements)
+    local_test_deps = frozenset({testdir_name})
     known_unimported_test_deps = get_pypi_names(known_unimported_test)
     known_undeclared_test_deps = get_import_names(known_undeclared_test)
 
@@ -806,6 +828,7 @@ def check_pyproject(
         imported_deps=imported_test_deps | imported_deps,  # use both
         declared_deps=declared_test_deps | declared_deps,  # use both
         excluded_deps=excluded_deps,
+        local_deps=local_test_deps | local_deps,  # use both
         known_unimported_deps=known_unimported_test_deps | known_unimported_deps,
         known_undeclared_deps=known_undeclared_test_deps | known_undeclared_deps,
         # flags
