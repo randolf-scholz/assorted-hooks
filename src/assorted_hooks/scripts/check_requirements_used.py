@@ -80,7 +80,7 @@ from importlib.util import find_spec
 from pathlib import Path
 from re import Pattern
 from types import ModuleType
-from typing import Any, Final, NamedTuple, NewType, Optional, Self, cast
+from typing import Any, NamedTuple, NewType, Optional, Self, cast
 
 # region pypa.packaging ----------------------------------------------------------------
 # NOTE: Manual implementation instead of pypa.packaging to avoid dependency.
@@ -90,8 +90,6 @@ ImportName = NewType("ImportName", NormalizedName)
 r"""A type hint for PyPI package names."""
 PypiName = NewType("PypiName", NormalizedName)
 r"""A type hint for PyPI package names."""
-_EMPTY_SET: Final[AbstractSet[Any]] = frozenset()
-r"""An empty frozenset."""
 
 
 def canonicalize_name(name: str, /) -> NormalizedName:
@@ -559,7 +557,7 @@ def get_name_pyproject(config: dict, /) -> str:
 
 
 def detect_dependencies(
-    filename: str | Path, /, *, excluded: AbstractSet[str] = _EMPTY_SET
+    filename: str | Path, /, *, excluded: AbstractSet[str]
 ) -> GroupedRequirements:
     r"""Collect the dependencies from files in the given path."""
     path = Path(filename)
@@ -575,7 +573,7 @@ def detect_dependencies(
         grouped_deps |= GroupedRequirements.from_file(path)
     elif path.is_dir():  # Directory
         for file_path in path.rglob("*.py"):
-            grouped_deps |= detect_dependencies(file_path)
+            grouped_deps |= detect_dependencies(file_path, excluded=excluded)
     else:  # assume module
         module_name = path.stem
         module = get_module(module_name)
@@ -792,7 +790,7 @@ def check_pyproject(
         return violations
 
     test_requirements = get_dev_requirements_from_pyproject(config, "test")
-    detected_test_deps = detect_dependencies(tests_dir)
+    detected_test_deps = detect_dependencies(tests_dir, excluded=set())
     imported_test_deps = get_import_names(detected_test_deps.third_party)
     declared_test_deps = get_pypi_names(test_requirements)
     known_unimported_test_deps = get_pypi_names(known_unimported_test)
