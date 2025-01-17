@@ -6,7 +6,7 @@ from textwrap import dedent
 from assorted_hooks.ast.check_typing import check_no_return_union
 
 
-def test_no_return_union_pep604():
+def test_no_return_union_pep604() -> None:
     code = r"""
     def foo(x: int) -> int | None: ...
     """
@@ -15,7 +15,7 @@ def test_no_return_union_pep604():
     assert check_no_return_union(tree, recursive=True, fname="test.py") == 1
 
 
-def test_no_return_union_pep604_recursion():
+def test_no_return_union_pep604_recursion() -> None:
     code = r"""
     def foo(x: int) -> list[None | int]: ...
     """
@@ -24,7 +24,7 @@ def test_no_return_union_pep604_recursion():
     assert check_no_return_union(tree, recursive=True, fname="test.py") == 1
 
 
-def test_no_return_union_typing_recursion():
+def test_no_return_union_typing_recursion() -> None:
     code = r"""
     def foo(x: int) -> list[Union[None, int]]: ...
     """
@@ -33,7 +33,7 @@ def test_no_return_union_typing_recursion():
     assert check_no_return_union(tree, recursive=True, fname="test.py") == 1
 
 
-def test_no_return_union_typing():
+def test_no_return_union_typing() -> None:
     code = r"""
     def foo(x: int) -> Union[int, None]: ...
     """
@@ -42,7 +42,7 @@ def test_no_return_union_typing():
     assert check_no_return_union(tree, recursive=True, fname="test.py") == 1
 
 
-def test_no_return_union_overload():
+def test_no_return_union_overload() -> None:
     """Test exclusion of overload implementation.
 
     We assume that a type-checker would select one of the overloads,
@@ -61,7 +61,7 @@ def test_no_return_union_overload():
     assert check_no_return_union(tree, recursive=True, fname="test.py") == 0
 
 
-def test_no_return_union_protocol():
+def test_no_return_union_protocol() -> None:
     r"""Test exclusion of Protocol implementation."""
     code = r"""
     @runtime_checkable
@@ -116,7 +116,7 @@ def test_no_return_union_protocol():
     )
 
 
-def test_no_return_union_protocol_contrafactual():
+def test_no_return_union_protocol_contrafactual() -> None:
     r"""Test exclusion of Protocol implementation."""
     code = r"""
     @runtime_checkable

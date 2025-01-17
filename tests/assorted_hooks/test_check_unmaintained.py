@@ -24,7 +24,7 @@ Optional dependency 'unittest' appears unmaintained (latest release: 0.0 from 20
 """
 
 
-def test_check_simple_example():
+def test_check_simple_example() -> None:
     # fake input of pyproject.toml
     with BytesIO(TEST_PYPROJECT_TOML) as file:
         config = tomllib.load(file)
@@ -511,7 +511,7 @@ wget = ">=3.2"
 """
 
 
-def test_check_complex_example():
+def test_check_complex_example() -> None:
     # fake input of pyproject.toml
     with BytesIO(COMPLEX_EXAMPLE) as file:
         config = tomllib.load(file)

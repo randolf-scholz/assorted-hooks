@@ -6,7 +6,7 @@ from textwrap import dedent
 from assorted_hooks.ast.check_typing import check_pep604_union
 
 
-def test_pep604_union():
+def test_pep604_union() -> None:
     code = r"""
     def foo(x: int) -> int | None: ...
     """

@@ -76,7 +76,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from typing import NamedTuple, TypeAlias, TypeGuard
 
-Func: TypeAlias = FunctionDef | AsyncFunctionDef
+Func: TypeAlias = FunctionDef | AsyncFunctionDef  # noqa: UP040
 r"""Type alias for function-defs."""
 
 

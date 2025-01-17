@@ -6,7 +6,7 @@ from textwrap import dedent
 from assorted_hooks.ast.check_typing import check_overload_default_ellipsis
 
 
-def test_overload_assign_positional_only():
+def test_overload_assign_positional_only() -> None:
     code = r"""
     @overload
     def foo(x: int, display: bool = True, /) -> int: ...
@@ -34,7 +34,7 @@ def test_overload_assign_positional_only():
     assert check_overload_default_ellipsis(tree, fname="test.py") == 0
 
 
-def test_overload_assign_positional_or_keyword():
+def test_overload_assign_positional_or_keyword() -> None:
     code = r"""
     @overload
     def foo(x: int, display: bool = True) -> int: ...
@@ -62,7 +62,7 @@ def test_overload_assign_positional_or_keyword():
     assert check_overload_default_ellipsis(tree, fname="test.py") == 0
 
 
-def test_overload_assign_keyword_only():
+def test_overload_assign_keyword_only() -> None:
     code = r"""
     @overload
     def foo(x: int, *, display: bool = True) -> int: ...

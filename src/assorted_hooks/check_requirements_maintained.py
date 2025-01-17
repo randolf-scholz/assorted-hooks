@@ -30,7 +30,7 @@ import warnings
 from collections.abc import Iterable, Sequence
 from datetime import datetime, timedelta
 from functools import partial
-from typing import Any, NamedTuple, TypeAlias
+from typing import Any, NamedTuple
 from urllib.request import urlopen
 
 from packaging.utils import NormalizedName, canonicalize_name
@@ -41,7 +41,7 @@ from assorted_hooks.utils import (
     get_requirements_from_pyproject,
 )
 
-JSON: TypeAlias = dict[str, Any]
+type JSON = dict[str, Any]
 TIMEOUT = 3  # seconds
 
 

@@ -160,7 +160,7 @@ def check_file(
     return violations
 
 
-def main():
+def main() -> None:
     r"""Main program."""
     parser = argparse.ArgumentParser(
         description="Check that __all__ exists.",

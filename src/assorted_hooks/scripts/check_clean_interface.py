@@ -157,10 +157,8 @@ def get_type_aliases(tree: AST, /) -> set[str]:
         match node:
             case AnnAssign(target=Name(id=name), annotation=Name(id="TypeAlias")):
                 type_aliases.add(name)
-        if sys.version_info >= (3, 12):
-            match node:
-                case ast.TypeAlias(name=Name(id=name)):
-                    type_aliases.add(name)
+            case ast.TypeAlias(name=Name(id=name)):
+                type_aliases.add(name)
 
     return type_aliases
 

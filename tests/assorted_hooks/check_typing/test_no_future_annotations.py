@@ -6,7 +6,7 @@ from textwrap import dedent
 from assorted_hooks.ast.check_typing import check_no_future_annotations
 
 
-def test_no_future_annotations():
+def test_no_future_annotations() -> None:
     code = r"""
     from __future__ import annotations
     """

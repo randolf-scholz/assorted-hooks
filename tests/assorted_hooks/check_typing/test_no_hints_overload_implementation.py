@@ -6,7 +6,7 @@ from textwrap import dedent
 from assorted_hooks.ast.check_typing import check_no_hints_overload_implementation
 
 
-def test_no_hints_overload_implementation_true_negative():
+def test_no_hints_overload_implementation_true_negative() -> None:
     code = r"""
     @overload
     def foo(x: int) -> int | None: ...
@@ -21,7 +21,7 @@ def test_no_hints_overload_implementation_true_negative():
     assert check_no_hints_overload_implementation(tree, fname="test.py") == 0
 
 
-def test_no_hints_overload_implementation_true_negative_class():
+def test_no_hints_overload_implementation_true_negative_class() -> None:
     code = r"""
     class X:
         @overload
@@ -40,7 +40,7 @@ def test_no_hints_overload_implementation_true_negative_class():
     assert check_no_hints_overload_implementation(tree, fname="test.py") == 0
 
 
-def test_no_hints_overload_implementation_true_args():
+def test_no_hints_overload_implementation_true_args() -> None:
     code = r"""
     @overload
     def foo(x: int) -> int | None: ...
@@ -55,7 +55,7 @@ def test_no_hints_overload_implementation_true_args():
     assert check_no_hints_overload_implementation(tree, fname="test.py") == 1
 
 
-def test_no_hints_overload_implementation_true_positive_return():
+def test_no_hints_overload_implementation_true_positive_return() -> None:
     code = r"""
     @overload
     def foo(x: int) -> int | None: ...

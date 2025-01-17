@@ -6,7 +6,7 @@ from textwrap import dedent
 from assorted_hooks.ast.check_typing import check_no_optional, check_optional
 
 
-def test_optional():
+def test_optional() -> None:
     code = r"""
     def foo(x: int) -> int | None: ...
     """

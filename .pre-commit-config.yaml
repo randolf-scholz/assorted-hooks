@@ -6,7 +6,7 @@ default_language_version:
 repos:
   # test with pre-commit try-repo ../assorted-hooks --verbose --all-files
   - repo: https://github.com/randolf-scholz/assorted-hooks
-    rev: v0.5.52
+    rev: v0.5.53
     hooks:
       # pygrep-based hooks
       - id: check-separator-length-88
@@ -55,25 +55,30 @@ repos:
       - id: trailing-whitespace
   # ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4
+    rev: v0.9.2
     hooks:
-      - id: ruff-format
-        files: "^src/|^tests/"
       - id: ruff
         name: ruff-isort
-        files: "^src/|^tests/"
-        args: ["--select", "I", "--fix"]
+        files: '^src/|^tests/'
+        args: [ "--select", "I", "--fix" ]
+      - id: ruff-format
+        files: '^src/|^tests/'
       - id: ruff
-        files: "^src/|^tests/"
+        files: '^src/|^tests/'
   # uv
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.5.11
+    rev: 0.5.20
     hooks:
       - id: uv-lock
-      - id: pip-compile
-        files: 'pyproject\.toml'
-        pass_filenames: true
-        args: ["--quiet", "--all-extras", "-o", "requirements.txt"]
+      - id: uv-export
+      - id: uv-sync
+        args: ["--upgrade"]
+        stages: [ "pre-commit" ]
+  # tach
+  - repo: https://github.com/gauge-sh/tach-pre-commit
+    rev: v0.21.0 # change this to the latest tag!
+    hooks:
+      - id: tach
   # markdownlint
   - repo: https://github.com/igorshubovych/markdownlint-cli
     rev: v0.43.0
@@ -81,9 +86,9 @@ repos:
       - id: markdownlint
         args:
           - "--disable" # disable rules
-          - "MD013" # Line length
-          - "MD033" # Inline HTML
-          - "--" # otherwise files are interpreted as args
+          - "MD013"     # Line length
+          - "MD033"     # Inline HTML
+          - "--"        # otherwise files are interpreted as args
   # shellcheck
   - repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.10.0.1
@@ -92,10 +97,36 @@ repos:
         args: ["-x", "--shell=bash", "--color=always", "--format=gcc", "--"]
   # pyright
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.391
+    rev: v1.1.392.post0
     hooks:
       - id: pyright
-        files: "^src/|^tests/"
+        # SEE: https://stackoverflow.com/a/20401674
+        #        entry: sh -c '! script -c "pyright $*" /dev/null | grep --color=never -Po "(?<=$PWD/)(.*:.*)"' --
+        # simple grep: grep --color=never -Po "$PWD/.*:.*"
+        # better ripgrep: rg --multiline --multiline-dotall "($PWD/[^\n]*?)(?:\n.*?)?(\(report\w+\))" -or '$1 $2'
+        # perl:  perl -0777 -ne "while (/((?:\x20+)(${path}[^\n\r]*?)(?:[\r\n].*?)?(\(report\w+\)))/gms) { print \"\$1 \$2\n\"}"
+        # FIXME: some weird issues with ripgrep + script.
+        # NOTE: The issue is likely control characters that are not being handled correctly.
+        #   In fact, it turns out the problem is precisely carriage return. We need to check [\n\r] instead of just \n
+        entry: |
+          bash -c '
+              path="${PWD//\//\\/}";
+              grey="\x1b\[90m"
+              end="\x1b\[0m"
+              code_group="(${grey}).*?\(report(\w+)\)";
+              git_root=$(git rev-parse --show-toplevel);
+              regex="\x20+(?:${git_root})/([^\r\n]*?)(?:[\r\n].*?)?${code_group}";
+              output="\$1 \$2(\$3)";
+              result=$(script -fqc "pyright $*" /dev/null | rg --multiline --multiline-dotall "$regex" -or "$output");
+              count=$(echo -n "$result" | grep -c "^");
+              if [ "$count" -ne 0 ]; then
+                  echo "$result";
+                  echo -e "\033[1;31mFound ${count} error(s)\033[0m";
+                  exit 1;
+              fi
+          ' --
+        files: '^src/|^tests/'
+        exclude: '/tasks/'
   # mypy
   - repo: local
     hooks:
@@ -104,7 +135,7 @@ repos:
         language: system
         require_serial: true
         types_or: [python, pyi]
-        files: "^src/|^tests/"
+        files: '^src/|^tests/'
         entry: mypy
         args:
           - "--hide-error-context"

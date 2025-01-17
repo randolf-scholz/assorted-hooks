@@ -9,7 +9,7 @@ from assorted_hooks.ast.check_typing import (
 )
 
 
-def test_no_tuple_isinstance():
+def test_no_tuple_isinstance() -> None:
     code = r"""
     isinstance(x, tuple)
     """
@@ -35,7 +35,7 @@ def test_no_tuple_isinstance():
     assert check_no_tuple_isinstance(tree, fname="test.py") == 1
 
 
-def test_no_tuple_issubclass():
+def test_no_tuple_issubclass() -> None:
     code = r"""
     issubclass(x, tuple)
     """
@@ -61,7 +61,7 @@ def test_no_tuple_issubclass():
     assert check_no_tuple_isinstance(tree, fname="test.py") == 1
 
 
-def test_no_union_isinstance():
+def test_no_union_isinstance() -> None:
     code = r"""
     isinstance(x, tuple)
     """
@@ -93,7 +93,7 @@ def test_no_union_isinstance():
     assert check_no_union_isinstance(tree, fname="test.py") == 1
 
 
-def test_no_union_issubclass():
+def test_no_union_issubclass() -> None:
     code = r"""
     issubclass(x, tuple)
     """
