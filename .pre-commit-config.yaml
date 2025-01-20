@@ -6,7 +6,7 @@ default_language_version:
 repos:
   # test with pre-commit try-repo ../assorted-hooks --verbose --all-files
   - repo: https://github.com/randolf-scholz/assorted-hooks
-    rev: v0.5.53
+    rev: v0.5.56
     hooks:
       # pygrep-based hooks
       - id: check-separator-length-88
@@ -67,7 +67,7 @@ repos:
         files: '^src/|^tests/'
   # uv
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.5.20
+    rev: 0.5.21
     hooks:
       - id: uv-lock
       - id: uv-export
@@ -100,33 +100,17 @@ repos:
     rev: v1.1.392.post0
     hooks:
       - id: pyright
-        # SEE: https://stackoverflow.com/a/20401674
-        #        entry: sh -c '! script -c "pyright $*" /dev/null | grep --color=never -Po "(?<=$PWD/)(.*:.*)"' --
-        # simple grep: grep --color=never -Po "$PWD/.*:.*"
-        # better ripgrep: rg --multiline --multiline-dotall "($PWD/[^\n]*?)(?:\n.*?)?(\(report\w+\))" -or '$1 $2'
-        # perl:  perl -0777 -ne "while (/((?:\x20+)(${path}[^\n\r]*?)(?:[\r\n].*?)?(\(report\w+\)))/gms) { print \"\$1 \$2\n\"}"
-        # FIXME: some weird issues with ripgrep + script.
-        # NOTE: The issue is likely control characters that are not being handled correctly.
-        #   In fact, it turns out the problem is precisely carriage return. We need to check [\n\r] instead of just \n
-        entry: |
-          bash -c '
-              path="${PWD//\//\\/}";
-              grey="\x1b\[90m"
-              end="\x1b\[0m"
-              code_group="(${grey}).*?\(report(\w+)\)";
-              git_root=$(git rev-parse --show-toplevel);
-              regex="\x20+(?:${git_root})/([^\r\n]*?)(?:[\r\n].*?)?${code_group}";
-              output="\$1 \$2(\$3)";
-              result=$(script -fqc "pyright $*" /dev/null | rg --multiline --multiline-dotall "$regex" -or "$output");
-              count=$(echo -n "$result" | grep -c "^");
-              if [ "$count" -ne 0 ]; then
-                  echo "$result";
-                  echo -e "\033[1;31mFound ${count} error(s)\033[0m";
-                  exit 1;
-              fi
-          ' --
         files: '^src/|^tests/'
-        exclude: '/tasks/'
+  # pyright-concise
+  - repo: local
+    hooks:
+      - id: pyright-concise
+        name: pyright-concise
+        language: system
+        types_or: [ python, pyi ]
+        entry: src/pyright_wrapper.sh
+        require_serial: true
+        files: '^src/|^tests/'
   # mypy
   - repo: local
     hooks:
