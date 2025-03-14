@@ -15,7 +15,7 @@ __all__ = [
     "check_all_files",
     "get_python_files",
     "get_repository",
-    "get_gitname_from_url",
+    "get_repository_name",
     "get_requirements_from_pyproject",
     "get_dev_requirements_from_pyproject",
     "get_canonical_names",
@@ -103,7 +103,7 @@ def yield_dev_deps(pyproject: dict, pattern: str | Pattern = "", /) -> Iterator[
     Extracts the dependencies from the following sections:
     - `dependency-groups`
     - `tool.pdm.dev-dependencies`
-    - `tool.poety.group.*.dependencies`
+    - `tool.poetry.group.*.dependencies`
     """
     regex = re.compile(pattern)
 
@@ -200,7 +200,7 @@ def get_canonical_names(
     )
 
 
-def get_gitname_from_url(url: str, /) -> str:
+def get_repository_name(url: str, /) -> str:
     r"""Extract the relevant information from a repository URL."""
     match = REPO_REGEX.search(url)
     if not match:
@@ -210,7 +210,7 @@ def get_gitname_from_url(url: str, /) -> str:
 
 def get_repository(git: Github, url: str, /) -> Repository:
     r"""Check if a repository is archived."""
-    name = get_gitname_from_url(url)
+    name = get_repository_name(url)
     try:
         repository = git.get_repo(name)
     except RateLimitExceededException:

@@ -79,15 +79,12 @@ def make_parser[T](cls: type[T], /) -> type[T]:
     Example:
         @make_parser
         class Options:
-
-
-
             fname: str = argument(
-                help="One or multiple files, folders or file patterns.",
+                help="One or multiple files, folders or file patterns."
             )
             recursive: bool = argument(
                 action="store_true",
-                help="Recursively check for unions.",
+                help="Recursively check for unions."
             )
     """
     raise NotImplementedError(f"This is a dataclass transform, not a function. {cls=}")

@@ -27,7 +27,7 @@ def check_file(fname: str, /, *, debug: bool = False) -> int:
 
     violations = 0
 
-    requiremets: set[Requirement] = set()
+    requirements: set[Requirement] = set()
 
     for dep in chain(yield_deps(pyproject), yield_dev_deps(pyproject)):
         try:
@@ -37,11 +37,11 @@ def check_file(fname: str, /, *, debug: bool = False) -> int:
             violations += 1
             continue
         else:
-            requiremets.add(req)
+            requirements.add(req)
 
     if debug:
-        print(f"Found {len(requiremets)} requirements.")
-        for req in sorted(requiremets, key=lambda x: x.name):
+        print(f"Found {len(requirements)} requirements.")
+        for req in sorted(requirements, key=lambda x: x.name):
             print(f"  {req}")
 
     return violations

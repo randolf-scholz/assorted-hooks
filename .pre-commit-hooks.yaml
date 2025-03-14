@@ -2,27 +2,27 @@
 
 # region ast-based ---------------------------------------------------------------------
 - id: check-direct-imports
-  name: check-direct-imports
   entry: check-direct-imports
+  name: '[py] avoid unnecessary attribute lookup.'
   description: "Checks that Bar is used instead of foo.Bar if both foo and Bar are imported."
   language: python
   types: [python]
 - id: check-no-mixed-args
-  name: check-no-mixed-args
   entry: check-no-mixed-args
+  name: '[py] avoid positional_or_keyword arguments.'
   description: "Check for disallowing positional_or_keyword arguments."
   language: python
   types: [python]
 - id: check-dunder-all
-  name: check-dunder-all
   entry: check-dunder-all
+  name: '[py] check __all__.'
   description: "Check that __all__ exists. `test_*.py` files are excluded by default."
   exclude: '^(.*\/)?test_.*\.py$'
   language: python
   types: [python]
 - id: check-typing
-  name: check-typing
   entry: check-typing
+  name: '[py] check type hints.'
   description: "AST-based linting rule for type-hints."
   language: python
   types: [python]
@@ -30,8 +30,8 @@
 
 # region misc --------------------------------------------------------------------------
 - id: check-archived-hooks
-  name: check-archived-hooks
   entry: check-archived-hooks
+  name: '[pre-commit] Check for deprecated hooks.'
   description: "Check for references to archived hooks. (Requires network access)"
   require_serial: true
   language: python
@@ -39,33 +39,24 @@
   files: ^\.pre-commit-config\.yaml$
   stages: [pre-push]
 - id: check-resolved-github-issues
-  name: check-resolved-github-issues
   entry: check-github-issues
-  description: "Check for references to resolved GitHub issues."
+  name: '[text] Check for resolved GitHub issues.'
+  description: 'Check for references to resolved GitHub issues.'
   require_serial: true
   language: python
   stages: [manual]
   types: [text]
 - id: check-requirements-valid
-  name: check-requirements-valid
   entry: check-requirements-valid
-  description: "Check that requirements are well-formed."
+  name: '[pyproject] Check requirements valid.'
+  description: 'Check that requirements are well-formed.'
   files: ^pyproject\.toml$
   language: python
   types: [toml]
 - id: check-requirements-maintained
-  name: check-requirements-maintained
   entry: check-requirements-maintained
-  description: "Check that dependencies have been maintained. (Requires network access)"
-  files: ^pyproject\.toml$
-  language: python
-  types: [toml]
-  stages: [pre-push]
-- id: check-requirements-maintained-unlisted
-  name: check-requirements-maintained-unlisted
-  entry: check-requirements-maintained
-  args: ["--check-unlisted"]
-  description: "Check that unlisted (transitive) dependencies have been maintained."
+  name: '[pyproject] Check requirements maintained.'
+  description: 'Check that dependencies have been maintained. (Requires network access)'
   files: ^pyproject\.toml$
   language: python
   types: [toml]
@@ -74,23 +65,23 @@
 
 # region scripts -----------------------------------------------------------------------
 - id: check-requirements-used
-  name: check-requirements-used
-  description: "Check that listed dependencies are used in code and vice-versa."
   entry: src/assorted_hooks/scripts/check_requirements_used.py
+  name: '[pyproject] Check requirements used.'
+  description: "Check that listed dependencies are used in code and vice-versa."
   files: ^pyproject\.toml$
   language: script
   types: [toml]
 - id: update-requirements
-  name: update-requirements
-  description: "Update dependencies to >=currently_installed."
   entry: src/assorted_hooks/scripts/update_requirements.py
+  name: '[pyproject] Update requirements.'
+  description: "Update dependencies to >=currently_installed."
   files: ^pyproject\.toml$
   language: script
   types: [toml]
 - id: check-clean-interface
-  name: check-clean-interface
-  description: "Check that __all__ holds all exported variables."
   entry: src/assorted_hooks/scripts/check_clean_interface.py
+  name: '[py] Check clean interface.'
+  description: "Check that __all__ holds all exported variables."
   language: script
   require_serial: true # otherwise module is loaded multiple times
   types: [python]
@@ -109,122 +100,76 @@
 # `—` (U+2014: Em Dash)
 # `═` (U+2550: Box Drawings Double Horizontal)
 # `─` (U+2500: Box Drawings Light Horizontal)
+- id: check-separator-length-80
+  name: '[text] Check separator length is 80.'
+  description: "Check that 'horizontal rule' comments are the right length (80)."
+  language: pygrep
+  entry: '^(\#.|\%.|\/\/)(.{0,69}|.{71})([-=\\u2500-\\u257F])\3{7}$'
 - id: check-separator-length-88
-  name: check-separator-length-88
+  name: '[text] Check separator length is 88.'
   description: "Check that 'horizontal rule' comments are the right length (88)."
   entry: '^(\#.|\%.|\/\/)(.{0,77}|.{79,})([-=\\u2500-\\u257F])\3{7}$'
   language: pygrep
   types: [text]
-- id: check-separator-length-80
-  name: check-separator-length-80
-  description: "Check that 'horizontal rule' comments are the right length (80)."
-  language: pygrep
-  entry: '^(\#.|\%.|\/\/)(.{0,69}|.{71})([-=\\u2500-\\u257F])\3{7}$'
 - id: check-separator-length-100
-  name: check-separator-length-100
+  name: '[text] Check separator length is 100.'
   description: "Check that 'horizontal rule' comments are the right length (100)."
   language: pygrep
   entry: '^(\#.|\%.|\/\/)(.{0,89}|.{91})([-=\\u2500-\\u257F])\3{7}$'
 - id: check-separator-length-120
-  name: check-separator-length-120
+  name: '[text] Check separator length is 120.'
   description: "Check that 'horizontal rule' comments are the right length (120)."
   language: pygrep
   entry: '^(\#.|\%.|\/\/)(.{0,109}|.{111})([-=\\u2500-\\u257F])\3{7}$'
 - id: python-no-blanket-type-ignore
-  name: python-no-blanket-type-ignore
+  name: '[py] No blanket type ignore.'
   description: "Enforce that `# type: ignore` annotations always specify codes."
   entry: '\#\s*(type|pyright)\:\s*ignore(?!\[)'
   language: pygrep
   types: [python]
 - id: python-no-builtin-eval
-  name: python-no-builtin-eval
+  name: '[py] No builtin eval.'
   description: "Disallows eval() but allows obj.eval()."
   entry: '(?<!def\s)(?<!\.)\b(builtins\.)?(eval\()'
   language: pygrep
   types: [python]
 - id: python-consider-using-raw-string
-  name: python-consider-using-raw-string
+  name: '[py] use r"""raw strings""" for docstrings.'
   description: "Checks that triple quoted strings are raw (docstrings). Use `$1r$2` find/replace."
   entry: '(\A|\s)("""[^\s\.\,\]\)\}][^\\]*?""")'
   language: pygrep
   types: [python]
 - id: python-rename-axes-axis
-  name: python-rename-axes-axis
+  name: '[numpy] Use "axis=" instead of "axes=".'
   description: "Rename 'axes=' to 'axis=' (numpy convention)."
   entry: '\b(axes=)'
   language: pygrep
   types: [python]
 - id: python-system-exit
-  name: python-system-exit
-  description: "Consider using `raise SystemExit(1)` instead of `sys.exit(1)`."
+  name: '[py] Use `raise SystemExit` instead of `sys.exit`.'
+  description: 'Consider using `raise SystemExit(1)` instead of `sys.exit(1)`.'
   entry: '\b(sys\.exit)\('
   language: pygrep
   types: [python]
 - id: pyarrow-timestamp-seconds
-  name: pyarrow-timestamp-seconds
+  name: '[pyarrow] Avoid timestamps with unit="s".'
   description: "Flags `timestamp('s')` as a potential bug."
   entry: '\b(timestamp\[s\]\[pyarrow\]|timestamp\((unit=)?"s"|datetime64\[s\])'
   language: pygrep
   types: [python]
 - id: python-match-case-builtins
-  name: python-match-case-builtins
-  description: "checks that `str(name)` is used instead of `str() as name`."
+  name: '[py] use "str(name)" instead of "str() as name".'
+  description: "Checks that `str(name)` is used instead of `str() as name` (more readable)."
   entry: '\b(bool|bytearray|bytes|dict|float|frozenset|int|list|set|str|tuple)\(\)\s+as\s+'
   language: pygrep
   types: [python]
-- id: python-match-case-builtins-simple
-  name: python-match-case-builtins-simple
-  description: "checks that `str(name)` is used instead of `str() as name`."
-  entry: '\b(bool|bytearray|bytes|float|int|str)\(\)\s+as\s+'
-  language: pygrep
-  types: [python]
+#- id: python-avoid-match-case-builtins
+#  name: '[py] use "str() as name" instead of "str(name)".'
+#  description: "checks that `str() as name` is used instead of `str(name)` (faster)."
+#  entry: '\b(bool|bytearray|bytes|dict|float|frozenset|int|list|set|str|tuple)\(\)\s+as\s+'
+#  language: pygrep
+#  types: [python]
 # endregion pygrep ---------------------------------------------------------------------
-
-# region latex -------------------------------------------------------------------------
-- id: chktex
-  name: chktex
-  language: system
-  types: [tex]
-  description: "ChkTeX, a LaTeX semantic checker."
-  entry: "chktex --format='%f:%l:%c %m [%k %n]\n' --quiet"
-  require_serial: true # Otherwise, we get lot's of warning about failed regex compilations
-  args: # default configuration
-    - "--erroron=all"
-    - "--nowarn=1" # Command terminated with space.
-    - "--nowarn=3" # Enclose previous parentheses with `{}`.
-    - "--nowarn=9" # ‘%s’ expected, found ‘%s’.
-    - "--nowarn=17" # Number of ‘character’ doesn't match the number of ‘character’.
-    - "--nowarn=19" # You should use "`’`" (ASCII 39) instead of "`’`" (ASCII 180).
-    - "--nowarn=21" # This command might not be intended.
-    - "--nowarn=22" # Comment displayed.
-    - "--nowarn=30" # Multiple spaces detected in output.
-    - "--nowarn=46" # Use `\(...\)` instead of `$...$`.
-- id: lacheck
-  name: lacheck
-  description: "A consistency checker for LaTeX documents"
-  pass_filenames: true
-  require_serial: true
-  language: script
-  types: [tex]
-  files: '\.tex$'
-  entry: src/lacheck_wrapper.sh
-  # NOTE: lacheck only takes a single file at a time, so we need to use xargs
-  # NOTE: lacheck always returns 0, so we need to grep for output
-  # NOTE: grep has exit code 1 if no matches are found, so we need to invert with `!`
-  # NOTE: We add a `--` to the end of the command to ensure that no filenames are interpreted as arguments
-# endregion latex ----------------------------------------------------------------------
-
-
-# region latex-regex -------------------------------------------------------------------
-- id: replace-def-newdocumentcommand
-  name: 'Replace \def by \NewDocumentCommand'
-  description: 'Use \NewDocumentCommand instead of \def'
-  entry: '\\def\s*\\[^\d]\w*\s*\{' # excludes \def\0 and \def\@command...
-  language: pygrep
-  types: [tex]
-
-# endregion latex-regex ----------------------------------------------------------------
-
 
 # region pyright-wrapper ---------------------------------------------------------------
 - id: pyright-concise

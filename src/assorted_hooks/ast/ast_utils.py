@@ -494,7 +494,7 @@ class FunctionContextVisitor(ast.NodeVisitor):
     def visit_AsyncFunctionDef(  # noqa: N802
         self, node: AsyncFunctionDef
     ) -> Iterator[FunctionContext]:
-        r"""Visit a async function definition."""
+        r"""Visit an async function definition."""
         self.funcs.append(node)
         yield from FunctionContextVisitor(node)
 

@@ -251,7 +251,7 @@ def yield_dev_deps(pyproject: dict, pattern: str | Pattern = "", /) -> Iterator[
     Extracts the dependencies from the following sections:
     - `dependency-groups`
     - `tool.pdm.dev-dependencies`
-    - `tool.poety.group.*.dependencies`
+    - `tool.poetry.group.*.dependencies`
     """
     regex = re.compile(pattern)
 
@@ -706,8 +706,8 @@ def check_deps(
     # flags
     error_on_undeclared_deps: bool = True,
     error_on_unimported_deps: bool = True,
-    error_on_unknown_imports: bool = True,
-    error_on_unknown_declars: bool = True,
+    error_on_unknown_imported: bool = True,
+    error_on_unknown_declared: bool = True,
 ) -> int:
     r"""Check the dependencies of a module."""
     resolved_deps = resolve_dependencies(
@@ -731,10 +731,10 @@ def check_deps(
     if unimported_deps and error_on_unimported_deps:
         violations += 1
         print(f"Detected unused dependencies: {unimported_deps}")
-    if unknown_imports and error_on_unknown_imports:
+    if unknown_imports and error_on_unknown_imported:
         violations += 1
         print(f"Detected unknown imports: {unknown_imports}")
-    if unknown_declars and error_on_unknown_declars:
+    if unknown_declars and error_on_unknown_declared:
         violations += 1
         print(f"Detected unknown declarations: {unknown_declars}")
 
@@ -758,10 +758,10 @@ def check_pyproject(
     error_on_undeclared_test_deps: bool = True,
     error_on_unimported_deps: bool = True,
     error_on_unimported_test_deps: bool = False,
-    error_on_unknown_imports: bool = True,
-    error_on_unknown_declars: bool = True,
-    error_on_unknown_test_imports: bool = True,
-    error_on_unknown_test_declars: bool = True,
+    error_on_unknown_imported: bool = True,
+    error_on_unknown_declared: bool = True,
+    error_on_unknown_test_imported: bool = True,
+    error_on_unknown_test_declared: bool = True,
 ) -> int:
     r"""Check a single file."""
     violations: int
@@ -802,8 +802,8 @@ def check_pyproject(
         # flags
         error_on_undeclared_deps=error_on_undeclared_deps,
         error_on_unimported_deps=error_on_unimported_deps,
-        error_on_unknown_imports=error_on_unknown_imports,
-        error_on_unknown_declars=error_on_unknown_declars,
+        error_on_unknown_imported=error_on_unknown_imported,
+        error_on_unknown_declared=error_on_unknown_declared,
     )
 
     # check test dependencies ----------------------------------------------------------
@@ -837,8 +837,8 @@ def check_pyproject(
         # flags
         error_on_undeclared_deps=error_on_undeclared_test_deps,
         error_on_unimported_deps=error_on_unimported_test_deps,
-        error_on_unknown_imports=error_on_unknown_test_imports,
-        error_on_unknown_declars=error_on_unknown_test_declars,
+        error_on_unknown_imported=error_on_unknown_test_imported,
+        error_on_unknown_declared=error_on_unknown_test_declared,
     )
 
     return violations
@@ -930,25 +930,25 @@ def main() -> None:
         help="Raise error if test dependency is unused.",
     )
     parser.add_argument(
-        "--error-on-unknown-imports",
+        "--error-on-unknown-imported",
         action=argparse.BooleanOptionalAction,
         default=True,
         help="Raise error if imported project dependency is missing (not installed).",
     )
     parser.add_argument(
-        "--error-on-unknown-test-imports",
+        "--error-on-unknown-test-imported",
         action=argparse.BooleanOptionalAction,
         default=True,
         help="Raise error if imported test dependency is missing (not installed).",
     )
     parser.add_argument(
-        "--error-on-unknown-declars",
+        "--error-on-unknown-declared",
         action=argparse.BooleanOptionalAction,
         default=True,
         help="Raise error if declared project dependency is missing (not installed).",
     )
     parser.add_argument(
-        "--error-on-unknown-test-declars",
+        "--error-on-unknown-test-declared",
         action=argparse.BooleanOptionalAction,
         default=True,
         help="Raise error if declared test dependency is not missing (not installed).",
@@ -995,10 +995,10 @@ def main() -> None:
             error_on_unimported_test_deps=args.error_on_unimported_test_deps,
             error_on_undeclared_deps=args.error_on_undeclared_deps,
             error_on_undeclared_test_deps=args.error_on_undeclared_test_deps,
-            error_on_unknown_imports=args.error_on_unknown_imports,
-            error_on_unknown_declars=args.error_on_unknown_declars,
-            error_on_unknown_test_imports=args.error_on_unknown_test_imports,
-            error_on_unknown_test_declars=args.error_on_unknown_test_declars,
+            error_on_unknown_imported=args.error_on_unknown_imported,
+            error_on_unknown_declared=args.error_on_unknown_declared,
+            error_on_unknown_test_imported=args.error_on_unknown_test_imported,
+            error_on_unknown_test_declared=args.error_on_unknown_test_declared,
             # debug
             error_on_superfluous_test_deps=args.error_on_superfluous_test_deps,
         )

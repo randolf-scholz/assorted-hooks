@@ -34,9 +34,6 @@ repos:
       # other hooks
       - id: check-resolved-github-issues
       - id: check-archived-hooks
-      # latex hooks
-      - id: chktex
-      - id: lacheck
   # https://pre-commit.com/hooks.html
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0

@@ -2,7 +2,7 @@
 
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
 
-[CHANGELOG](CHANGELOG.md) | [LICENSE](LICENSE) | [python-hooks](#python-hooks) | [pygrep hooks](#pygrep-hooks) | [latex hooks](#latex-hooks)
+[python-hooks](#python-hooks) | [pygrep hooks](#pygrep-hooks) | [CHANGELOG](CHANGELOG.md) | [LICENSE](LICENSE)
 
 ## Python Hooks
 
@@ -30,8 +30,8 @@
 
 - [`check-archived-hooks`](docs/check_archived_hooks.md): Checks your `.pre-commit-config.yaml` for archived repositories.
 - [`check-resolved-github-issues`](docs/check_resolved_github_issues.md): Checks code for references to GitHub issues. Queries the GitHub API to check if the issues are resolved.\
-  **Note:** By default only checks github urls prefixed with `FIXME:`, can be disabled by changing the `--prefix` regex.
-- [`pyright-concise`](docs/python/pyright_concise.md): runs `pyright` with a concise output formatting.
+  **Note:** By default only checks GitHub urls prefixed with `FIXME:`, can be disabled by changing the `--prefix` regex.
+- [`pyright-concise`](docs/pyright_concise.md): runs `pyright` with a concise output formatting.
 
 ## pygrep hooks
 
@@ -41,11 +41,6 @@
 - [`python-match-case-builtins`](docs/pygrep/python_match_case_builtins.md): checks that `str(name)` is used instead of `str() as name` in match-case expressions.
 - [`python-system-exit`](docs/pygrep/python_system_exit.md): Use `raise SystemExit` instead of `sys.exit()`.
 - [`pyarrow-timestamp-seconds`](docs/pygrep/pyarrow_timestamp_seconds.md): flags `timestamp('s')` as a potential bug.
-
-## $\LaTeX$ Hooks
-
-- [`chktex`](docs/latex/chktex.md): Wrapper for the $\LaTeX$ linter with opinionated defaults.
-- [`lacheck`](docs/latex/lacheck.md): Wrapper for the $\LaTeX$ linter with opinionated defaults.
 
 ## deprecated hooks
 
