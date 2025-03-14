@@ -20,7 +20,7 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Final, NamedTuple
 
-PATTERN: Final[re.Pattern] = re.compile(r"\b(?P<name>\w+)[\s-]?wise\b")
+PATTERN: Final[re.Pattern] = re.compile(r"\b(?P<name>\w+)[\s-]?wise\b", re.IGNORECASE)
 
 
 class Match(NamedTuple):
@@ -39,7 +39,7 @@ def get_matches(path: Path) -> Iterator[Match]:
         for line_number, line in enumerate(file, start=1):
             for match in PATTERN.finditer(line):
                 yield Match(
-                    file=path.name,
+                    file=str(path),
                     row=line_number,
                     col=match.start() + 1,
                     name=match.group("name"),
@@ -70,7 +70,7 @@ def check_files(*files: str) -> int:
             fname = sample.file
             row = sample.row
             col = sample.col
-            print(f"{fname}:{row}:{col}: Inconsistent spelling: {sample.match!r}")
+            print(f"{fname}:{row}:{col} Inconsistent spelling: {sample.match!r}")
     return violations
 
 
