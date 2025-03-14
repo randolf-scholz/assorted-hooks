@@ -237,6 +237,7 @@ def main() -> None:
             raise RuntimeError(f"{file!s}: Checking file failed!") from exc
 
     if violations:
+        print(f"{'-' * 79}\nFound {violations} violations.")
         raise SystemExit(1)
 
 

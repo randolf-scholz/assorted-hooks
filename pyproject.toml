@@ -5,7 +5,7 @@ build-backend = "pdm.backend"
 # region project configuration ---------------------------------------------------------
 [project]
 name = "assorted-hooks"
-version = "0.6.0"
+version = "0.6.1"
 authors = [{ name = "Randolf Scholz", email = "randolf.scholz@gmail.com" }]
 description = "Custom pre-commit hooks"
 
@@ -50,6 +50,7 @@ check-archived-hooks = "assorted_hooks.check_archived_hooks:main"
 check-github-issues = "assorted_hooks.check_github_issues:main"
 check-requirements-maintained = "assorted_hooks.check_requirements_maintained:main"
 check-requirements-valid = "assorted_hooks.check_requirements_valid:main"
+check-spelling-wise-suffix = "assorted_hooks.check_spelling_wise_suffix:main"
 # script hooks
 check-clean-interface = "assorted_hooks.scripts.check_clean_interface:main"
 check-requirements-used = "assorted_hooks.scripts.check_requirements_used:main"

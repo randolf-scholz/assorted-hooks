@@ -61,6 +61,13 @@
   language: python
   types: [toml]
   stages: [pre-push]
+- id: check-spelling-wise-suffix
+  entry: check-spelling-wise-suffix
+  name: '[text] Avoid inconsistent "-wise" suffix spelling.'
+  description: 'Check for consistent use of "-wise" suffix.'
+  language: python
+  types: [text]
+  require_serial: true
 # endregion misc -----------------------------------------------------------------------
 
 # region scripts -----------------------------------------------------------------------
