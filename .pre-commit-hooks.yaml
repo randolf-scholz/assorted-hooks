@@ -146,28 +146,28 @@
   entry: '(\A|\s)("""[^\s\.\,\]\)\}][^\\]*?""")'
   language: pygrep
   types: [python]
-- id: python-rename-axes-axis
-  name: '[numpy] Use "axis=" instead of "axes=".'
-  description: "Rename 'axes=' to 'axis=' (numpy convention)."
-  entry: '\b(axes=)'
-  language: pygrep
-  types: [python]
 - id: python-system-exit
   name: '[py] Use `raise SystemExit` instead of `sys.exit`.'
   description: 'Consider using `raise SystemExit(1)` instead of `sys.exit(1)`.'
   entry: '\b(sys\.exit)\('
   language: pygrep
   types: [python]
-- id: pyarrow-timestamp-seconds
-  name: '[pyarrow] Avoid timestamps with unit="s".'
-  description: "Flags `timestamp('s')` as a potential bug."
-  entry: '\b(timestamp\[s\]\[pyarrow\]|timestamp\((unit=)?"s"|datetime64\[s\])'
-  language: pygrep
-  types: [python]
 - id: python-match-case-builtins
   name: '[py] use "str(name)" instead of "str() as name".'
   description: "Checks that `str(name)` is used instead of `str() as name` (more readable)."
   entry: '\b(bool|bytearray|bytes|dict|float|frozenset|int|list|set|str|tuple)\(\)\s+as\s+'
+  language: pygrep
+  types: [python]
+- id: numpy-rename-axes-axis
+  name: '[numpy] Use "axis=" instead of "axes=".'
+  description: "Rename 'axes=' to 'axis=' (numpy convention)."
+  entry: '\b(axes=)'
+  language: pygrep
+  types: [python]
+- id: pyarrow-timestamp-seconds
+  name: '[pyarrow] Avoid timestamps with unit="s".'
+  description: "Flags `timestamp('s')` as a potential bug."
+  entry: '\b(timestamp\[s\]\[pyarrow\]|timestamp\((unit=)?"s"|datetime64\[s\])'
   language: pygrep
   types: [python]
 #- id: python-avoid-match-case-builtins
