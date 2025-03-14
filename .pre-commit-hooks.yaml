@@ -69,7 +69,7 @@
   files: ^pyproject\.toml$
   language: python
   types: [toml]
-  stages: [ pre-push ]
+  stages: [pre-push]
 # endregion misc -----------------------------------------------------------------------
 
 # region scripts -----------------------------------------------------------------------
@@ -213,6 +213,18 @@
   # NOTE: grep has exit code 1 if no matches are found, so we need to invert with `!`
   # NOTE: We add a `--` to the end of the command to ensure that no filenames are interpreted as arguments
 # endregion latex ----------------------------------------------------------------------
+
+
+# region latex-regex -------------------------------------------------------------------
+- id: replace-def-newdocumentcommand
+  name: 'Replace \def by \NewDocumentCommand'
+  description: 'Use \NewDocumentCommand instead of \def'
+  entry: '\\def\s*\\[^\d]\w*\s*\{' # excludes \def\0 and \def\@command...
+  language: pygrep
+  types: [tex]
+
+# endregion latex-regex ----------------------------------------------------------------
+
 
 # region pyright-wrapper ---------------------------------------------------------------
 - id: pyright-concise
