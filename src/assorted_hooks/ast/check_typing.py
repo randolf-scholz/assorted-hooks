@@ -241,11 +241,7 @@ def check_concrete_classes_concrete_types(
     fname: str,
     check_attrs: bool = False,
     check_funcs: bool = True,
-) -> int:
-    r"""Check that concrete classes use concrete return types."""
-    # These generic types are considered non-concrete.
-    # Better would be to use a type checker and see if ABCs/Protocols are returned.
-    VALUES = {
+    values: frozenset[str] = frozenset({
         "AbstractSet",
         "Collection",
         "Iterable",
@@ -256,7 +252,11 @@ def check_concrete_classes_concrete_types(
         "Sequence",
         "Set",
         "Sized",
-    }
+    }),
+) -> int:
+    r"""Check that concrete classes use concrete return types."""
+    # These generic types are considered non-concrete.
+    # Better would be to use a type checker and see if ABCs/Protocols are returned.
     violations = 0
     matches: list[AnnAssign | FunctionDef | AsyncFunctionDef] = []
 
@@ -264,15 +264,15 @@ def check_concrete_classes_concrete_types(
         for node in cls.body:
             match node:
                 case AnnAssign(annotation=Subscript(value=Name(id=ann))) if check_attrs:
-                    if ann in VALUES:
+                    if ann in values:
                         matches.append(node)
                 case FunctionDef(returns=Subscript(value=Name(id=ann))) if check_funcs:
-                    if ann in VALUES:
+                    if ann in values:
                         matches.append(node)
                 case AsyncFunctionDef(returns=Subscript(value=Name(id=ann))) if (
                     check_funcs
                 ):
-                    if ann in VALUES:
+                    if ann in values:
                         matches.append(node)
 
     for node in matches:

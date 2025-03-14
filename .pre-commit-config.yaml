@@ -1,7 +1,7 @@
 exclude: '(\.git/|\.venv/|\.idea/|\docs/_build/)'
 minimum_pre_commit_version: 3.6.0
 default_language_version:
-  python: python3.12
+  python: python3.13
   node: "20.10.0"
 repos:
   # test with pre-commit try-repo ../assorted-hooks --verbose --all-files

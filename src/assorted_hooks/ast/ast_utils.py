@@ -364,7 +364,6 @@ def yield_imported_attributes(tree: AST, /) -> Iterator[tuple[Attribute, Name, s
 
     for node in yield_pure_attributes(tree):
         if node.attr in imported_symbols:
-            # parent = get_full_attribute_string(node)
             parent, string = get_full_name_and_parent(node)
 
             head, tail = string.split(".", maxsplit=1)

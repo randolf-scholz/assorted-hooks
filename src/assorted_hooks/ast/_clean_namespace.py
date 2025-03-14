@@ -1,4 +1,5 @@
 r"""Clean namespace of module (unused)."""
+# ruff: noqa: ERA001
 
 # import logging
 # from datetime import datetime

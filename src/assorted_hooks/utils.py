@@ -151,7 +151,10 @@ def get_requirements_from_pyproject(
         raise RuntimeError("The following requirements are invalid:", list(errors))
 
     if not reqs:
-        warnings.warn("No requirements found in the pyproject.toml file.")
+        warnings.warn(
+            "No requirements found in the pyproject.toml file.",
+            stacklevel=2,
+        )
 
     return reqs
 
@@ -180,7 +183,10 @@ def get_dev_requirements_from_pyproject(
         raise RuntimeError("The following requirements are invalid:", list(errors))
 
     if not reqs:
-        warnings.warn("No development requirements found in the pyproject.toml file.")
+        warnings.warn(
+            "No development requirements found in the pyproject.toml file.",
+            stacklevel=2,
+        )
 
     return reqs
 

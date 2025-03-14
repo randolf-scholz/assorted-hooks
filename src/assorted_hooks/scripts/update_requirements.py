@@ -2,6 +2,7 @@
 # /// script
 # requires-python = ">=3.11"
 # ///
+# ruff: noqa: S101
 r"""Update dependencies in pyproject.toml to the currently installed versions.
 
 Note:
@@ -90,7 +91,7 @@ r"""A type hint for PyPI package names."""
 def canonicalize_name(name: str, /) -> PypiName:
     r"""Normalize the name of a package (PEP 503)."""
     normalized = re.sub(r"[-_.]+", "-", name).lower()
-    return cast(PypiName, normalized)
+    return cast("PypiName", normalized)
 
 
 PKG_DICT: dict[PypiName, str] = {

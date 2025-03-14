@@ -7,8 +7,8 @@ __all__ = [
     # Types
     "Actions",
     # Functions
-    "argument",
-    "argparser",
+    "Argument",
+    "ArgParser",
     "make_parser",
     "parse_args",
 ]
@@ -30,7 +30,7 @@ type Actions = Literal[
 
 
 @dataclass
-class argument:
+class Argument:
     r"""Wraps add_argument, similar to `dataclasses.field`."""
 
     action: Actions = NotImplemented  # pyright: ignore[reportAssignmentType]
@@ -45,14 +45,14 @@ class argument:
 
 
 @dataclass
-class argparser:
+class ArgParser:
     r"""Argument parser."""
 
     prog: str = NotImplemented
     usage: str = NotImplemented
     description: str = NotImplemented
     epilog: str = NotImplemented
-    parents: list["argparser"] = NotImplemented
+    parents: list["ArgParser"] = NotImplemented
     formatter_class: str = NotImplemented
     prefix_chars: str = NotImplemented
     fromfile_prefix_chars: str = NotImplemented

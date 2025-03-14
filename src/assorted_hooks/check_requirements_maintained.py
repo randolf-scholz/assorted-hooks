@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-r"""Detects unmaintained dependencies."""
-
 # TODO: add check if repo is archived
+r"""Detects unmaintained dependencies."""
 
 __all__ = [
     # Constants
@@ -12,6 +11,7 @@ __all__ = [
     "check_file",
     "check_pyproject",
     "get_all_pypi_json",
+    "get_all_pypi_json_fallback",
     "get_latest_release",
     "get_local_packages",
     "get_project_name_from_pyproject",
@@ -33,6 +33,7 @@ from functools import partial
 from typing import Any, NamedTuple
 from urllib.request import urlopen
 
+import aiohttp
 from packaging.utils import NormalizedName, canonicalize_name
 
 from assorted_hooks.utils import (
@@ -53,19 +54,20 @@ class Spec(NamedTuple):
     license: str
 
 
-async def get_pypi_json(pkg: str, /, *, session: Any) -> JSON:
-    r"""Get the JSON data for the given package."""
-    url = f"https://pypi.org/pypi/{pkg}/json"
-    async with session.get(url, timeout=TIMEOUT) as response:
-        match response.status:
-            case 200:
-                return await response.json()
-            case 404:
-                raise ValueError(f"Package {pkg!r} not found.")
-            case status:
-                raise ValueError(f"Failed to get package {pkg!r}: {status=}")
+@warnings.deprecated("Option to check local packages was removed")
+def get_local_packages() -> dict[NormalizedName, tuple[str, str, str]]:
+    r"""Get the packages installed in the current environment."""
+    return {
+        canonicalize_name(x.name): (
+            x.version,
+            x.metadata["Summary"],
+            x.metadata["License"],
+        )
+        for x in importlib_metadata.distributions()
+    }
 
 
+@warnings.deprecated("Option to check local packages was removed")
 async def get_pypi_fallback(pkg: str, /) -> JSON:
     url = f"https://pypi.org/pypi/{pkg}/json"
     loop = asyncio.get_event_loop()
@@ -80,18 +82,33 @@ async def get_pypi_fallback(pkg: str, /) -> JSON:
             raise ValueError(f"Failed to get package {pkg!r}: {status=}")
 
 
+@warnings.deprecated("Option to check local packages was removed")
+async def get_all_pypi_json_fallback(packages: Iterable[str], /) -> dict[str, JSON]:
+    r"""Get the JSON data for all the given packages (without aiohttp)."""
+    warnings.warn("aiohttp is not available, using fallback.", stacklevel=2)
+    tasks = (get_pypi_fallback(pkg) for pkg in packages)
+    responses = await asyncio.gather(*tasks)
+    return dict(zip(packages, responses, strict=True))
+
+
+async def get_pypi_json(pkg: str, /, *, session: aiohttp.ClientSession) -> JSON:
+    r"""Get the JSON data for the given package."""
+    url = f"https://pypi.org/pypi/{pkg}/json"
+    async with session.get(url) as response:
+        match response.status:
+            case 200:
+                return await response.json()
+            case 404:
+                raise ValueError(f"Package {pkg!r} not found.")
+            case status:
+                raise ValueError(f"Failed to get package {pkg!r}: {status=}")
+
+
 async def get_all_pypi_json(packages: Iterable[str], /) -> dict[str, JSON]:
     r"""Get the JSON data for all the given packages."""
-    try:  # load aiohttp if available
-        import aiohttp
-    except (ImportError, ModuleNotFoundError):
-        warnings.warn("aiohttp is not available, using fallback.", stacklevel=2)
-        tasks = (get_pypi_fallback(pkg) for pkg in packages)
+    async with aiohttp.ClientSession(timeout=TIMEOUT) as session:
+        tasks = (get_pypi_json(pkg, session=session) for pkg in packages)
         responses = await asyncio.gather(*tasks)
-    else:
-        async with aiohttp.ClientSession() as session:
-            tasks = (get_pypi_json(pkg, session=session) for pkg in packages)
-            responses = await asyncio.gather(*tasks)
 
     return dict(zip(packages, responses, strict=True))
 
@@ -127,25 +144,12 @@ def get_project_name_from_pyproject(pyproject: dict, /) -> NormalizedName:
     return canonicalize_name(project_name)
 
 
-def get_local_packages() -> dict[NormalizedName, tuple[str, str, str]]:
-    r"""Get the packages installed in the current environment."""
-    return {
-        canonicalize_name(x.name): (
-            x.version,
-            x.metadata["Summary"],
-            x.metadata["License"],
-        )
-        for x in importlib_metadata.distributions()
-    }
-
-
 def check_pyproject(
     pyproject: JSON,
     /,
     *,
     exclude: Sequence[str] = (),
     check_optional: bool = True,
-    check_unlisted: bool = False,
     threshold: int = 1000,
     debug: bool = False,
 ) -> int:
@@ -165,21 +169,7 @@ def check_pyproject(
     local_packages: list[NormalizedName]
 
     # get local packages
-    if check_unlisted:
-        local_packages = sorted(get_local_packages())
-        # exclude the project itself
-        if project_name in local_packages:
-            local_packages.remove(project_name)
-        # add missing declared dependencies
-        for dep in project_main_deps + project_dev_deps:
-            if dep not in local_packages:
-                warnings.warn(
-                    f"Dependency {dep!r} appears to not be installed.",
-                    stacklevel=2,
-                )
-                local_packages.append(dep)
-    else:
-        local_packages = project_main_deps + project_dev_deps
+    local_packages = project_main_deps + project_dev_deps
 
     # get the latest versions of all packages
     pypi_packages: dict[str, JSON] = asyncio.run(get_all_pypi_json(local_packages))
@@ -208,7 +198,6 @@ def check_pyproject(
     # normalize the names
     bad_direct_deps = unmaintained_packages & set(project_main_deps)
     bad_optional_deps = unmaintained_packages & set(project_dev_deps)
-    bad_unlisted_deps = unmaintained_packages - (bad_direct_deps | bad_optional_deps)
 
     # Split unmaintained packages into 3 groups:
     #   1. direct dependencies (listed in pyproject.toml)
@@ -234,15 +223,6 @@ def check_pyproject(
                 f"(latest release: {latest_version} from {upload_date})"
             )
 
-    if check_unlisted:
-        for pkg in bad_unlisted_deps:
-            latest_version, upload_date = latest_releases[pkg]
-            violations += 1
-            print(
-                f"Unlisted dependency {pkg!r} appears unmaintained "
-                f"(latest release: {latest_version} from {upload_date})"
-            )
-
     if debug:
         print(f"Checked {len(local_packages)} packages.")
         for pkg in local_packages:
@@ -252,7 +232,7 @@ def check_pyproject(
     return violations
 
 
-def check_file(filename: str, /, **opts: Any) -> int:
+def check_file(filename: str, /, **opts: Any) -> int:  # noqa: ANN401
     r"""Check the pyproject.toml file for unmaintained dependencies."""
     # load the pyproject.toml as dict
     with open(filename, "rb") as file:
@@ -297,14 +277,6 @@ def main() -> None:
         help="If true, checks optional dependencies.",
     )
     parser.add_argument(
-        "--check-unlisted",
-        "-u",
-        action=argparse.BooleanOptionalAction,
-        type=bool,
-        default=False,
-        help="If true, check all local packages.",
-    )
-    parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,
         type=bool,
@@ -323,7 +295,7 @@ def main() -> None:
             debug=args.debug,
         )
     except Exception as exc:
-        raise RuntimeError(f"{args.pyproject_file!s}: failed due to {exc!r}") from None
+        raise RuntimeError(f"{args.pyproject_file!s}: failed due to {exc!r}") from exc
 
     if violations:
         print(f"{'-' * 79}\nFound {violations} violations.")

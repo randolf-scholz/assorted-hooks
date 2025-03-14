@@ -26,7 +26,7 @@ __all__ = [
     "DEBUG",
     "IMPORT_NAMES",
     # Types
-    "NormalizedName",
+    "CanonicalName",
     "ImportName",
     "PypiName",
     # Classes
@@ -36,7 +36,7 @@ __all__ = [
     # Exceptions
     "InvalidRequirement",
     # Functions
-    "canonicalize_name",
+    "canonicalize",
     "check_deps",
     "check_pyproject",
     "detect_dependencies",
@@ -84,18 +84,18 @@ from typing import Any, NamedTuple, NewType, Optional, Self, cast
 
 # region pypa.packaging ----------------------------------------------------------------
 # NOTE: Manual implementation instead of pypa.packaging to avoid dependency.
-NormalizedName = NewType("NormalizedName", str)
+CanonicalName = NewType("CanonicalName", str)
 r"""A type hint for normalized names."""
-ImportName = NewType("ImportName", NormalizedName)
+ImportName = NewType("ImportName", CanonicalName)
 r"""A type hint for PyPI package names."""
-PypiName = NewType("PypiName", NormalizedName)
+PypiName = NewType("PypiName", CanonicalName)
 r"""A type hint for PyPI package names."""
 
 
-def canonicalize_name(name: str, /) -> NormalizedName:
+def canonicalize(name: str, /) -> CanonicalName:
     r"""Normalize the name of a package (PEP 503)."""
     normalized = re.sub(r"[-_.]+", "-", name).lower()
-    return cast(NormalizedName, normalized)
+    return cast("CanonicalName", normalized)
 
 
 def get_packages() -> dict[ImportName, frozenset[PypiName]]:
@@ -105,8 +105,8 @@ def get_packages() -> dict[ImportName, frozenset[PypiName]]:
         if not vals:
             raise ValueError(f"Found empty list of distributions for {key!r}.")
 
-        canonical_key = cast(ImportName, canonicalize_name(key))
-        canonical_vals = frozenset(cast(PypiName, canonicalize_name(v)) for v in vals)
+        canonical_key = cast("ImportName", canonicalize(key))
+        canonical_vals = frozenset(cast("PypiName", canonicalize(v)) for v in vals)
         d[canonical_key] = canonical_vals
     return d
 
@@ -115,9 +115,9 @@ def get_packages_inverse() -> dict[PypiName, frozenset[ImportName]]:
     r"""Get the mapping of pip-package names to their module names."""
     d: dict[PypiName, set[ImportName]] = defaultdict(set)
     for key, vals in metadata.packages_distributions().items():
-        canonical_key = cast(ImportName, canonicalize_name(key))
+        canonical_key = cast("ImportName", canonicalize(key))
         for val in vals:
-            canonical_value = cast(PypiName, canonicalize_name(val))
+            canonical_value = cast("PypiName", canonicalize(val))
             d[canonical_value].add(canonical_key)
     # convert to frozenset
     return {k: frozenset(v) for k, v in d.items()}
@@ -151,32 +151,30 @@ class Requirement:
 
 def get_canonical_names(
     reqs: Iterable[str | Requirement], /
-) -> frozenset[NormalizedName]:
+) -> frozenset[CanonicalName]:
     r"""Get the canonical names from a list of requirements."""
-    return frozenset(
-        canonicalize_name(r if isinstance(r, str) else r.name) for r in reqs
-    )
+    return frozenset(canonicalize(r if isinstance(r, str) else r.name) for r in reqs)
 
 
 def get_import_names(reqs: Iterable[str | Requirement], /) -> frozenset[ImportName]:
     r"""Get the canonical names from a list of requirements."""
     return frozenset(
-        ImportName(canonicalize_name(r if isinstance(r, str) else r.name)) for r in reqs
+        ImportName(canonicalize(r if isinstance(r, str) else r.name)) for r in reqs
     )
 
 
 def get_pypi_names(reqs: Iterable[str | Requirement], /) -> frozenset[PypiName]:
     r"""Get the canonical names from a list of requirements."""
     return frozenset(
-        PypiName(canonicalize_name(r if isinstance(r, str) else r.name)) for r in reqs
+        PypiName(canonicalize(r if isinstance(r, str) else r.name)) for r in reqs
     )
 
 
 # endregion pypa.packaging -------------------------------------------------------------
 
 # region constants ---------------------------------------------------------------------
-STDLIB_MODULES: frozenset[NormalizedName] = frozenset(
-    map(canonicalize_name, sys.stdlib_module_names)
+STDLIB_MODULES: frozenset[CanonicalName] = frozenset(
+    map(canonicalize, sys.stdlib_module_names)
 )
 r"""A set of all standard library modules."""
 PYPI_NAMES: dict[ImportName, frozenset[PypiName]] = get_packages()
@@ -301,7 +299,10 @@ def get_requirements_from_pyproject(
         raise RuntimeError("The following requirements are invalid:", list(errors))
 
     if not reqs:
-        warnings.warn("No requirements found in the pyproject.toml file.")
+        warnings.warn(
+            "No requirements found in the pyproject.toml file.",
+            stacklevel=2,
+        )
 
     return reqs
 
@@ -330,7 +331,10 @@ def get_dev_requirements_from_pyproject(
         raise RuntimeError("The following requirements are invalid:", list(errors))
 
     if not reqs:
-        warnings.warn("No development requirements found in the pyproject.toml file.")
+        warnings.warn(
+            "No development requirements found in the pyproject.toml file.",
+            stacklevel=2,
+        )
 
     return reqs
 
@@ -561,7 +565,8 @@ def detect_dependencies(
 ) -> GroupedRequirements:
     r"""Collect the dependencies from files in the given path."""
     path = Path(filename)
-    assert path.exists(), f"Invalid path: {path}"
+    if not path.exists():
+        raise FileNotFoundError(f"Invalid path: {path}")
 
     grouped_deps: GroupedRequirements = GroupedRequirements()
 
@@ -578,8 +583,6 @@ def detect_dependencies(
         module_name = path.stem
         module = get_module(module_name)
         grouped_deps |= GroupedRequirements.from_module(module)
-    # if not path.exists():
-    #     raise FileNotFoundError(f"Invalid path: {path}")
 
     return grouped_deps
 
@@ -696,8 +699,8 @@ def check_deps(
     *,
     declared_deps: frozenset[PypiName],
     imported_deps: frozenset[ImportName],
-    excluded_deps: frozenset[NormalizedName],
-    local_deps: frozenset[NormalizedName],
+    excluded_deps: frozenset[CanonicalName],
+    local_deps: frozenset[CanonicalName],
     known_unimported_deps: frozenset[PypiName],
     known_undeclared_deps: frozenset[ImportName],
     # flags
@@ -762,17 +765,17 @@ def check_pyproject(
 ) -> int:
     r"""Check a single file."""
     violations: int
-    assert Path(module_dir).is_dir(), f"Invalid module directory: {module_dir}"
-    assert tests_dir is None or Path(tests_dir).is_dir(), (
-        f"Invalid tests directory: {tests_dir}"
-    )
+    if not Path(module_dir).is_dir():
+        raise FileNotFoundError(f"{module_dir} is not a directory.")
+    if not (tests_dir is None or Path(tests_dir).is_dir()):
+        raise FileNotFoundError(f"{tests_dir} is not a directory.")
 
     with open(pyproject_file, "rb") as file:
         config = tomllib.load(file)
 
     # get the normalized project name
-    project_name: Any = canonicalize_name(get_name_pyproject(config))
-    testdir_name: Any = canonicalize_name(Path(tests_dir).stem) if tests_dir else None
+    project_name: Any = canonicalize(get_name_pyproject(config))
+    testdir_name: Any = canonicalize(Path(tests_dir).stem) if tests_dir else None
 
     excluded_deps = get_canonical_names(exclude)
     excluded_subdirs = set() if testdir_name is None else {testdir_name}
@@ -972,8 +975,8 @@ def main() -> None:
         help="Load modules silently.",
     )
     args = parser.parse_args()
-    global DEBUG  # noqa: PLW0603
-    global SILENT  # noqa: PLW0603
+
+    global DEBUG, SILENT  # noqa: PLW0603
     SILENT = args.silent
     DEBUG = args.debug
 
