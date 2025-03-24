@@ -94,19 +94,18 @@
   types: [python]
 # endregion scripts --------------------------------------------------------------------
 
+# region pyright-wrapper ---------------------------------------------------------------
+- id: pyright-concise
+  name: pyright-concise
+  description: "Wrapper for pyright that produces more concise output."
+  entry: src/pyright_wrapper.sh
+  language: script
+  types_or: [python, pyi]
+  require_serial: true
+# endregion pyright-wrapper ------------------------------------------------------------
+
+
 # region pygrep ------------------------------------------------------------------------
-# NOTE: This regex checks comments begin with a `#`, `%`, `//` (padded to length 2)
-#   The first group is 0-82 or 84-unlimited characters
-#   The construction `([-=—─═])\2{2}` checks for a separator character repeated 3 times
-#   If the first group matches ≥84 characters, then the line is overlong (2+84+3=89 characters)
-#   If it matches ≤82 characters, then the line is too short, given that it is detected as a separator.
-#   (2 + 83 characters + separator + separator + separator = 88 characters)
-# NOTE: The second group is a separator character, we consider the characters:
-# `-` (U+002D: Hyphen-Minus)
-# `=` (U+003D: Equals Sign)
-# `—` (U+2014: Em Dash)
-# `═` (U+2550: Box Drawings Double Horizontal)
-# `─` (U+2500: Box Drawings Light Horizontal)
 - id: check-separator-length-80
   name: '[text] Check separator length is 80.'
   description: "Check that 'horizontal rule' comments are the right length (80)."
@@ -177,14 +176,3 @@
 #  language: pygrep
 #  types: [python]
 # endregion pygrep ---------------------------------------------------------------------
-
-# region pyright-wrapper ---------------------------------------------------------------
-- id: pyright-concise
-  name: pyright-concise
-  description: "Wrapper for pyright that produces more concise output."
-  entry: src/pyright_wrapper.sh
-  language: python
-  types_or: [python, pyi]
-  require_serial: true
-  minimum_pre_commit_version: "2.9.2"
-# endregion pyright-wrapper ------------------------------------------------------------
