@@ -52,7 +52,7 @@ repos:
       - id: trailing-whitespace
   # ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.0
+    rev: v0.11.2
     hooks:
       - id: ruff
         name: ruff-isort
@@ -64,7 +64,7 @@ repos:
         files: '^src/|^tests/'
   # uv
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.6.6
+    rev: 0.6.9
     hooks:
       - id: uv-lock
       - id: uv-export
@@ -73,7 +73,7 @@ repos:
         stages: [ "pre-commit" ]
   # tach
   - repo: https://github.com/gauge-sh/tach-pre-commit
-    rev: v0.28.1 # change this to the latest tag!
+    rev: v0.28.3 # change this to the latest tag!
     hooks:
       - id: tach
   # markdownlint
@@ -94,7 +94,7 @@ repos:
         args: ["-x", "--shell=bash", "--color=always", "--format=gcc", "--"]
   # pyright
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.396
+    rev: v1.1.397
     hooks:
       - id: pyright
         files: '^src/|^tests/'

@@ -106,7 +106,8 @@ async def get_pypi_json(pkg: str, /, *, session: aiohttp.ClientSession) -> JSON:
 
 async def get_all_pypi_json(packages: Iterable[str], /) -> dict[str, JSON]:
     r"""Get the JSON data for all the given packages."""
-    async with aiohttp.ClientSession(timeout=TIMEOUT) as session:
+    timeout = aiohttp.ClientTimeout(connect=TIMEOUT)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
         tasks = (get_pypi_json(pkg, session=session) for pkg in packages)
         responses = await asyncio.gather(*tasks)
 
