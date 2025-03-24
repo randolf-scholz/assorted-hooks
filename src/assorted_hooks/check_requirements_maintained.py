@@ -35,6 +35,7 @@ from urllib.request import urlopen
 
 import aiohttp
 from packaging.utils import NormalizedName, canonicalize_name
+from typing_extensions import deprecated
 
 from assorted_hooks.utils import (
     get_canonical_names,
@@ -54,7 +55,7 @@ class Spec(NamedTuple):
     license: str
 
 
-@warnings.deprecated("Option to check local packages was removed")
+@deprecated("Option to check local packages was removed")
 def get_local_packages() -> dict[NormalizedName, tuple[str, str, str]]:
     r"""Get the packages installed in the current environment."""
     return {
@@ -67,7 +68,7 @@ def get_local_packages() -> dict[NormalizedName, tuple[str, str, str]]:
     }
 
 
-@warnings.deprecated("Option to check local packages was removed")
+@deprecated("Option to check local packages was removed")
 async def get_pypi_fallback(pkg: str, /) -> JSON:
     url = f"https://pypi.org/pypi/{pkg}/json"
     loop = asyncio.get_event_loop()
@@ -82,7 +83,7 @@ async def get_pypi_fallback(pkg: str, /) -> JSON:
             raise ValueError(f"Failed to get package {pkg!r}: {status=}")
 
 
-@warnings.deprecated("Option to check local packages was removed")
+@deprecated("Option to check local packages was removed")
 async def get_all_pypi_json_fallback(packages: Iterable[str], /) -> dict[str, JSON]:
     r"""Get the JSON data for all the given packages (without aiohttp)."""
     warnings.warn("aiohttp is not available, using fallback.", stacklevel=2)

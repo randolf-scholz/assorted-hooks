@@ -5,7 +5,7 @@ build-backend = "pdm.backend"
 # region project configuration ---------------------------------------------------------
 [project]
 name = "assorted-hooks"
-version = "0.6.13"
+version = "0.6.14"
 authors = [{ name = "Randolf Scholz", email = "randolf.scholz@gmail.com" }]
 description = "Custom pre-commit hooks"
 
@@ -21,18 +21,19 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Utilities",
     "Typing :: Typed",
 ]
 
 # dependencies
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "aiohttp>=3.11.14",
     "packaging>=24.2",
     "pygithub>=2.6.1",
     "pyyaml>=6.0.2",
+    "typing-extensions>=4.12.2",
 ]
 
 [project.urls]
@@ -83,7 +84,7 @@ tests = ["pytest>=8.3.5"]
 src = ["src/", "tests/"]
 indent-width = 4
 line-length = 88
-target-version = "py313"
+target-version = "py312"
 output-format = "concise"
 
 [tool.ruff.lint]
