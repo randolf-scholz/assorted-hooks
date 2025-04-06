@@ -12,7 +12,7 @@ source_roots = [
 
 [[modules]]
 path = "assorted_hooks.ast"
-depends_on = []
+depends_on = ["assorted_hooks.utils"]
 
 [[modules]]
 path = "assorted_hooks.ast._clean_namespace"

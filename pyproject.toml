@@ -5,7 +5,7 @@ build-backend = "pdm.backend"
 # region project configuration ---------------------------------------------------------
 [project]
 name = "assorted-hooks"
-version = "0.6.15"
+version = "0.6.16"
 authors = [{ name = "Randolf Scholz", email = "randolf.scholz@gmail.com" }]
 description = "Custom pre-commit hooks"
 
@@ -29,11 +29,11 @@ classifiers = [
 # dependencies
 requires-python = ">=3.12"
 dependencies = [
-    "aiohttp>=3.11.14",
+    "aiohttp>=3.11.16",
     "packaging>=24.2",
     "pygithub>=2.6.1",
     "pyyaml>=6.0.2",
-    "typing-extensions>=4.12.2",
+    "typing-extensions>=4.13.1",
 ]
 
 [project.urls]
@@ -46,6 +46,7 @@ check-direct-imports = "assorted_hooks.ast.check_direct_imports:main"
 check-no-mixed-args = "assorted_hooks.ast.check_no_mixed_args:main"
 check-standard-generics = "assorted_hooks.ast.check_standard_generics:main"
 check-typing = "assorted_hooks.ast.check_typing:main"
+check-runtime-dataprotocol = "assorted_hooks.ast.check_runtime_dataprotocol:main"
 # other hooks
 check-archived-hooks = "assorted_hooks.check_archived_hooks:main"
 check-github-issues = "assorted_hooks.check_github_issues:main"
@@ -66,14 +67,14 @@ dev = [
 ]
 typing = [
     "mypy>=1.15.0",
-    "pyright>=1.1.397",
-    "types-pyyaml>=6.0.12.20241230",
+    "pyright>=1.1.398",
+    "types-pyyaml>=6.0.12.20250402",
 ]
     linters = [
     "pre-commit>=4.2.0",
     "pylint>=3.3.6",
-    "ruff>=0.11.2",
-    "tach>=0.28.3",
+    "ruff>=0.11.4",
+    "tach>=0.28.5",
 ]
 tests = ["pytest>=8.3.5"]
 # endregion development dependencies ---------------------------------------------------

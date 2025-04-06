@@ -26,6 +26,12 @@
   description: "AST-based linting rule for type-hints."
   language: python
   types: [python]
+- id: check-runtime-dataprotocol
+  entry: check-runtime-dataprotocol
+  name: '[py] checks for @runtime-checkable data protocols.'
+  description: 'Do not use @runtime-checkable with data protocols.'
+  language: python
+  types: [python]
 # endregion ast-based ------------------------------------------------------------------
 
 # region misc --------------------------------------------------------------------------
@@ -103,7 +109,6 @@
   types_or: [python, pyi]
   require_serial: true
 # endregion pyright-wrapper ------------------------------------------------------------
-
 
 # region pygrep ------------------------------------------------------------------------
 - id: check-separator-length-80
