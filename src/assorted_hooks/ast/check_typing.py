@@ -594,17 +594,19 @@ def main() -> None:
 
     # apply script to all files
     violations = 0
-    exceptions = []
+    exceptions = {}
     for file in files:
         __logger__.debug('Checking "%s:0"', file)
         try:
             violations += check_file(file, options=args)
         except Exception as exc:  # noqa: BLE001
-            exceptions.append(exc)
+            exceptions[file] = exc
     if exceptions:
-        msg = "\n".join(str(exc) for exc in exceptions)
-        raise RuntimeError(f"Checking the following files failed:\n{msg}")
+        msg = "\n".join(f"{key}: {value}" for key, value in exceptions.items())
+        print(f"{'-' * 79}\nChecking the following files failed!\n{msg}")
 
     if violations:
         print(f"{'-' * 79}\nFound {violations} violations.")
+
+    if violations or exceptions:
         raise SystemExit(1)
