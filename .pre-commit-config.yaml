@@ -6,16 +6,16 @@ default_language_version:
 repos:
   # test with pre-commit try-repo ../assorted-hooks --verbose --all-files
   - repo: https://github.com/randolf-scholz/assorted-hooks
-    rev: v0.5.56
+    rev: v0.6.17
     hooks:
       # pygrep-based hooks
       - id: check-separator-length-88
       - id: pyarrow-timestamp-seconds
+      - id: numpy-rename-axes-axis
       - id: python-consider-using-raw-string
       - id: python-match-case-builtins
       - id: python-no-blanket-type-ignore
       - id: python-no-builtin-eval
-      - id: python-rename-axes-axis
       - id: python-system-exit
       # ast-based hooks
       - id: check-direct-imports
@@ -52,7 +52,7 @@ repos:
       - id: trailing-whitespace
   # ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.4
+    rev: v0.11.9
     hooks:
       - id: ruff
         name: ruff-isort
@@ -64,7 +64,7 @@ repos:
         files: '^src/|^tests/'
   # uv
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.6.12
+    rev: 0.7.3
     hooks:
       - id: uv-lock
       - id: uv-export
@@ -73,7 +73,7 @@ repos:
         stages: [ "pre-commit" ]
   # tach
   - repo: https://github.com/gauge-sh/tach-pre-commit
-    rev: v0.28.5 # change this to the latest tag!
+    rev: v0.29.0 # change this to the latest tag!
     hooks:
       - id: tach
   # markdownlint
@@ -94,7 +94,7 @@ repos:
         args: ["-x", "--shell=bash", "--color=always", "--format=gcc", "--"]
   # pyright
   - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.398
+    rev: v1.1.400
     hooks:
       - id: pyright
         files: '^src/|^tests/'
