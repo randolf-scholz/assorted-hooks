@@ -38,6 +38,7 @@ from ast import (
     Name,
     Subscript,
     Tuple,
+    arguments,
 )
 from pathlib import Path
 
@@ -55,6 +56,87 @@ from assorted_hooks.ast.ast_utils import (
 from assorted_hooks.utils import get_python_files
 
 __logger__ = logging.getLogger(__name__)
+
+
+DUNDER_METHODS_WITH_ARGS: frozenset[str] = frozenset({
+    "__format__",
+    "__lt__",
+    "__le__",
+    "__eq__",
+    "__ne__",
+    "__gt__",
+    "__ge__",
+    "__getattr__",
+    "__getattribute__",
+    "__setattr__",
+    "__delattr__",
+    "__get__",
+    "__set__",
+    "__delete__",
+    "__instancecheck__",
+    "__subclasscheck__",
+    "__getitem__",
+    "__setitem__",
+    "__delitem__",
+    "__contains__",
+    "__add__",
+    "__sub__",
+    "__mul__",
+    "__matmul__",
+    "__truediv__",
+    "__floordiv__",
+    "__mod__",
+    "__divmod__",
+    "__pow__",
+    "__lshift__",
+    "__rshift__",
+    "__and__",
+    "__xor__",
+    "__or__",
+    "__radd__",
+    "__rsub__",
+    "__rmul__",
+    "__rmatmul__",
+    "__rtruediv__",
+    "__rfloordiv__",
+    "__rmod__",
+    "__rdivmod__",
+    "__rpow__",
+    "__rlshift__",
+    "__rrshift__",
+    "__rand__",
+    "__rxor__",
+    "__ror__",
+    "__iadd__",
+    "__isub__",
+    "__imul__",
+    "__imatmul__",
+    "__itruediv__",
+    "__ifloordiv__",
+    "__imod__",
+    "__ipow__",
+    "__ilshift__",
+    "__irshift__",
+    "__iand__",
+    "__ixor__",
+    "__ior__",
+    "__round__",
+})
+
+
+def check_dunder_positional_only(tree: AST, /, *, fname: str) -> int:
+    r"""Make sure that dunder methods use positional-only arguments."""
+    violations = 0
+    for node in ast.walk(tree):
+        match node:
+            case FunctionDef(name=name, args=args) if name in DUNDER_METHODS_WITH_ARGS:
+                if args.args or args.kwarg or args.kwonlyargs:
+                    violations += 1
+                    print(
+                        f"{fname}:{node.lineno}: Dunder method {name!r} should use"
+                        " positional-only arguments."
+                    )
+    return violations
 
 
 def check_no_future_annotations(tree: AST, /, *, fname: str) -> int:
@@ -373,6 +455,8 @@ def check_file(filepath: str | Path, /, *, options: argparse.Namespace) -> int:
         violations += check_no_hints_overload_implementation(tree, fname=fname)
     if options.check_concrete:
         violations += check_concrete_classes_concrete_types(tree, fname=fname)
+    if options.check_dunder_positional_only:
+        violations += check_dunder_positional_only(tree, fname=fname)
     return violations
 
 
@@ -409,6 +493,13 @@ def main() -> None:
         type=bool,
         default=True,
         help="Check that `from __future__ import annotations` is not used.",
+    )
+    parser.add_argument(
+        "--check-dunder-positional-only",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=True,
+        help="Check that dunder methods use positional-only arguments.",
     )
     # endregion auto-enabled checks ----------------------------------------------------
     # region auto-disabled checks ------------------------------------------------------
