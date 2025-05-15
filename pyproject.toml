@@ -29,11 +29,11 @@ classifiers = [
 # dependencies
 requires-python = ">=3.12"
 dependencies = [
-    "aiohttp>=3.11.16",
-    "packaging>=24.2",
+    "aiohttp>=3.11.18",
+    "packaging>=25.0",
     "pygithub>=2.6.1",
     "pyyaml>=6.0.2",
-    "typing-extensions>=4.13.1",
+    "typing-extensions>=4.13.2",
 ]
 
 [project.urls]
@@ -67,14 +67,14 @@ dev = [
 ]
 typing = [
     "mypy>=1.15.0",
-    "pyright>=1.1.398",
+    "pyright>=1.1.400",
     "types-pyyaml>=6.0.12.20250402",
 ]
     linters = [
     "pre-commit>=4.2.0",
-    "pylint>=3.3.6",
-    "ruff>=0.11.4",
-    "tach>=0.28.5",
+    "pylint>=3.3.7",
+    "ruff>=0.11.9",
+    "tach>=0.29.0",
 ]
 tests = ["pytest>=8.3.5"]
 # endregion development dependencies ---------------------------------------------------
