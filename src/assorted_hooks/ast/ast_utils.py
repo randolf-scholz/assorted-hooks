@@ -12,6 +12,7 @@ __all__ = [
     "get_full_name_and_parent",
     "get_imported_symbols",
     "has_union",
+    "replace_node",
     # checks
     "is_abc",
     "is_abstractmethod",
@@ -563,3 +564,21 @@ def yield_functions_in_context(tree: AST, /) -> Iterator[FunctionContext]:
     # yield function contexts
     for name, (function_defs, overload_defs) in func_map.items():
         yield FunctionContext(name, function_defs, overload_defs, tree)
+
+
+def replace_node(lines: list[str], old_node: ast.stmt, new_node: ast.stmt) -> list[str]:
+    r"""Replace a node in the AST with a new node."""
+    if old_node.end_lineno is None:
+        raise ValueError("Node has no end line number.")
+    if old_node.end_col_offset is None:
+        raise ValueError("Node has no end column offset.")
+
+    row = old_node.lineno - 1
+    col = old_node.col_offset
+    end_row = old_node.end_lineno - 1
+    end_col = old_node.end_col_offset
+
+    lines[row : end_row + 1] = [
+        f"{lines[row][:col]}{ast.unparse(new_node)}{lines[end_row][end_col:]}"
+    ]
+    return lines

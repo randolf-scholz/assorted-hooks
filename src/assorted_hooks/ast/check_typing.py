@@ -18,6 +18,7 @@ __all__ = [
     "check_overload_default_ellipsis",
     "check_pep604_union",
     "get_python_files",
+    "is_fixable",
     "main",
 ]
 
@@ -42,6 +43,7 @@ from ast import (
     Subscript,
     Tuple,
 )
+from copy import deepcopy
 from pathlib import Path
 
 from assorted_hooks.ast.ast_utils import (
@@ -51,6 +53,7 @@ from assorted_hooks.ast.ast_utils import (
     is_protocol,
     is_typing_union,
     is_union,
+    replace_node,
     yield_concrete_classes,
     yield_namespace_and_funcs,
     yield_overloads,
@@ -78,7 +81,6 @@ DUNDER_METHODS_WITH_ARGS: frozenset[str] = frozenset({
     "__getattr__",
     "__getattribute__",
     "__getitem__",
-    "__getstate__",
     "__gt__",
     "__iadd__",
     "__iand__",
@@ -133,18 +135,46 @@ DUNDER_METHODS_WITH_ARGS: frozenset[str] = frozenset({
 })
 
 
-def check_dunder_positional_only(tree: AST, /, *, fname: str) -> int:
+def is_fixable(args: ast.arguments) -> bool:
+    r"""Check if the function arguments can be fixed.
+
+    We allow automatic fix if the function only uses positional arguments without defaults.
+    """
+    return not (args.defaults or args.kwarg or args.kwonlyargs)
+
+
+def check_dunder_positional_only(tree: AST, /, *, fname: str, fix: bool = False) -> int:
     r"""Make sure that dunder methods use positional-only arguments."""
     violations = 0
+    fixables: list[FunctionDef] = []
+
     for node in ast.walk(tree):
         match node:
-            case FunctionDef(name=name, args=args) if name in DUNDER_METHODS_WITH_ARGS:
+            case FunctionDef(name=name, args=args) as fn if (
+                name in DUNDER_METHODS_WITH_ARGS
+            ):
                 if args.args or args.kwarg or args.kwonlyargs:
                     violations += 1
                     print(
                         f"{fname}:{node.lineno}: Dunder method {name!r} should use"
                         " positional-only arguments."
                     )
+                if is_fixable(args):
+                    fixables.append(fn)
+    if fix and fixables:
+        lines = Path(fname).read_text().splitlines(keepends=True)
+        for fn in sorted(
+            fixables, key=lambda n: (n.lineno, n.col_offset), reverse=True
+        ):
+            new_fn = deepcopy(fn)
+            new_fn.args.posonlyargs = fn.args.posonlyargs + fn.args.args
+            new_fn.args.args = []
+            replace_node(lines, fn, new_fn)
+
+        # write back
+        with open(fname, "w", encoding="utf8") as f:
+            f.writelines(lines)
+
     return violations
 
 
@@ -465,7 +495,7 @@ def check_file(filepath: str | Path, /, *, options: argparse.Namespace) -> int:
     if options.check_concrete:
         violations += check_concrete_classes_concrete_types(tree, fname=fname)
     if options.check_dunder_positional_only:
-        violations += check_dunder_positional_only(tree, fname=fname)
+        violations += check_dunder_positional_only(tree, fname=fname, fix=options.fix)
     return violations
 
 
@@ -574,6 +604,13 @@ def main() -> None:
         type=bool,
         default=False,
         help="Check that isinstance uses tuples instead of unions.",
+    )
+    parser.add_argument(
+        "--fix",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=False,
+        help="Fix the violations.",
     )
     # endregion auto-disabled checks ---------------------------------------------------
     parser.add_argument(

@@ -19,17 +19,19 @@ __all__ = [
     "get_requirements_from_pyproject",
     "get_dev_requirements_from_pyproject",
     "get_canonical_names",
+    "run_checks",
     "yield_deps",
     "yield_dev_deps",
 ]
 
 import argparse
+import logging
 import re
 import warnings
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from pathlib import Path
 from re import Pattern
-from typing import Any, Optional, Protocol
+from typing import Any, Concatenate, Optional, Protocol
 
 from github import Github, RateLimitExceededException
 from github.Repository import Repository
@@ -38,6 +40,37 @@ from packaging.utils import NormalizedName, canonicalize_name
 
 REPO_REGEX = re.compile(r"github\.com/(?P<name>(?:[\w-]+/)*[\w-]+)(?:\.git)?")
 r"""Regular expression to extract the repository name."""
+
+
+type Checker = Callable[Concatenate[Path, ...], int]
+
+
+def run_checks(filespec: str, /, checker: Checker, options: Mapping[str, Any]) -> None:
+    # find all files
+    files: list[Path] = get_python_files(filespec)
+    violations = 0
+    exceptions = {}
+
+    logger = logging.getLogger(checker.__module__)
+
+    # apply script to all files
+    for file in files:
+        logger.debug('Checking "%s:0"', file)
+        try:
+            violations += checker(file, **options)
+        except Exception as exc:  # noqa: BLE001
+            exceptions[file] = exc
+
+    # display results
+    print(f"{'-' * 79}\nFound {violations} violations.")
+
+    if exceptions:
+        excs = "\n".join(f"{key}: {value}" for key, value in exceptions.items())
+        msg = f"{'-' * 79}\nChecking the following files failed!\n{excs}"
+        raise ExceptionGroup(msg, list(exceptions.values()))
+
+    if violations:
+        raise SystemExit(1)
 
 
 def _iter_poetry_group(group: dict[str, Any], /) -> Iterator[str]:

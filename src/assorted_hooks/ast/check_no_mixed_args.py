@@ -33,8 +33,7 @@ def check_file(
     filepath: str | Path,
     /,
     *,
-    allow_one: bool = False,
-    allow_two: bool = False,
+    max_args: int = 3,
     ignore_dunder: bool = False,
     ignore_names: Collection[str] = (),
     ignore_decorators: Collection[str] = (),
@@ -49,8 +48,6 @@ def check_file(
     filename = str(path)
     text = path.read_text(encoding="utf8")
     tree = ast.parse(text, filename=filename)
-
-    num_allowed_args = 2 if allow_two else 1 if allow_one else 0
 
     def is_ignorable(func: Func, /) -> bool:
         r"""Checks if the func can be ignored."""
@@ -72,32 +69,20 @@ def check_file(
             else node.args.args[1:]  # exclude self/cls
         )
 
-        if len(args) > num_allowed_args:
+        if len(args) > max_args:
             violations += 1
-            try:
-                arg = node.args.args[0]
-            except IndexError as exc:
-                raise RuntimeError(
-                    f'"{filename}:{node.lineno}" Something went wrong. {vars(node)=}'
-                ) from exc
             print(
-                f"{filename}:{arg.lineno}:"
+                f"{filename}:{node.lineno}:"
                 f" Mixed positional and keyword arguments in function."
             )
 
     for node in yield_funcs_outside_classes(tree):
         if is_ignorable(node):
             continue
-        if len(node.args.args) > num_allowed_args:
+        if len(node.args.args) > max_args:
             violations += 1
-            try:
-                arg = node.args.args[0]
-            except IndexError as exc:
-                raise RuntimeError(
-                    f'"{filename}:{node.lineno}" Something went wrong. {vars(node)=}'
-                ) from exc
             print(
-                f"{filename}:{arg.lineno}:"
+                f"{filename}:{node.lineno}:"
                 f" Mixed positional and keyword arguments in function."
             )
 
@@ -117,18 +102,12 @@ def main() -> None:
         help="One or multiple files, folders or file patterns.",
     )
     parser.add_argument(
-        "--allow-one",
-        action=argparse.BooleanOptionalAction,
-        type=bool,
-        default=False,
-        help="Allows a single positional_or_keyword argument.",
-    )
-    parser.add_argument(
-        "--allow-two",
-        action=argparse.BooleanOptionalAction,
-        type=bool,
-        default=False,
-        help="Allows two positional_or_keyword arguments.",
+        "-m",
+        "--max-args",
+        action="store",
+        type=int,
+        default=3,
+        help="Allow this many positional_or_keyword arguments.",
     )
     parser.add_argument(
         "--ignore-names",
@@ -181,11 +160,6 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    if args.allow_one and args.allow_two:
-        raise ValueError(
-            "Cannot allow both one and two positional_or_keyword arguments."
-        )
-
     if args.debug:
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
         __logger__.debug("args: %s", vars(args))
@@ -200,8 +174,7 @@ def main() -> None:
         try:
             violations += check_file(
                 file,
-                allow_one=args.allow_one,
-                allow_two=args.allow_two,
+                max_args=args.max,
                 ignore_dunder=args.ignore_dunder,
                 ignore_names=args.ignore_names,
                 ignore_overloads=args.ignore_overloads,
