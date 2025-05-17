@@ -92,12 +92,6 @@ repos:
     hooks:
       - id: shellcheck
         args: ["-x", "--shell=bash", "--color=always", "--format=gcc", "--"]
-  # pyright
-  - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.400
-    hooks:
-      - id: pyright
-        files: '^src/|^tests/'
   # pyright-concise
   - repo: local
     hooks:

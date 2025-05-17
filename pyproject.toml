@@ -43,7 +43,7 @@ repository = "https://github.com/randolf-scholz/assorted-hooks"
 # ast hooks
 check-dunder-all = "assorted_hooks.ast.check_dunder_all:main"
 check-direct-imports = "assorted_hooks.ast.check_direct_imports:main"
-check-no-mixed-args = "assorted_hooks.ast.check_no_mixed_args:main"
+check-signatures = "assorted_hooks.ast.check_signatures:main"
 check-standard-generics = "assorted_hooks.ast.check_standard_generics:main"
 check-typing = "assorted_hooks.ast.check_typing:main"
 check-runtime-dataprotocol = "assorted_hooks.ast.check_runtime_dataprotocol:main"

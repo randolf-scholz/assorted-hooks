@@ -45,14 +45,19 @@ def check_tests_mirror_source(
         return violations
 
     # Step 2: Check that there are no extra directories in tests_dir that are not in src_dir.
+    #   Note: This only applies to We only consider directories of the form "tests/package_name/**/dir" for which
+    #      src/package_name/ exists.
     for tests_subdir in tests_dir.rglob("*"):
         # skip private/hidden directories
         if tests_subdir.name.startswith("_") or tests_subdir.name.startswith("."):
             continue
         if tests_subdir.is_dir():
+            # strip the tests_dir prefix from the path
             relative_path = tests_subdir.relative_to(tests_dir)
+            # check if it corresponds to the form "tests/package_name/**/dir"
+            # and if src_dir/package_name exists
             corresponding_src_dir = src_dir / relative_path
-            if not (
+            if Path(*corresponding_src_dir.parts[:2]).exists() and not (
                 corresponding_src_dir.exists()
                 or corresponding_src_dir.with_suffix(".py").exists()
             ):

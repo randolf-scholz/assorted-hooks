@@ -2,12 +2,9 @@
 r"""Disallow mixed positional and keyword arguments in function-defs."""
 
 __all__ = [
-    # Constants
-    "DUNDER_METHODS_WITH_ARGS",
     # Functions
     "check_file",
     "check_concrete_classes_concrete_types",
-    "check_dunder_positional_only",
     "check_no_future_annotations",
     "check_no_hints_overload_implementation",
     "check_no_optional",
@@ -18,7 +15,6 @@ __all__ = [
     "check_overload_default_ellipsis",
     "check_pep604_union",
     "get_python_files",
-    "is_fixable",
     "main",
 ]
 
@@ -43,7 +39,6 @@ from ast import (
     Subscript,
     Tuple,
 )
-from copy import deepcopy
 from pathlib import Path
 
 from assorted_hooks.ast.ast_utils import (
@@ -53,7 +48,6 @@ from assorted_hooks.ast.ast_utils import (
     is_protocol,
     is_typing_union,
     is_union,
-    replace_node,
     yield_concrete_classes,
     yield_namespace_and_funcs,
     yield_overloads,
@@ -61,121 +55,6 @@ from assorted_hooks.ast.ast_utils import (
 from assorted_hooks.utils import get_python_files
 
 __logger__ = logging.getLogger(__name__)
-
-
-DUNDER_METHODS_WITH_ARGS: frozenset[str] = frozenset({
-    "__add__",
-    "__and__",
-    "__contains__",
-    "__deepcopy__",
-    "__delattr__",
-    "__delete__",
-    "__delitem__",
-    "__divmod__",
-    "__eq__",
-    "__exit__",
-    "__floordiv__",
-    "__format__",
-    "__ge__",
-    "__get__",
-    "__getattr__",
-    "__getattribute__",
-    "__getitem__",
-    "__gt__",
-    "__iadd__",
-    "__iand__",
-    "__ifloordiv__",
-    "__ilshift__",
-    "__imatmul__",
-    "__imod__",
-    "__imul__",
-    "__instancecheck__",
-    "__ior__",
-    "__ipow__",
-    "__irshift__",
-    "__isub__",
-    "__itruediv__",
-    "__ixor__",
-    "__le__",
-    "__lshift__",
-    "__lt__",
-    "__matmul__",
-    "__mod__",
-    "__mro_entries__",
-    "__mul__",
-    "__ne__",
-    "__or__",
-    "__pow__",
-    "__radd__",
-    "__rand__",
-    "__rdivmod__",
-    "__reduce_ex__",
-    "__rfloordiv__",
-    "__rlshift__",
-    "__rmatmul__",
-    "__rmod__",
-    "__rmul__",
-    "__ror__",
-    "__round__",
-    "__rpow__",
-    "__rrshift__",
-    "__rshift__",
-    "__rsub__",
-    "__rtruediv__",
-    "__rxor__",
-    "__set__",
-    "__set_name__",
-    "__setattr__",
-    "__setitem__",
-    "__setstate__",
-    "__sub__",
-    "__subclasscheck__",
-    "__truediv__",
-    "__xor__",
-})
-
-
-def is_fixable(args: ast.arguments) -> bool:
-    r"""Check if the function arguments can be fixed.
-
-    We allow automatic fix if the function only uses positional arguments without defaults.
-    """
-    return not (args.defaults or args.kwarg or args.kwonlyargs)
-
-
-def check_dunder_positional_only(tree: AST, /, *, fname: str, fix: bool = False) -> int:
-    r"""Make sure that dunder methods use positional-only arguments."""
-    violations = 0
-    fixables: list[FunctionDef] = []
-
-    for node in ast.walk(tree):
-        match node:
-            case FunctionDef(name=name, args=args) as fn if (
-                name in DUNDER_METHODS_WITH_ARGS
-            ):
-                if args.args or args.kwarg or args.kwonlyargs:
-                    violations += 1
-                    print(
-                        f"{fname}:{node.lineno}: Dunder method {name!r} should use"
-                        " positional-only arguments."
-                    )
-                if is_fixable(args):
-                    fixables.append(fn)
-    if fix and fixables:
-        lines = Path(fname).read_text().splitlines(keepends=True)
-        for fn in sorted(
-            fixables, key=lambda n: (n.lineno, n.col_offset), reverse=True
-        ):
-            new_fn = deepcopy(fn)
-            new_fn.args.posonlyargs = fn.args.posonlyargs + fn.args.args
-            new_fn.args.args = []
-            replace_node(lines, fn, new_fn)
-
-        # write back
-        with open(fname, "w", encoding="utf8") as f:
-            f.writelines(lines)
-
-    return violations
 
 
 def check_no_future_annotations(tree: AST, /, *, fname: str) -> int:
@@ -494,8 +373,6 @@ def check_file(filepath: str | Path, /, *, options: argparse.Namespace) -> int:
         violations += check_no_hints_overload_implementation(tree, fname=fname)
     if options.check_concrete:
         violations += check_concrete_classes_concrete_types(tree, fname=fname)
-    if options.check_dunder_positional_only:
-        violations += check_dunder_positional_only(tree, fname=fname, fix=options.fix)
     return violations
 
 
@@ -532,13 +409,6 @@ def main() -> None:
         type=bool,
         default=True,
         help="Check that `from __future__ import annotations` is not used.",
-    )
-    parser.add_argument(
-        "--check-dunder-positional-only",
-        action=argparse.BooleanOptionalAction,
-        type=bool,
-        default=True,
-        help="Check that dunder methods use positional-only arguments.",
     )
     # endregion auto-enabled checks ----------------------------------------------------
     # region auto-disabled checks ------------------------------------------------------
@@ -604,13 +474,6 @@ def main() -> None:
         type=bool,
         default=False,
         help="Check that isinstance uses tuples instead of unions.",
-    )
-    parser.add_argument(
-        "--fix",
-        action=argparse.BooleanOptionalAction,
-        type=bool,
-        default=False,
-        help="Fix the violations.",
     )
     # endregion auto-disabled checks ---------------------------------------------------
     parser.add_argument(

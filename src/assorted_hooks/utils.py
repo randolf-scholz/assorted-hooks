@@ -2,17 +2,12 @@ r"""Some utility functions for assorted_hooks."""
 
 __all__ = [
     # Constants
-    "KEYWORDS",
-    "SOFT_KEYWORDS",
-    "BUILTIN_FUNCTIONS",
-    "BUILTIN_CONSTANTS",
-    "BUILTIN_SITE_CONSTANTS",
-    "BUILTIN_EXCEPTIONS",
     "REPO_REGEX",
     # Protocols
     "FileCheck",
     # Functions
-    "check_all_files",
+    "is_dunder",
+    "is_private",
     "get_python_files",
     "get_repository",
     "get_repository_name",
@@ -37,37 +32,6 @@ from github import Github, RateLimitExceededException
 from github.Repository import Repository
 from packaging.requirements import InvalidRequirement, Requirement
 from packaging.utils import NormalizedName, canonicalize_name
-
-REPO_REGEX = re.compile(r"github\.com/(?P<name>(?:[\w-]+/)*[\w-]+)(?:\.git)?")
-r"""Regular expression to extract the repository name."""
-
-
-def run_checks(filespec: str, checker: Callable[[Path], int]) -> None:
-    # find all files
-    files: list[Path] = get_python_files(filespec)
-    violations = 0
-    exceptions = {}
-
-    logger = logging.getLogger(checker.__module__)
-
-    # apply script to all files
-    for file in files:
-        logger.debug('Checking "%s:0"', file)
-        try:
-            violations += checker(file)
-        except Exception as exc:  # noqa: BLE001
-            exceptions[file] = exc
-
-    # display results
-    print(f"{'-' * 79}\nFound {violations} violations.")
-
-    if exceptions:
-        excs = "\n".join(f"{key}: {value}" for key, value in exceptions.items())
-        msg = f"{'-' * 79}\nChecking the following files failed!\n{excs}"
-        raise ExceptionGroup(msg, list(exceptions.values()))
-
-    if violations:
-        raise SystemExit(1)
 
 
 def _iter_poetry_group(group: dict[str, Any], /) -> Iterator[str]:
@@ -230,6 +194,10 @@ def get_canonical_names(
     )
 
 
+REPO_REGEX = re.compile(r"github\.com/(?P<name>(?:[\w-]+/)*[\w-]+)(?:\.git)?")
+r"""Regular expression to extract the repository name."""
+
+
 def get_repository_name(url: str, /) -> str:
     r"""Extract the relevant information from a repository URL."""
     match = REPO_REGEX.search(url)
@@ -297,147 +265,39 @@ def get_python_files(
     return files
 
 
-def check_all_files(*checks: FileCheck, options: argparse.Namespace) -> None:
+def run_checks(filespec: str, /, checker: Callable[[Path], int]) -> None:
     # find all files
-    files: list[Path] = get_python_files(options.files)
-
+    files: list[Path] = get_python_files(filespec)
     violations = 0
+    exceptions = {}
+
+    logger = logging.getLogger(checker.__module__)
 
     # apply script to all files
     for file in files:
-        print(f"Checking {file!s}")
-        for check in checks:
-            try:
-                violations += check(file, options=options)
-            except Exception as exc:
-                raise RuntimeError(
-                    f"{file!s}: Performing check {check!r} failed!"
-                ) from exc
+        logger.debug('Checking "%s:0"', file)
+        try:
+            violations += checker(file)
+        except Exception as exc:  # noqa: BLE001
+            exceptions[file] = exc
+
+    # display results
+    print(f"{'-' * 79}\nFound {violations} violations.")
+
+    if exceptions:
+        excs = "\n".join(f"{key}: {value}" for key, value in exceptions.items())
+        msg = f"{'-' * 79}\nChecking the following files failed!\n{excs}"
+        raise ExceptionGroup(msg, list(exceptions.values()))
 
     if violations:
-        print(f"{'-' * 79}\nFound {violations} violations.")
         raise SystemExit(1)
 
 
-KEYWORDS: list[str] = [
-    "False"     , "await",      "else",       "import",     "pass",
-    "None"      , "break",      "except",     "in",         "raise",
-    "True"      , "class",      "finally",    "is",         "return",
-    "and"       , "continue",   "for",        "lambda",     "try",
-    "as"        , "def",        "from",       "nonlocal",   "while",
-    "assert"    , "del",        "global",     "not",        "with",
-    "async"     , "elif",       "if",         "or",         "yield",
-]  # fmt: skip
-r"""Python builtin keywords, cf. https://docs.python.org/3/reference/lexical_analysis.html#keywords."""
+def is_dunder(name: str, /) -> bool:
+    r"""Checks if the name is a dunder name."""
+    return name.startswith("__") and name.endswith("__") and name.isidentifier()
 
 
-SOFT_KEYWORDS: list[str] = ["match", "case", "_"]
-r"""Python soft keywords, cf. https://docs.python.org/3/reference/lexical_analysis.html#soft-keywords."""
-
-BUILTIN_FUNCTIONS: list[str] = [
-    # A
-    "abs", "aiter", "all", "anext", "any", "ascii",
-    # B
-    "bin", "bool", "breakpoint", "bytearray", "bytes",
-    # C
-    "callable", "chr", "classmethod", "compile", "complex",
-    # D
-    "delattr", "dict", "dir", "divmod",
-    # E
-    "enumerate", "eval", "exec",
-    # F
-    "filter", "float", "format", "frozenset",
-    # G
-    "getattr", "globals",
-    # H
-    "hasattr", "hash", "help", "hex",
-    # I
-    "id", "input", "int", "isinstance", "issubclass", "iter",
-    # L
-    "len", "list", "locals",
-    # M
-    "map", "max", "memoryview", "min",
-    # N
-    "next",
-    # O
-    "object", "oct", "open", "ord",
-    # P
-    "pow", "print", "property",
-    # R
-    "range", "repr", "reversed", "round",
-    # S
-    "set", "setattr", "slice", "sorted", "staticmethod", "str", "sum", "super",
-    # T
-    "tuple", "type",
-    # V
-    "vars",
-    # Z
-    "zip",
-    # _
-    "__import__",
-]  # fmt: skip
-r"""Builtin functions, cf. https://docs.python.org/3/library/functions.html."""
-
-BUILTIN_CONSTANTS: list[str] = [
-    "False",
-    "None",
-    "True",
-    "NotImplemented",
-    "Ellipsis",
-    "__debug__",
-]
-r"""Builtin constants, cf. https://docs.python.org/3/library/constants.html."""
-
-BUILTIN_SITE_CONSTANTS: list[str] = ["copyright", "credits", "license", "exit", "quit"]
-r"""cf. https://docs.python.org/3/library/constants.html#constants-added-by-the-site-module"""
-
-BUILTIN_EXCEPTIONS: list[str] = [
-    # A
-    "ArithmeticError", "AssertionError", "AttributeError",
-    # B
-    "BaseException", "BlockingIOError", "BrokenPipeError", "BufferError",
-    "BytesWarning",
-    # C
-    "ChildProcessError", "ConnectionAbortedError", "ConnectionError",
-    "ConnectionRefusedError", "ConnectionResetError",
-    # D
-    "DeprecationWarning",
-    # E
-    "EOFError", "EncodingWarning", "EnvironmentError", "Exception",
-    # F
-    "FileExistsError", "FileNotFoundError", "FloatingPointError", "FutureWarning",
-    # G
-    "GeneratorExit",
-    # I
-    "IOError", "ImportError", "ImportWarning", "IndentationError", "IndexError",
-    "InterruptedError", "IsADirectoryError",
-    # K
-    "KeyError", "KeyboardInterrupt",
-    # L
-    "LookupError",
-    # M
-    "MemoryError", "ModuleNotFoundError",
-    # N
-    "NameError", "NotADirectoryError", "NotImplemented", "NotImplementedError",
-    # O
-    "OSError", "OverflowError",
-    # P
-    "PendingDeprecationWarning", "PermissionError", "ProcessLookupError",
-    # R
-    "RecursionError", "ReferenceError", "ResourceWarning", "RuntimeError", "RuntimeWarning",
-    # S
-    "StopAsyncIteration", "StopIteration", "SyntaxError", "SyntaxWarning",
-    "SystemError", "SystemExit",
-    # T
-    "TabError", "TimeoutError", "TypeError",
-    # U
-    "UnboundLocalError", "UnicodeDecodeError", "UnicodeEncodeError", "UnicodeError",
-    "UnicodeTranslateError", "UnicodeWarning", "UserWarning",
-    # V
-    "ValueError",
-    # W
-    "Warning",
-    # Z
-    "ZeroDivisionError",
-]  # fmt: skip
-r"""Builtin exceptions, cf. https://docs.python.org/3/library/exceptions.html."""
+def is_private(name: str, /) -> bool:
+    r"""Checks if the name is a private name."""
+    return name.startswith("_") and not name.startswith("__") and name.isidentifier()

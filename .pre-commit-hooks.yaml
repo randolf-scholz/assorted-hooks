@@ -7,10 +7,10 @@
   description: "Checks that Bar is used instead of foo.Bar if both foo and Bar are imported."
   language: python
   types: [python]
-- id: check-no-mixed-args
-  entry: check-no-mixed-args
-  name: '[py] avoid positional_or_keyword arguments.'
-  description: "Check for disallowing positional_or_keyword arguments."
+- id: check-signatures
+  entry: check-signatures
+  name: '[py] Check function signatures.'
+  description: "AST-based linting rules for function signatures."
   language: python
   types: [python]
 - id: check-dunder-all
@@ -78,7 +78,7 @@
   entry: check-tests-mirror-source
   name: 'Check tests mirror source.'
   description: 'Check that test folder structure mirrors source folder structure.'
-  types: [folder]
+  types: [directory]
   language: python
 # endregion misc -----------------------------------------------------------------------
 

@@ -3,6 +3,7 @@ r"""AST based utilities for the assorted_hooks package."""
 __all__ = [
     # Types
     "Func",
+    "FunctionKind",
     # Classes
     "AttributeVisitor",
     "FunctionContext",
@@ -18,14 +19,12 @@ __all__ = [
     "is_abstractmethod",
     "is_concrete_class",
     "is_decorated_with",
-    "is_dunder",
     "is_dunder_all",
     "is_dunder_main",
     "is_function_def",
     "is_future_import",
     "is_literal_list",
     "is_overload",
-    "is_private",
     "is_protocol",
     "is_pure_attribute",
     "is_staticmethod",
@@ -33,14 +32,15 @@ __all__ = [
     "is_typing_union",
     "is_union",
     # Iterators
-    "yield_concrete_classes",
     "yield_aliases",
     "yield_classes",
+    "yield_concrete_classes",
     "yield_dunder_all",
-    "yield_funcs_in_classes",
-    "yield_funcs_outside_classes",
+    "yield_methods",
+    "yield_non_method_functions",
     "yield_functions",
     "yield_functions_in_context",
+    "yield_functions_with_context",
     "yield_imported_attributes",
     "yield_namespace_and_funcs",
     "yield_overloads",
@@ -75,6 +75,7 @@ from ast import (
 from collections import defaultdict
 from collections.abc import Iterator
 from dataclasses import dataclass, field
+from enum import StrEnum
 from typing import NamedTuple, TypeAlias, TypeGuard
 
 Func: TypeAlias = FunctionDef | AsyncFunctionDef  # noqa: UP040
@@ -143,18 +144,6 @@ def has_union(tree: AST, /) -> bool:
 def is_decorated_with(node: Func, name: str, /) -> bool:
     r"""Checks if the function is decorated with a certain decorator."""
     return name in (get_full_name(d) for d in node.decorator_list)
-
-
-def is_dunder(node: Func, /) -> bool:
-    r"""Checks if the name is a dunder name."""
-    name = node.name
-    return name.startswith("__") and name.endswith("__") and name.isidentifier()
-
-
-def is_private(node: Func, /) -> bool:
-    r"""Checks if the name is a private name."""
-    name = node.name
-    return name.startswith("_") and not name.startswith("__") and name.isidentifier()
 
 
 def is_dunder_main(node: AST, /) -> TypeGuard[If]:
@@ -305,34 +294,53 @@ def yield_functions(tree: AST, /) -> Iterator[Func]:
 
 
 def yield_classes(tree: AST, /) -> Iterator[ClassDef]:
-    r"""Get all class-defs from the tree."""
+    r"""Get all class-definitions from the tree."""
     for node in ast.walk(tree):
         if isinstance(node, ClassDef):
             yield node
 
 
-def yield_funcs_in_classes(tree: AST, /) -> Iterator[Func]:
-    r"""Get all function that are defined directly inside class bodies."""
+def yield_methods(tree: AST, /) -> Iterator[Func]:
+    r"""Get all functions that are defined directly inside class bodies."""
     for cls in yield_classes(tree):
         for node in cls.body:
             if isinstance(node, Func):
                 yield node
 
 
-def yield_funcs_outside_classes(tree: AST, /) -> Iterator[Func]:
+def yield_non_method_functions(tree: AST, /) -> Iterator[Func]:
     r"""Get all functions that are nod defined inside class body."""
-    funcs_in_classes: set[AST] = set()
+    class_context: set[AST] = set()
 
     for node in ast.walk(tree):
         match node:
             case ClassDef(body=body):
-                funcs_in_classes.update(
-                    child for child in body if isinstance(child, Func)
-                )
+                class_context.update(body)
             # FIXME: https://github.com/python/cpython/issues/106246
             case FunctionDef() | AsyncFunctionDef():
-                if node not in funcs_in_classes:
+                if node not in class_context:
                     yield node
+
+
+class FunctionKind(StrEnum):
+    r"""Function kind enum."""
+
+    FUNCTION = "function"
+    METHOD = "method"
+
+
+def yield_functions_with_context(tree: AST, /) -> Iterator[tuple[Func, FunctionKind]]:
+    class_context: set[AST] = set()
+    function = FunctionKind.FUNCTION
+    method = FunctionKind.METHOD
+
+    for node in ast.walk(tree):
+        match node:
+            case ClassDef(body=body):
+                class_context.update(body)
+            # FIXME: https://github.com/python/cpython/issues/106246
+            case FunctionDef() | AsyncFunctionDef():
+                yield node, (method if node in class_context else function)
 
 
 def yield_namespace_and_funcs(
@@ -566,7 +574,9 @@ def yield_functions_in_context(tree: AST, /) -> Iterator[FunctionContext]:
         yield FunctionContext(name, function_defs, overload_defs, tree)
 
 
-def replace_node(lines: list[str], old_node: ast.stmt, new_node: ast.stmt) -> list[str]:
+def replace_node(
+    lines: list[str], old_node: ast.stmt, new_node: ast.stmt, /
+) -> list[str]:
     r"""Replace a node in the AST with a new node."""
     if old_node.end_lineno is None:
         raise ValueError("Node has no end line number.")

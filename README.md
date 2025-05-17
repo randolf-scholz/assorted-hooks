@@ -10,11 +10,13 @@
 
 - [`check-direct-imports`](docs/python/check_direct_imports.md): use directly imported symbols instead of module attributes.\
   **Example:** if both `import ast` and `from ast import AST` are present, use `AST` instead of `ast.AST`.
-- [`check-no-mixed-args`](docs/python/check_no_mixed_args.md): ensure no `POSITIONAL_OR_KEYWORD` parameters are used in function definitions.\
+- [`check-signatures`](docs/python/check_signatures.md): AST-based linting rules for python function signatures.\
+  **Example:** use `def f(x, /, *args):` instead of `def f(x, *args):`.
+- ensure no `POSITIONAL_OR_KEYWORD` parameters are used in function definitions.\
   **Example:** use `def f(a, b, /, *, c=1):` instead of `def f(a, b, c=1):`.
 - [`check-dunder-all`](docs/python/check_dunder_all.md): ensure `__all__` is defined in all modules and is well-formed.\
   **Example:** `__all__ = ['a', 'b', 'c']`.
-- [`check-typing`](docs/python/check_typing.md): AST based linting rules for python type hints.
+- [`check-typing`](docs/python/check_typing.md): AST-based linting rules for python type hints.
 
 ### Script-Based
 

@@ -12,17 +12,7 @@ source_roots = [
 
 [[modules]]
 path = "assorted_hooks.ast"
-depends_on = ["assorted_hooks.utils"]
-
-[[modules]]
-path = "assorted_hooks.ast._clean_namespace"
 depends_on = []
-utility = true
-
-[[modules]]
-path = "assorted_hooks.ast._unimplemented_check_tests_folder_structure"
-depends_on = []
-utility = true
 
 [[modules]]
 path = "assorted_hooks.ast._unimplemented_check_typing_style"
@@ -47,14 +37,6 @@ utility = true
 
 [[modules]]
 path = "assorted_hooks.ast.check_dunder_all"
-depends_on = [
-    "assorted_hooks.ast.ast_utils",
-    "assorted_hooks.utils",
-]
-utility = true
-
-[[modules]]
-path = "assorted_hooks.ast.check_no_mixed_args"
 depends_on = [
     "assorted_hooks.ast.ast_utils",
     "assorted_hooks.utils",
@@ -136,3 +118,23 @@ utility = true
 [[modules]]
 path = "assorted_hooks.utils"
 depends_on = []
+
+[[modules]]
+path = "assorted_hooks.check_tests_mirror_source"
+depends_on = []
+utility = true
+
+[[modules]]
+path = "assorted_hooks.check_spelling_wise_suffix"
+depends_on = []
+utility = true
+
+[[modules]]
+path = "assorted_hooks.ast.check_signatures"
+depends_on = ["assorted_hooks.ast.ast_utils", "assorted_hooks.utils"]
+utility = true
+
+[[modules]]
+path = "assorted_hooks.ast.check_runtime_data_protocol"
+depends_on = ["assorted_hooks.utils"]
+utility = true
