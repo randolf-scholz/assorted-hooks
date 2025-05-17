@@ -13,6 +13,7 @@
   description: "AST-based linting rules for function signatures."
   language: python
   types: [python]
+  require_serial: true
 - id: check-dunder-all
   entry: check-dunder-all
   name: '[py] check __all__.'

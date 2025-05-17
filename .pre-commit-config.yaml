@@ -6,7 +6,7 @@ default_language_version:
 repos:
   # test with pre-commit try-repo ../assorted-hooks --verbose --all-files
   - repo: https://github.com/randolf-scholz/assorted-hooks
-    rev: v0.6.18
+    rev: v0.6.21
     hooks:
       # pygrep-based hooks
       - id: check-separator-length-88
@@ -21,8 +21,7 @@ repos:
       - id: check-direct-imports
       - id: check-dunder-all
       - id: check-typing
-      - id: check-no-mixed-args
-        args: ["--allow-one"]
+      - id: check-signatures
       # script-based hooks
       - id: check-clean-interface
         files: "^src/"
@@ -34,6 +33,7 @@ repos:
       # other hooks
       - id: check-resolved-github-issues
       - id: check-archived-hooks
+      - id: check-tests-mirror-source
   # https://pre-commit.com/hooks.html
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0

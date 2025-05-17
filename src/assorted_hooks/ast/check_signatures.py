@@ -58,15 +58,15 @@ def check_file(
     filepath: str | Path,
     /,
     *,
+    allow_mixed_args: bool = True,
     fix: bool = False,
     max_args: int = 2,
-    max_positional: int = 3,
+    max_positional_args: int = 3,
     ignore_dunder: bool = False,
     ignore_names: Collection[str] = (),
     ignore_decorators: Collection[str] = (),
     ignore_overloads: bool = True,
     ignore_private: bool = False,
-    ignore_wo_pos_only: bool = False,
 ) -> int:
     r"""Check whether functions contain POSITIONAL_OR_KEYWORD arguments."""
     # Get the AST
@@ -80,12 +80,11 @@ def check_file(
     def is_ignorable(func: Func, /) -> bool:
         r"""Checks if the func can be ignored."""
         return (
-            (ignore_wo_pos_only and not func.args.posonlyargs)
+            any(is_decorated_with(func, name) for name in ignore_decorators)
             or (ignore_dunder and is_dunder(func.name))
             or (ignore_overloads and is_overload(func))
             or (ignore_private and is_private(func.name))
             or (func.name in ignore_names)
-            or any(is_decorated_with(func, name) for name in ignore_decorators)
         )
 
     for node, kind in yield_functions_with_context(tree):
@@ -115,17 +114,23 @@ def check_file(
                 f"{filename}:{node.lineno}:"
                 f" Mixed varargs and positional_or_keyword arguments in {kind!r}!"
             )
-        if po_args and pk_args and (len(pk_args) > max_args):
+        if pk_args and po_args and not allow_mixed_args:
             violations += 1
             print(
                 f"{filename}:{node.lineno}:"
-                f" Mixed positional and positional_or_keyword arguments in {kind!r}!"
+                f" Mixed positional_only and positional_or_keyword arguments in {kind!r}!"
             )
-        if (len(po_args) + len(pk_args)) > max_positional:
+        if len(pk_args) > max_args:
+            violations += 1
+            print(
+                f"{filename}:{node.lineno}: Too many positional_or_keyword arguments in {kind!r}!"
+                f" (max {max_args})"
+            )
+        if (len(po_args) + len(pk_args)) > max_positional_args:
             violations += 1
             print(
                 f"{filename}:{node.lineno}: Too many positional arguments in {kind!r}!"
-                f" (max {max_positional})"
+                f" (max {max_positional_args})"
             )
         if not ignore_dunder and is_dunder(node.name) and pk_args:
             violations += 1
@@ -168,7 +173,13 @@ def main() -> None:
         help="One or multiple files, folders or file patterns.",
     )
     parser.add_argument(
-        "-m",
+        "--max-args",
+        action="store",
+        type=int,
+        default=2,
+        help="Allow this many positional_or_keyword arguments.",
+    )
+    parser.add_argument(
         "--max-positional-args",
         action="store",
         type=int,
@@ -190,18 +201,11 @@ def main() -> None:
         help="Ignore all methods/functions with certain decorators. (for example: '@jit.script')",
     )
     parser.add_argument(
-        "--ignore-without-positional-only",
-        action=argparse.BooleanOptionalAction,
-        type=bool,
-        default=False,
-        help="Skip FunctionDefs without positional-only arguments.",
-    )
-    parser.add_argument(
         "--ignore-overloads",
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=False,
-        help="Ignore FunctionDefs that are @overload decorated..",
+        help="Ignore FunctionDefs that are @overload decorated.",
     )
     parser.add_argument(
         "--ignore-dunder",
@@ -223,6 +227,13 @@ def main() -> None:
         type=bool,
         default=True,
         help="Check that dunder methods use positional-only arguments.",
+    )
+    parser.add_argument(
+        "--allow-mixed-args",
+        action=argparse.BooleanOptionalAction,
+        type=bool,
+        default=True,
+        help="Allow the same signature to include both positional_only and positional_or_keyword arguments.",
     )
     parser.add_argument(
         "--fix",
@@ -247,12 +258,12 @@ def main() -> None:
     checker = partial(
         check_file,
         fix=args.fix,
-        max_args=args.max_args,
-        max_positional=args.max_positional,
+        allow_mixed_args=args.allow_mixed_args,
+        max_args=args.max_positional_args,
+        max_positional_args=args.max_positional_args,
         ignore_dunder=args.ignore_dunder,
         ignore_names=args.ignore_names,
         ignore_overloads=args.ignore_overloads,
-        ignore_wo_pos_only=args.ignore_without_positional_only,
         ignore_private=args.ignore_private,
         ignore_decorators=args.ignore_decorators,
     )
