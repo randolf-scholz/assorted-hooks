@@ -12,6 +12,7 @@ import ast
 import logging
 import sys
 from collections.abc import Collection
+from functools import partial
 from pathlib import Path
 
 from assorted_hooks.ast.ast_utils import (
@@ -24,7 +25,7 @@ from assorted_hooks.ast.ast_utils import (
     yield_funcs_in_classes,
     yield_funcs_outside_classes,
 )
-from assorted_hooks.utils import get_python_files
+from assorted_hooks.utils import run_checks
 
 __logger__ = logging.getLogger(__name__)
 
@@ -162,32 +163,19 @@ def main() -> None:
 
     if args.debug:
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-        __logger__.debug("args: %s", vars(args))
+    __logger__.debug("args: %s", vars(args))
 
-    # find all files
-    files: list[Path] = get_python_files(args.files)
-
-    # apply script to all files
-    violations = 0
-    for file in files:
-        __logger__.debug('Checking "%s:0"', file)
-        try:
-            violations += check_file(
-                file,
-                max_args=args.max,
-                ignore_dunder=args.ignore_dunder,
-                ignore_names=args.ignore_names,
-                ignore_overloads=args.ignore_overloads,
-                ignore_wo_pos_only=args.ignore_without_positional_only,
-                ignore_private=args.ignore_private,
-                ignore_decorators=args.ignore_decorators,
-            )
-        except Exception as exc:
-            raise RuntimeError(f"{file!s}: Checking file failed!") from exc
-
-    if violations:
-        print(f"{'-' * 79}\nFound {violations} violations.")
-        raise SystemExit(1)
+    checker = partial(
+        check_file,
+        max_args=args.max_args,
+        ignore_dunder=args.ignore_dunder,
+        ignore_names=args.ignore_names,
+        ignore_overloads=args.ignore_overloads,
+        ignore_wo_pos_only=args.ignore_without_positional_only,
+        ignore_private=args.ignore_private,
+        ignore_decorators=args.ignore_decorators,
+    )
+    run_checks(args.files, checker)
 
 
 if __name__ == "__main__":

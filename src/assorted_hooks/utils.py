@@ -28,10 +28,10 @@ import argparse
 import logging
 import re
 import warnings
-from collections.abc import Callable, Iterable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator
 from pathlib import Path
 from re import Pattern
-from typing import Any, Concatenate, Optional, Protocol
+from typing import Any, Optional, Protocol
 
 from github import Github, RateLimitExceededException
 from github.Repository import Repository
@@ -42,10 +42,7 @@ REPO_REGEX = re.compile(r"github\.com/(?P<name>(?:[\w-]+/)*[\w-]+)(?:\.git)?")
 r"""Regular expression to extract the repository name."""
 
 
-type Checker = Callable[Concatenate[Path, ...], int]
-
-
-def run_checks(filespec: str, /, checker: Checker, options: Mapping[str, Any]) -> None:
+def run_checks(filespec: str, checker: Callable[[Path], int]) -> None:
     # find all files
     files: list[Path] = get_python_files(filespec)
     violations = 0
@@ -57,7 +54,7 @@ def run_checks(filespec: str, /, checker: Checker, options: Mapping[str, Any]) -
     for file in files:
         logger.debug('Checking "%s:0"', file)
         try:
-            violations += checker(file, **options)
+            violations += checker(file)
         except Exception as exc:  # noqa: BLE001
             exceptions[file] = exc
 

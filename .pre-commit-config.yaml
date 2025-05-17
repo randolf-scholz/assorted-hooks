@@ -6,7 +6,7 @@ default_language_version:
 repos:
   # test with pre-commit try-repo ../assorted-hooks --verbose --all-files
   - repo: https://github.com/randolf-scholz/assorted-hooks
-    rev: v0.6.17
+    rev: v0.6.18
     hooks:
       # pygrep-based hooks
       - id: check-separator-length-88
@@ -52,7 +52,7 @@ repos:
       - id: trailing-whitespace
   # ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.9
+    rev: v0.11.10
     hooks:
       - id: ruff
         name: ruff-isort
@@ -64,7 +64,7 @@ repos:
         files: '^src/|^tests/'
   # uv
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.7.3
+    rev: 0.7.5
     hooks:
       - id: uv-lock
       - id: uv-export

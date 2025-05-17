@@ -74,6 +74,12 @@
   language: python
   types: [text]
   require_serial: true
+- id: check-tests-mirror-source
+  entry: check-tests-mirror-source
+  name: 'Check tests mirror source.'
+  description: 'Check that test folder structure mirrors source folder structure.'
+  types: [folder]
+  language: python
 # endregion misc -----------------------------------------------------------------------
 
 # region scripts -----------------------------------------------------------------------

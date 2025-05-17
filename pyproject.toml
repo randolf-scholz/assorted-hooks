@@ -53,6 +53,7 @@ check-github-issues = "assorted_hooks.check_github_issues:main"
 check-requirements-maintained = "assorted_hooks.check_requirements_maintained:main"
 check-requirements-valid = "assorted_hooks.check_requirements_valid:main"
 check-spelling-wise-suffix = "assorted_hooks.check_spelling_wise_suffix:main"
+check-tests-mirror-source = "assorted_hooks.check_tests_mirror_source:main"
 # script hooks
 check-clean-interface = "assorted_hooks.scripts.check_clean_interface:main"
 check-requirements-used = "assorted_hooks.scripts.check_requirements_used:main"
