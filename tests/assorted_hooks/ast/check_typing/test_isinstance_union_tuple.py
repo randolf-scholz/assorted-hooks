@@ -14,25 +14,25 @@ def test_no_tuple_isinstance() -> None:
     isinstance(x, tuple)
     """
     tree = ast.parse(dedent(code))
-    assert check_no_tuple_isinstance(tree, fname="test.py") == 0
+    assert check_no_tuple_isinstance(tree, filename="test.py") == 0
 
     code = r"""
     isinstance(x, ())
     """
     tree = ast.parse(dedent(code))
-    assert check_no_tuple_isinstance(tree, fname="test.py") == 1
+    assert check_no_tuple_isinstance(tree, filename="test.py") == 1
 
     code = r"""
     isinstance(x, (int,))
     """
     tree = ast.parse(dedent(code))
-    assert check_no_tuple_isinstance(tree, fname="test.py") == 1
+    assert check_no_tuple_isinstance(tree, filename="test.py") == 1
 
     code = r"""
     isinstance(x, (tuple, list))
     """
     tree = ast.parse(dedent(code))
-    assert check_no_tuple_isinstance(tree, fname="test.py") == 1
+    assert check_no_tuple_isinstance(tree, filename="test.py") == 1
 
 
 def test_no_tuple_issubclass() -> None:
@@ -40,25 +40,25 @@ def test_no_tuple_issubclass() -> None:
     issubclass(x, tuple)
     """
     tree = ast.parse(dedent(code))
-    assert check_no_tuple_isinstance(tree, fname="test.py") == 0
+    assert check_no_tuple_isinstance(tree, filename="test.py") == 0
 
     code = r"""
     issubclass(x, ())
     """
     tree = ast.parse(dedent(code))
-    assert check_no_tuple_isinstance(tree, fname="test.py") == 1
+    assert check_no_tuple_isinstance(tree, filename="test.py") == 1
 
     code = r"""
     issubclass(x, (int,))
     """
     tree = ast.parse(dedent(code))
-    assert check_no_tuple_isinstance(tree, fname="test.py") == 1
+    assert check_no_tuple_isinstance(tree, filename="test.py") == 1
 
     code = r"""
     issubclass(x, (tuple, list))
     """
     tree = ast.parse(dedent(code))
-    assert check_no_tuple_isinstance(tree, fname="test.py") == 1
+    assert check_no_tuple_isinstance(tree, filename="test.py") == 1
 
 
 def test_no_union_isinstance() -> None:
@@ -66,31 +66,31 @@ def test_no_union_isinstance() -> None:
     isinstance(x, tuple)
     """
     tree = ast.parse(dedent(code))
-    assert check_no_union_isinstance(tree, fname="test.py") == 0
+    assert check_no_union_isinstance(tree, filename="test.py") == 0
 
     code = r"""
     isinstance(x, ())
     """
     tree = ast.parse(dedent(code))
-    assert check_no_union_isinstance(tree, fname="test.py") == 0
+    assert check_no_union_isinstance(tree, filename="test.py") == 0
 
     code = r"""
     isinstance(x, Union[int])
     """
     tree = ast.parse(dedent(code))
-    assert check_no_union_isinstance(tree, fname="test.py") == 1
+    assert check_no_union_isinstance(tree, filename="test.py") == 1
 
     code = r"""
     isinstance(x, tuple | list)
     """
     tree = ast.parse(dedent(code))
-    assert check_no_union_isinstance(tree, fname="test.py") == 1
+    assert check_no_union_isinstance(tree, filename="test.py") == 1
 
     code = r"""
     isinstance(x, Union[tuple, list])
     """
     tree = ast.parse(dedent(code))
-    assert check_no_union_isinstance(tree, fname="test.py") == 1
+    assert check_no_union_isinstance(tree, filename="test.py") == 1
 
 
 def test_no_union_issubclass() -> None:
@@ -98,25 +98,25 @@ def test_no_union_issubclass() -> None:
     issubclass(x, tuple)
     """
     tree = ast.parse(dedent(code))
-    assert check_no_union_isinstance(tree, fname="test.py") == 0
+    assert check_no_union_isinstance(tree, filename="test.py") == 0
 
     code = r"""
     issubclass(x, ())
     """
     tree = ast.parse(dedent(code))
-    assert check_no_union_isinstance(tree, fname="test.py") == 0
+    assert check_no_union_isinstance(tree, filename="test.py") == 0
 
     code = r"""
     issubclass(x, Union[int])
     """
     tree = ast.parse(dedent(code))
-    assert check_no_union_isinstance(tree, fname="test.py") == 1
+    assert check_no_union_isinstance(tree, filename="test.py") == 1
 
     code = r"""
     issubclass(x, tuple | list)
     """
     tree = ast.parse(dedent(code))
-    assert check_no_union_isinstance(tree, fname="test.py") == 1, ast.dump(
+    assert check_no_union_isinstance(tree, filename="test.py") == 1, ast.dump(
         tree, indent=4
     )
 
@@ -124,4 +124,4 @@ def test_no_union_issubclass() -> None:
     issubclass(x, Union[tuple, list])
     """
     tree = ast.parse(dedent(code))
-    assert check_no_union_isinstance(tree, fname="test.py") == 1
+    assert check_no_union_isinstance(tree, filename="test.py") == 1

@@ -18,7 +18,7 @@ def test_no_hints_overload_implementation_true_negative() -> None:
     def bar(x: int) -> int | None: ...
     """
     tree = ast.parse(dedent(code))
-    assert check_no_hints_overload_implementation(tree, fname="test.py") == 0
+    assert check_no_hints_overload_implementation(tree, filename="test.py") == 0
 
 
 def test_no_hints_overload_implementation_true_negative_class() -> None:
@@ -37,7 +37,7 @@ def test_no_hints_overload_implementation_true_negative_class() -> None:
     def bar(x: int) -> int | None: ...
     """
     tree = ast.parse(dedent(code))
-    assert check_no_hints_overload_implementation(tree, fname="test.py") == 0
+    assert check_no_hints_overload_implementation(tree, filename="test.py") == 0
 
 
 def test_no_hints_overload_implementation_true_args() -> None:
@@ -52,7 +52,7 @@ def test_no_hints_overload_implementation_true_args() -> None:
     def bar(x: int) -> int | None: ...
     """
     tree = ast.parse(dedent(code))
-    assert check_no_hints_overload_implementation(tree, fname="test.py") == 1
+    assert check_no_hints_overload_implementation(tree, filename="test.py") == 1
 
 
 def test_no_hints_overload_implementation_true_positive_return() -> None:
@@ -67,4 +67,4 @@ def test_no_hints_overload_implementation_true_positive_return() -> None:
     def bar(x: int) -> int | None: ...
     """
     tree = ast.parse(dedent(code))
-    assert check_no_hints_overload_implementation(tree, fname="test.py") == 1
+    assert check_no_hints_overload_implementation(tree, filename="test.py") == 1

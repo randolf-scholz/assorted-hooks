@@ -11,16 +11,16 @@ def test_no_future_annotations() -> None:
     from __future__ import annotations
     """
     tree = ast.parse(dedent(code))
-    assert check_no_future_annotations(tree, fname="test.py") == 1
+    assert check_no_future_annotations(tree, filename="test.py") == 1
 
     code = r"""
     from __future__ import foo
     """
     tree = ast.parse(dedent(code))
-    assert check_no_future_annotations(tree, fname="test.py") == 0
+    assert check_no_future_annotations(tree, filename="test.py") == 0
 
     code = r"""
     from __future__ import foo, annotations
     """
     tree = ast.parse(dedent(code))
-    assert check_no_future_annotations(tree, fname="test.py") == 1
+    assert check_no_future_annotations(tree, filename="test.py") == 1

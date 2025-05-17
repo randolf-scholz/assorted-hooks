@@ -11,26 +11,26 @@ def test_optional() -> None:
     def foo(x: int) -> int | None: ...
     """
     tree = ast.parse(dedent(code))
-    assert check_no_optional(tree, fname="test.py") == 0
-    assert check_optional(tree, fname="test.py") == 1
+    assert check_no_optional(tree, filename="test.py") == 0
+    assert check_optional(tree, filename="test.py") == 1
 
     code = r"""
     def foo(x: int) -> list[int | None]: ...
     """
     tree = ast.parse(dedent(code))
-    assert check_no_optional(tree, fname="test.py") == 0
-    assert check_optional(tree, fname="test.py") == 1
+    assert check_no_optional(tree, filename="test.py") == 0
+    assert check_optional(tree, filename="test.py") == 1
 
     code = r"""
     def foo(x: int) -> Optional[int]: ...
     """
     tree = ast.parse(dedent(code))
-    assert check_no_optional(tree, fname="test.py") == 1
-    assert check_optional(tree, fname="test.py") == 0
+    assert check_no_optional(tree, filename="test.py") == 1
+    assert check_optional(tree, filename="test.py") == 0
 
     code = r"""
     def foo(x: int) -> list[Optional[int]]: ...
     """
     tree = ast.parse(dedent(code))
-    assert check_no_optional(tree, fname="test.py") == 1
-    assert check_optional(tree, fname="test.py") == 0
+    assert check_no_optional(tree, filename="test.py") == 1
+    assert check_optional(tree, filename="test.py") == 0

@@ -39,7 +39,7 @@ from assorted_hooks.ast.ast_utils import (
     is_overload,
     is_staticmethod,
     replace_node,
-    yield_functions_with_context,
+    yield_functions_and_context,
 )
 from assorted_hooks.utils import is_dunder, is_private, run_checks
 
@@ -99,7 +99,9 @@ def check_file(
             or (func.name in ignore_names)
         )
 
-    for node, kind in yield_functions_with_context(tree):
+    for fn_ctx in yield_functions_and_context(tree):
+        node = fn_ctx.node
+        kind = fn_ctx.kind
         if is_ignorable(node):
             continue
         match kind:

@@ -11,22 +11,22 @@ def test_pep604_union() -> None:
     def foo(x: int) -> int | None: ...
     """
     tree = ast.parse(dedent(code))
-    assert check_pep604_union(tree, fname="test.py") == 0
+    assert check_pep604_union(tree, filename="test.py") == 0
 
     code = r"""
     def foo(x: int) -> Union[None | int]: ...
     """
     tree = ast.parse(dedent(code))
-    assert check_pep604_union(tree, fname="test.py") == 1
+    assert check_pep604_union(tree, filename="test.py") == 1
 
     code = r"""
     def foo(x: int) -> list[Union[int, None]]: ...
     """
     tree = ast.parse(dedent(code))
-    assert check_pep604_union(tree, fname="test.py") == 1
+    assert check_pep604_union(tree, filename="test.py") == 1
 
     code = r"""
     def foo(x: int) -> list[None | int]: ...
     """
     tree = ast.parse(dedent(code))
-    assert check_pep604_union(tree, fname="test.py") == 0
+    assert check_pep604_union(tree, filename="test.py") == 0

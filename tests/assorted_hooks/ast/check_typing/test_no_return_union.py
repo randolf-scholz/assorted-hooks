@@ -11,8 +11,8 @@ def test_no_return_union_pep604() -> None:
     def foo(x: int) -> int | None: ...
     """
     tree = ast.parse(dedent(code))
-    assert check_no_return_union(tree, recursive=False, fname="test.py") == 1
-    assert check_no_return_union(tree, recursive=True, fname="test.py") == 1
+    assert check_no_return_union(tree, recursive=False, filename="test.py") == 1
+    assert check_no_return_union(tree, recursive=True, filename="test.py") == 1
 
 
 def test_no_return_union_pep604_recursion() -> None:
@@ -20,8 +20,8 @@ def test_no_return_union_pep604_recursion() -> None:
     def foo(x: int) -> list[None | int]: ...
     """
     tree = ast.parse(dedent(code))
-    assert check_no_return_union(tree, recursive=False, fname="test.py") == 0
-    assert check_no_return_union(tree, recursive=True, fname="test.py") == 1
+    assert check_no_return_union(tree, recursive=False, filename="test.py") == 0
+    assert check_no_return_union(tree, recursive=True, filename="test.py") == 1
 
 
 def test_no_return_union_typing_recursion() -> None:
@@ -29,8 +29,8 @@ def test_no_return_union_typing_recursion() -> None:
     def foo(x: int) -> list[Union[None, int]]: ...
     """
     tree = ast.parse(dedent(code))
-    assert check_no_return_union(tree, recursive=False, fname="test.py") == 0
-    assert check_no_return_union(tree, recursive=True, fname="test.py") == 1
+    assert check_no_return_union(tree, recursive=False, filename="test.py") == 0
+    assert check_no_return_union(tree, recursive=True, filename="test.py") == 1
 
 
 def test_no_return_union_typing() -> None:
@@ -38,8 +38,8 @@ def test_no_return_union_typing() -> None:
     def foo(x: int) -> Union[int, None]: ...
     """
     tree = ast.parse(dedent(code))
-    assert check_no_return_union(tree, recursive=False, fname="test.py") == 1
-    assert check_no_return_union(tree, recursive=True, fname="test.py") == 1
+    assert check_no_return_union(tree, recursive=False, filename="test.py") == 1
+    assert check_no_return_union(tree, recursive=True, filename="test.py") == 1
 
 
 def test_no_return_union_overload() -> None:
@@ -57,8 +57,8 @@ def test_no_return_union_overload() -> None:
         def __getitem__(self, index: int | slice) -> int | Self: ...
     """
     tree = ast.parse(dedent(code))
-    assert check_no_return_union(tree, recursive=False, fname="test.py") == 0
-    assert check_no_return_union(tree, recursive=True, fname="test.py") == 0
+    assert check_no_return_union(tree, recursive=False, filename="test.py") == 0
+    assert check_no_return_union(tree, recursive=True, filename="test.py") == 0
 
 
 def test_no_return_union_protocol() -> None:
@@ -104,13 +104,13 @@ def test_no_return_union_protocol() -> None:
     tree = ast.parse(dedent(code))
     assert (
         check_no_return_union(
-            tree, check_protocols=False, recursive=False, fname="test.py"
+            tree, exclude_protocols=False, recursive=False, filename="test.py"
         )
         == 0
     )
     assert (
         check_no_return_union(
-            tree, check_protocols=False, recursive=True, fname="test.py"
+            tree, exclude_protocols=False, recursive=True, filename="test.py"
         )
         == 0
     )
@@ -159,13 +159,13 @@ def test_no_return_union_protocol_contrafactual() -> None:
     tree = ast.parse(dedent(code))
     assert (
         check_no_return_union(
-            tree, check_protocols=False, recursive=False, fname="test.py"
+            tree, exclude_protocols=False, recursive=False, filename="test.py"
         )
         == 1
     )
     assert (
         check_no_return_union(
-            tree, check_protocols=False, recursive=True, fname="test.py"
+            tree, exclude_protocols=False, recursive=True, filename="test.py"
         )
         == 1
     )

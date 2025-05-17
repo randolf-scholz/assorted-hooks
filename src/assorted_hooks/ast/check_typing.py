@@ -43,7 +43,7 @@ from pathlib import Path
 
 from assorted_hooks.ast.ast_utils import (
     Func,
-    FunctionContextVisitor,
+    OverloadVisitor,
     has_union,
     is_protocol,
     is_typing_union,
@@ -57,7 +57,7 @@ from assorted_hooks.utils import get_python_files
 __logger__ = logging.getLogger(__name__)
 
 
-def check_no_future_annotations(tree: AST, /, *, fname: str) -> int:
+def check_no_future_annotations(tree: AST, /, *, filename: str) -> int:
     r"""Make sure PEP563 is not used."""
     violations = 0
     for node in ast.walk(tree):
@@ -67,11 +67,11 @@ def check_no_future_annotations(tree: AST, /, *, fname: str) -> int:
                 for alias in future_import.names:
                     if alias.name == "annotations":
                         violations += 1
-                        print(f"{fname}:{node.lineno}: Do not use PEP563!")
+                        print(f"{filename}:{node.lineno}: Do not use PEP563!")
     return violations
 
 
-def check_overload_default_ellipsis(tree: AST, /, *, fname: str) -> int:
+def check_overload_default_ellipsis(tree: AST, /, *, filename: str) -> int:
     r"""Check that keyword arguments in overloads assign Ellipsis instead of a value."""
     violations = 0
 
@@ -86,7 +86,7 @@ def check_overload_default_ellipsis(tree: AST, /, *, fname: str) -> int:
                 case _:
                     violations += 1
                     print(
-                        f"{fname}:{node.lineno}: Default value for"
+                        f"{filename}:{node.lineno}: Default value for"
                         f" {arg.arg!r} inside @overload should be '...'"
                     )
 
@@ -100,20 +100,20 @@ def check_overload_default_ellipsis(tree: AST, /, *, fname: str) -> int:
                 case _:
                     violations += 1
                     print(
-                        f"{fname}:{node.lineno}: Default value for"
+                        f"{filename}:{node.lineno}: Default value for"
                         f" {kwarg.arg!r} inside @overload should be '...'"
                     )
     return violations
 
 
-def check_pep604_union(tree: AST, /, *, fname: str) -> int:
+def check_pep604_union(tree: AST, /, *, filename: str) -> int:
     r"""Check that X | Y is used instead of Union[X, Y]."""
     violations = 0
 
     for node in ast.walk(tree):
         if is_typing_union(node):
             violations += 1
-            print(f"{fname}:{node.lineno}: Use X | Y instead of Union[X, Y]!")
+            print(f"{filename}:{node.lineno}: Use X | Y instead of Union[X, Y]!")
 
     return violations
 
@@ -123,53 +123,54 @@ def check_no_return_union(
     /,
     *,
     recursive: bool,
-    fname: str,
-    exclude_overloaded_impl: bool = True,
-    check_protocols: bool = True,
+    filename: str,
+    include_overload_implementation: bool = True,
+    exclude_protocols: bool = True,
 ) -> int:
     r"""Check if function returns a union type.
 
     By default, for overloaded functions only the overloads are checked and not the implementations.
+
+    Args:
+        tree (AST): The AST to check.
+        recursive (bool): If True, check recursively for unions.
+        filename (str): The name of the file being checked.
+        include_overload_implementation (bool): If True, include the implementation of overloads in the check.
+        exclude_protocols (bool): If True, exclude protocol classes from the check.
     """
     violations = 0
 
     # determine all functions to check
     funcs: list[Func] = []
 
-    for ctx in FunctionContextVisitor(tree):
+    for fn_ctx in OverloadVisitor(tree):
         # skip if inside protocol context.
-        if not check_protocols:
-            match ctx.context:
-                case ClassDef(bases=bases):
-                    if any(map(is_protocol, bases)):
-                        continue
+        if (
+            exclude_protocols
+            and isinstance(fn_ctx.context, ClassDef)
+            and any(is_protocol(base) for base in fn_ctx.context.bases)
+        ):
+            continue
 
         # always include overload definitions
-        funcs += ctx.overload_defs
+        funcs += fn_ctx.overloads
 
-        # include non-overload definitions
-        match ctx.function_defs:
-            case []:
-                continue
-            case [fn]:
-                if not ctx.overload_defs or not exclude_overloaded_impl:
-                    funcs.append(fn)
-            case [*fns]:  # multiple function definitions
-                # this can happen e.g. with property setters/getters, dispatch, etc.
-                funcs.extend(fns)
+        # include function implementations
+        if include_overload_implementation:
+            funcs.extend(fn_ctx.overloads)
 
     # emit violations
     for fn in funcs:
-        if fn.returns is not None and (
+        if (fn.returns is not None) and (
             is_union(fn.returns) or (recursive and has_union(fn.returns))
         ):
             violations += 1
-            print(f"{fname}:{fn.lineno}: Avoid returning union types!")
+            print(f"{filename}:{fn.lineno}: Avoid returning union types!")
 
     return violations
 
 
-def check_no_optional(tree: AST, /, *, fname: str) -> int:
+def check_no_optional(tree: AST, /, *, filename: str) -> int:
     r"""Check that `None | T` is used instead of `Optional[T]`."""
     violations = 0
 
@@ -177,12 +178,12 @@ def check_no_optional(tree: AST, /, *, fname: str) -> int:
         match node:
             case Subscript(value=Name(id="Optional")):
                 violations += 1
-                print(f"{fname}:{node.lineno}: Use None | X instead of Optional[X]")
+                print(f"{filename}:{node.lineno}: Use None | X instead of Optional[X]")
 
     return violations
 
 
-def check_no_union_isinstance(tree: AST, /, *, fname: str) -> int:
+def check_no_union_isinstance(tree: AST, /, *, filename: str) -> int:
     r"""Checks that tuples are used instead of unions in isinstance checks."""
     violations = 0
 
@@ -194,7 +195,7 @@ def check_no_union_isinstance(tree: AST, /, *, fname: str) -> int:
             ):
                 violations += 1
                 print(
-                    f"{fname}:{node.lineno}: Use tuple instead of union in isinstance"
+                    f"{filename}:{node.lineno}: Use tuple instead of union in isinstance"
                 )
             case Call(
                 func=Name(id="issubclass"),
@@ -202,13 +203,13 @@ def check_no_union_isinstance(tree: AST, /, *, fname: str) -> int:
             ):
                 violations += 1
                 print(
-                    f"{fname}:{node.lineno}: Use tuple instead of union in issubclass"
+                    f"{filename}:{node.lineno}: Use tuple instead of union in issubclass"
                 )
 
     return violations
 
 
-def check_no_tuple_isinstance(tree: AST, /, *, fname: str) -> int:
+def check_no_tuple_isinstance(tree: AST, /, *, filename: str) -> int:
     r"""Checks that unions are used instead of tuples in isinstance checks."""
     violations = 0
 
@@ -220,7 +221,7 @@ def check_no_tuple_isinstance(tree: AST, /, *, fname: str) -> int:
             ):
                 violations += 1
                 print(
-                    f"{fname}:{node.lineno}: Use union instead of tuple in isinstance"
+                    f"{filename}:{node.lineno}: Use union instead of tuple in isinstance"
                 )
             case Call(
                 func=Name(id="issubclass"),
@@ -228,7 +229,7 @@ def check_no_tuple_isinstance(tree: AST, /, *, fname: str) -> int:
             ):
                 violations += 1
                 print(
-                    f"{fname}:{node.lineno}: Use union instead of tuple in issubclass"
+                    f"{filename}:{node.lineno}: Use union instead of tuple in issubclass"
                 )
 
     return violations
@@ -238,7 +239,7 @@ def check_concrete_classes_concrete_types(
     tree: AST,
     /,
     *,
-    fname: str,
+    filename: str,
     check_attrs: bool = False,
     check_funcs: bool = True,
     values: frozenset[str] = frozenset({
@@ -277,13 +278,15 @@ def check_concrete_classes_concrete_types(
 
     for node in matches:
         violations += 1
-        print(f"{fname}:{node.lineno}: Concrete classes should return concrete types.")
+        print(
+            f"{filename}:{node.lineno}: Concrete classes should return concrete types."
+        )
 
     return violations
 
 
 def check_no_hints_overload_implementation(
-    tree: ClassDef | Module, /, *, fname: str
+    tree: ClassDef | Module, /, *, filename: str
 ) -> int:
     r"""Checks that the implementation of an overloaded function has no type hints."""
     violations = 0
@@ -317,13 +320,13 @@ def check_no_hints_overload_implementation(
                     ):
                         violations += 1
                         print(
-                            f"{fname}:{func.lineno}: Overloaded function"
+                            f"{filename}:{func.lineno}: Overloaded function"
                             f" implementation {func.name!r} should not have type hints."
                         )
     return violations
 
 
-def check_optional(tree: AST, /, *, fname: str) -> int:
+def check_optional(tree: AST, /, *, filename: str) -> int:
     r"""Check that `Optional[T]` is used instead of `None | T`."""
     violations = 0
 
@@ -331,10 +334,10 @@ def check_optional(tree: AST, /, *, fname: str) -> int:
         match node:
             case BinOp(op=BitOr(), left=Constant(value=None)):
                 violations += 1
-                print(f"{fname}:{node.lineno}: Use Optional[X] instead of None | X")
+                print(f"{filename}:{node.lineno}: Use Optional[X] instead of None | X")
             case BinOp(op=BitOr(), right=Constant(value=None)):
                 violations += 1
-                print(f"{fname}:{node.lineno}: Use Optional[X] instead of X | None")
+                print(f"{filename}:{node.lineno}: Use Optional[X] instead of X | None")
 
     return violations
 
@@ -351,30 +354,30 @@ def check_file(filepath: str | Path, /, *, options: argparse.Namespace) -> int:
     tree = ast.parse(text, filename=filename)
 
     if options.check_optional:
-        violations += check_optional(tree, fname=filename)
+        violations += check_optional(tree, filename=filename)
     if options.check_no_optional:
-        violations += check_no_optional(tree, fname=filename)
+        violations += check_no_optional(tree, filename=filename)
     if options.check_pep604_union:
-        violations += check_pep604_union(tree, fname=filename)
+        violations += check_pep604_union(tree, filename=filename)
     if options.check_overload_default_ellipsis:
-        violations += check_overload_default_ellipsis(tree, fname=filename)
+        violations += check_overload_default_ellipsis(tree, filename=filename)
     if options.check_no_future_annotations:
-        violations += check_no_future_annotations(tree, fname=filename)
+        violations += check_no_future_annotations(tree, filename=filename)
     if options.check_no_return_union:
         violations += check_no_return_union(
             tree,
-            fname=filename,
+            filename=filename,
             recursive=options.check_no_return_union_recursive,
-            check_protocols=options.check_no_return_union_protocol,
+            exclude_protocols=options.check_no_return_union_protocol,
         )
     if options.check_no_tuple_isinstance:
-        violations += check_no_tuple_isinstance(tree, fname=filename)
+        violations += check_no_tuple_isinstance(tree, filename=filename)
     if options.check_no_union_isinstance:
-        violations += check_no_union_isinstance(tree, fname=filename)
+        violations += check_no_union_isinstance(tree, filename=filename)
     if options.check_no_hints_overload_implementation:
-        violations += check_no_hints_overload_implementation(tree, fname=filename)
+        violations += check_no_hints_overload_implementation(tree, filename=filename)
     if options.check_concrete:
-        violations += check_concrete_classes_concrete_types(tree, fname=filename)
+        violations += check_concrete_classes_concrete_types(tree, filename=filename)
     return violations
 
 

@@ -6,8 +6,9 @@ __all__ = [
     "FunctionKind",
     # Classes
     "AttributeVisitor",
-    "FunctionContext",
-    "FunctionContextVisitor",
+    "OverloadCTX",
+    "FunctionCTX",
+    "OverloadVisitor",
     # Functions
     "get_full_name",
     "get_full_name_and_parent",
@@ -39,8 +40,8 @@ __all__ = [
     "yield_methods",
     "yield_non_method_functions",
     "yield_functions",
-    "yield_functions_in_context",
-    "yield_functions_with_context",
+    "yield_overloads_and_context",
+    "yield_functions_and_context",
     "yield_imported_attributes",
     "yield_namespace_and_funcs",
     "yield_overloads",
@@ -72,11 +73,10 @@ from ast import (
     Name,
     Subscript,
 )
-from collections import defaultdict
 from collections.abc import Iterator
-from dataclasses import dataclass, field
+from dataclasses import KW_ONLY, dataclass, field
 from enum import StrEnum
-from typing import NamedTuple, TypeAlias, TypeGuard
+from typing import TypeAlias, TypeGuard
 
 Func: TypeAlias = FunctionDef | AsyncFunctionDef  # noqa: UP040
 r"""Type alias for function-defs."""
@@ -322,27 +322,6 @@ def yield_non_method_functions(tree: AST, /) -> Iterator[Func]:
                     yield node
 
 
-class FunctionKind(StrEnum):
-    r"""Function kind enum."""
-
-    FUNCTION = "function"
-    METHOD = "method"
-
-
-def yield_functions_with_context(tree: AST, /) -> Iterator[tuple[Func, FunctionKind]]:
-    class_context: set[AST] = set()
-    function = FunctionKind.FUNCTION
-    method = FunctionKind.METHOD
-
-    for node in ast.walk(tree):
-        match node:
-            case ClassDef(body=body):
-                class_context.update(body)
-            # FIXME: https://github.com/python/cpython/issues/106246
-            case FunctionDef() | AsyncFunctionDef():
-                yield node, (method if node in class_context else function)
-
-
 def yield_namespace_and_funcs(
     tree: AST, /, *, namespace: tuple[str, ...] = ()
 ) -> Iterator[tuple[tuple[str, ...], Func]]:
@@ -414,19 +393,6 @@ def yield_concrete_classes(tree: AST, /) -> Iterator[ClassDef]:
             yield node
 
 
-class FunctionContext(NamedTuple):
-    r"""Tuple of function definition and associated overloads."""
-
-    name: str
-    r"""Function name."""
-    function_defs: list[Func]
-    r"""Function definitions for the name."""
-    overload_defs: list[Func]
-    r"""List of associated overloads."""
-    context: AST
-    r"""Function context."""
-
-
 def is_protocol(node: AST, /) -> bool:
     r"""Check if the node is a protocol."""
     match node:
@@ -465,62 +431,6 @@ def is_typeddict(node: AST, /) -> bool:
 
 
 @dataclass
-class FunctionContextVisitor(ast.NodeVisitor):
-    r"""Get all function-defs and corresponding overloads from the tree.
-
-    Each def is paired with a list of associated overloads.
-    """
-
-    tree: AST
-    r"""Parent node of the current node."""
-    funcs: list[Func] = field(default_factory=list)
-    r"""List of functions."""
-
-    def __iter__(self) -> Iterator[FunctionContext]:
-        r"""Iterate over the tree."""
-        # recursion
-        yield from self.generic_visit(self.tree)
-
-        # group funcs by name and whether they are overloads
-        func_map: dict[str, tuple[list[Func], list[Func]]] = defaultdict(
-            lambda: ([], [])
-        )
-        for func in self.funcs:
-            if is_overload(func):
-                func_map[func.name][1].append(func)
-            else:
-                func_map[func.name][0].append(func)
-
-        # yield function contexts
-        for name, (function_defs, overload_defs) in func_map.items():
-            yield FunctionContext(name, function_defs, overload_defs, self.tree)
-
-    def visit_FunctionDef(self, node: FunctionDef) -> Iterator[FunctionContext]:  # noqa: N802
-        r"""Visit a function definition."""
-        self.funcs.append(node)
-        yield from FunctionContextVisitor(node)
-
-    def visit_AsyncFunctionDef(  # noqa: N802
-        self, node: AsyncFunctionDef
-    ) -> Iterator[FunctionContext]:
-        r"""Visit an async function definition."""
-        self.funcs.append(node)
-        yield from FunctionContextVisitor(node)
-
-    def visit_ClassDef(self, node: ClassDef) -> Iterator[FunctionContext]:  # noqa: N802
-        r"""Visit a class definition."""
-        yield from FunctionContextVisitor(node)
-
-    def generic_visit(self, node: AST) -> Iterator[FunctionContext]:
-        r"""Generic visit method."""
-        for child in ast.iter_child_nodes(node):
-            if isinstance(child, ClassDef | Func):
-                yield from self.visit(child)
-            else:
-                self.visit(child)
-
-
-@dataclass
 class AttributeVisitor(ast.NodeVisitor):
     r"""Get all attributes from the tree.
 
@@ -547,31 +457,164 @@ class AttributeVisitor(ast.NodeVisitor):
                     yield from self.visit(child)
 
 
-def yield_functions_in_context(tree: AST, /) -> Iterator[FunctionContext]:
+class FunctionKind(StrEnum):
+    r"""Function kind enum."""
+
+    FUNCTION = "function"
+    METHOD = "method"
+
+    @staticmethod
+    def from_context(node: AST | None, /) -> "FunctionKind":
+        r"""Get the function kind from the context."""
+        match node:
+            case ClassDef():
+                return FunctionKind.METHOD
+            case _:
+                return FunctionKind.FUNCTION
+
+
+def yield_functions_and_context(
+    tree: AST, /, *, context: Func | ClassDef | None = None
+) -> Iterator["FunctionCTX"]:
     r"""Functional alternative to `FunctionContextVisitor`."""
-    funcs = []
-    nodes = list(ast.iter_child_nodes(tree))
-    for node in nodes:
+    for node in (nodes := list(ast.iter_child_nodes(tree))):
         match node:
             case FunctionDef() | AsyncFunctionDef() as fn:
-                funcs.append(fn)
-                yield from yield_functions_in_context(fn)
+                yield FunctionCTX(fn, context=context)
+                # recurse into function body
+                yield from yield_functions_and_context(fn, context=fn)
             case ClassDef() as cls:
-                yield from yield_functions_in_context(cls)
+                # recurse into class body
+                yield from yield_functions_and_context(cls, context=cls)
             case _:
                 nodes.extend(ast.iter_child_nodes(node))
 
-    # group funcs by name and whether they are overloads
-    func_map: dict[str, tuple[list[Func], list[Func]]] = defaultdict(lambda: ([], []))
-    for func in funcs:
-        if is_overload(func):
-            func_map[func.name][1].append(func)
-        else:
-            func_map[func.name][0].append(func)
 
-    # yield function contexts
-    for name, (function_defs, overload_defs) in func_map.items():
-        yield FunctionContext(name, function_defs, overload_defs, tree)
+@dataclass(slots=True)
+class FunctionCTX:
+    r"""Function node with context."""
+
+    node: Func
+    context: Func | ClassDef | Module | None = None
+
+    @property
+    def kind(self) -> FunctionKind:
+        r"""Get the function kind."""
+        return FunctionKind.from_context(self.context)
+
+    yield_from_ast = staticmethod(yield_functions_and_context)
+
+
+def yield_overloads_and_context(
+    tree: AST, /, *, context: Func | ClassDef | None = None
+) -> Iterator["OverloadCTX"]:
+    r"""Functional alternative to `FunctionContextVisitor`."""
+    nodes = list(ast.iter_child_nodes(tree))
+    fn_dict: dict[str, OverloadCTX] = {}
+
+    for node in nodes:
+        match node:
+            case FunctionDef(name=name) | AsyncFunctionDef(name=name) as fn:
+                if name not in fn_dict:
+                    fn_dict[name] = OverloadCTX(name, context=context)
+                if is_overload(fn):
+                    fn_dict[name].overloads.append(fn)
+                else:
+                    # if implementation is found, pop immediately.
+                    fn_dict[name].implementation = fn
+                    yield fn_dict.pop(name)
+                # recurse into function body
+                yield from yield_overloads_and_context(fn, context=fn)
+            case ClassDef() as cls:
+                # recurse into class body
+                yield from yield_overloads_and_context(cls, context=cls)
+            case _:
+                nodes.extend(ast.iter_child_nodes(node))
+
+    # yield all discovered functions
+    yield from fn_dict.values()
+
+
+@dataclass(slots=True)
+class OverloadCTX:
+    r"""Context for overloaded functions."""
+
+    name: str
+    r"""Function name."""
+
+    _: KW_ONLY
+
+    context: Func | ClassDef | Module | None
+    r"""Function context."""
+    implementation: Func | None = None
+    r"""Implementation of the function."""
+    overloads: list[Func] = field(default_factory=list)
+    r"""List of associated overloads."""
+
+    @property
+    def kind(self) -> FunctionKind:
+        r"""Get the function kind."""
+        return FunctionKind.from_context(self.context)
+
+    yield_from_ast = staticmethod(yield_overloads_and_context)
+
+
+class OverloadVisitor(ast.NodeVisitor):
+    r"""Get all function-defs and corresponding overloads from the tree.
+
+    Each def is paired with a list of associated overloads.
+    """
+
+    tree: AST
+    r"""Parent node of the current node."""
+    context: Module | ClassDef | FunctionDef | AsyncFunctionDef | None
+    r"""Context of the current node."""
+    funcs: list[Func]
+    r"""List of functions."""
+
+    def __init__(self, tree: AST, /, context: Func | ClassDef | None = None) -> None:
+        super().__init__()
+        self.tree = tree
+        self.context = context
+        self.fn_dict: dict[str, OverloadCTX] = {}
+
+    def __iter__(self) -> Iterator[OverloadCTX]:
+        r"""Iterate over the tree."""
+        return iter(self.generic_visit(self.tree))
+
+    def _add_fn(self, func: Func) -> Iterator[OverloadCTX]:
+        name = func.name
+        # check if the function is already defined
+        if name not in self.fn_dict:
+            self.fn_dict[name] = OverloadCTX(name, context=self.context)
+        if is_overload(func):
+            self.fn_dict[name].overloads.append(func)
+        else:
+            # as soon as we find a non-overload, we clear the function from the dict
+            # since subsequent overloads will be on a "new" function
+            self.fn_dict[name].implementation = func
+            yield self.fn_dict.pop(name)
+
+    def generic_visit(self, node: AST) -> Iterator[OverloadCTX]:
+        r"""Generic visit method."""
+        for child in ast.iter_child_nodes(node):
+            yield from self.visit(child)
+        # yield all discovered functions
+        yield from self.fn_dict.values()
+
+    def visit_FunctionDef(self, node: FunctionDef) -> Iterator[OverloadCTX]:  # noqa: N802
+        r"""Visit a function definition."""
+        yield from self._add_fn(node)
+        yield from OverloadVisitor(node, context=node)
+
+    def visit_AsyncFunctionDef(self, node: AsyncFunctionDef) -> Iterator[OverloadCTX]:  # noqa: N802
+        r"""Visit an async function definition."""
+        yield from self._add_fn(node)
+        yield from OverloadVisitor(node, context=node)
+
+    def visit_ClassDef(self, node: ClassDef) -> Iterator[OverloadCTX]:  # noqa: N802
+        r"""Visit a class definition."""
+        yield from OverloadVisitor(node, context=node)
 
 
 def replace_node(
