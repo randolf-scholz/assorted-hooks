@@ -45,6 +45,14 @@ from assorted_hooks.utils import is_dunder, is_private, run_checks
 
 __logger__ = logging.getLogger(__name__)
 
+_DUNDER_BLACKLIST: frozenset[str] = frozenset({
+    "__init__",
+    "__new__",
+    "__call__",
+    "__post_init__",
+})
+r"""Dunder methods that should not be fixed."""
+
 
 def is_fixable(args: ast.arguments) -> bool:
     r"""Check if the function arguments can be fixed.
@@ -132,7 +140,12 @@ def check_file(
                 f"{filename}:{node.lineno}: Too many positional arguments in {kind!r}!"
                 f" (max {max_positional_args})"
             )
-        if not ignore_dunder and is_dunder(node.name) and pk_args:
+        if (
+            not ignore_dunder
+            and is_dunder(node.name)
+            and pk_args
+            and node.name not in _DUNDER_BLACKLIST
+        ):
             violations += 1
             print(
                 f"{filename}:{node.lineno}: Dunder method {node.name!r} should use"
@@ -226,7 +239,7 @@ def main() -> None:
         action=argparse.BooleanOptionalAction,
         type=bool,
         default=True,
-        help="Check that dunder methods use positional-only arguments.",
+        help="Check that dunder methods use positional-only arguments (excludes init and call) .",
     )
     parser.add_argument(
         "--allow-mixed-args",
