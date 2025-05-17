@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Final
 
 from assorted_hooks.ast.ast_utils import yield_aliases
-from assorted_hooks.utils import get_python_files
+from assorted_hooks.utils import get_path_relative_to_git_root, get_python_files
 
 __logger__ = logging.getLogger(__name__)
 
@@ -97,16 +97,17 @@ def check_file(filepath: str | Path, /) -> int:
     # Get the AST
     violations = 0
     path = Path(filepath)
-    fname = str(path)
+    filename = str(get_path_relative_to_git_root(path))
+
     text = path.read_text(encoding="utf8")
-    tree = ast.parse(text, filename=fname)
+    tree = ast.parse(text, filename=filename)
 
     for alias in yield_aliases(tree):
         name, lineno = alias.name, alias.lineno
         if name in BAD_ALIASES:
             violations += 1
             replacement = REPLACEMENTS[name]
-            print(f"{fname}:{lineno}: Use {replacement!r} instead of {name!r}.")
+            print(f"{filename}:{lineno}: Use {replacement!r} instead of {name!r}.")
 
     return violations
 

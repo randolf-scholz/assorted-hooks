@@ -344,35 +344,37 @@ def check_file(filepath: str | Path, /, *, options: argparse.Namespace) -> int:
     # Get the AST
     violations = 0
     path = Path(filepath)
-    fname = str(path)
+    filename = str(
+        path if not path.is_relative_to(Path.cwd()) else path.relative_to(Path.cwd())
+    )
     text = path.read_text(encoding="utf8")
-    tree = ast.parse(text, filename=fname)
+    tree = ast.parse(text, filename=filename)
 
     if options.check_optional:
-        violations += check_optional(tree, fname=fname)
+        violations += check_optional(tree, fname=filename)
     if options.check_no_optional:
-        violations += check_no_optional(tree, fname=fname)
+        violations += check_no_optional(tree, fname=filename)
     if options.check_pep604_union:
-        violations += check_pep604_union(tree, fname=fname)
+        violations += check_pep604_union(tree, fname=filename)
     if options.check_overload_default_ellipsis:
-        violations += check_overload_default_ellipsis(tree, fname=fname)
+        violations += check_overload_default_ellipsis(tree, fname=filename)
     if options.check_no_future_annotations:
-        violations += check_no_future_annotations(tree, fname=fname)
+        violations += check_no_future_annotations(tree, fname=filename)
     if options.check_no_return_union:
         violations += check_no_return_union(
             tree,
-            fname=fname,
+            fname=filename,
             recursive=options.check_no_return_union_recursive,
             check_protocols=options.check_no_return_union_protocol,
         )
     if options.check_no_tuple_isinstance:
-        violations += check_no_tuple_isinstance(tree, fname=fname)
+        violations += check_no_tuple_isinstance(tree, fname=filename)
     if options.check_no_union_isinstance:
-        violations += check_no_union_isinstance(tree, fname=fname)
+        violations += check_no_union_isinstance(tree, fname=filename)
     if options.check_no_hints_overload_implementation:
-        violations += check_no_hints_overload_implementation(tree, fname=fname)
+        violations += check_no_hints_overload_implementation(tree, fname=filename)
     if options.check_concrete:
-        violations += check_concrete_classes_concrete_types(tree, fname=fname)
+        violations += check_concrete_classes_concrete_types(tree, fname=filename)
     return violations
 
 

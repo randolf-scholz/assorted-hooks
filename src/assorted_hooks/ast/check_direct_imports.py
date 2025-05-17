@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 
 from assorted_hooks.ast.ast_utils import get_imported_symbols, yield_imported_attributes
-from assorted_hooks.utils import get_python_files
+from assorted_hooks.utils import get_path_relative_to_git_root, get_python_files
 
 __logger__ = logging.getLogger(__name__)
 
@@ -55,7 +55,8 @@ def check_direct_imports(tree: ast.AST, fname: str, /, *, debug: bool = False) -
 def check_file(filepath: str | Path, /, *, debug: bool = False) -> int:
     r"""Finds shadowed attributes in a file."""
     path = Path(filepath)
-    filename = str(path)
+    filename = str(get_path_relative_to_git_root(path))
+
     text = path.read_text(encoding="utf8")
     tree = ast.parse(text, filename=filename)
 

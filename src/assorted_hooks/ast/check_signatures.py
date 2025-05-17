@@ -80,7 +80,11 @@ def check_file(
     # Get the AST
     violations = 0
     path = Path(filepath)
-    filename = str(path)
+    # get file name relative to the current working directory
+    filename = str(
+        path if not path.is_relative_to(Path.cwd()) else path.relative_to(Path.cwd())
+    )
+
     text = path.read_text(encoding="utf8")
     tree = ast.parse(text, filename=filename)
     fixable_dunders = []

@@ -5,7 +5,7 @@ build-backend = "pdm.backend"
 # region project configuration ---------------------------------------------------------
 [project]
 name = "assorted-hooks"
-version = "0.6.23"
+version = "0.6.24"
 authors = [{ name = "Randolf Scholz", email = "randolf.scholz@gmail.com" }]
 description = "Custom pre-commit hooks"
 
@@ -46,7 +46,7 @@ check-direct-imports = "assorted_hooks.ast.check_direct_imports:main"
 check-signatures = "assorted_hooks.ast.check_signatures:main"
 check-standard-generics = "assorted_hooks.ast.check_standard_generics:main"
 check-typing = "assorted_hooks.ast.check_typing:main"
-check-runtime-dataprotocol = "assorted_hooks.ast.check_runtime_dataprotocol:main"
+check-runtime-data-protocol = "assorted_hooks.ast.check_runtime_data_protocol:main"
 # other hooks
 check-archived-hooks = "assorted_hooks.check_archived_hooks:main"
 check-github-issues = "assorted_hooks.check_github_issues:main"
@@ -183,6 +183,8 @@ ignore = [
     "RUF012",   # Mutable class attributes should be annotated with typing.ClassVar # FIXME: PEP 603
     "RUF013",   # PEP 484 prohibits implicit Optional
     "RUF022",   # __all__ not sorted
+    # bandit
+    "S603",     # subprocess-popen-with-shell
     # tryceratops
     "TRY003",   # Avoid specifying long messages outside the exception class
     # pyupgrade

@@ -6,14 +6,16 @@ __all__ = [
     # Protocols
     "FileCheck",
     # Functions
-    "is_dunder",
-    "is_private",
+    "get_canonical_names",
+    "get_dev_requirements_from_pyproject",
+    "get_path_relative_to_cwd",
+    "get_path_relative_to_git_root",
     "get_python_files",
     "get_repository",
     "get_repository_name",
     "get_requirements_from_pyproject",
-    "get_dev_requirements_from_pyproject",
-    "get_canonical_names",
+    "is_dunder",
+    "is_private",
     "run_checks",
     "yield_deps",
     "yield_dev_deps",
@@ -22,6 +24,7 @@ __all__ = [
 import argparse
 import logging
 import re
+import subprocess
 import warnings
 from collections.abc import Callable, Iterable, Iterator
 from pathlib import Path
@@ -263,6 +266,29 @@ def get_python_files(
         files = [file.relative_to(root) for file in files]
 
     return files
+
+
+def get_path_relative_to_cwd(path: Path, /) -> Path:
+    r"""Get the relative path to the current working directory."""
+    if path.is_relative_to(Path.cwd()):
+        return path.relative_to(Path.cwd())
+    return path
+
+
+def get_path_relative_to_git_root(path: Path, /) -> Path:
+    r"""Get the relative path to the git root directory.
+
+    Raises:
+        RuntimeError: If the git root directory could not be determined.
+        ValueError: If the path is not inside the git repository.
+    """
+    output = subprocess.check_output(
+        ["/usr/bin/git", "rev-parse", "--show-toplevel"], text=True
+    )
+    git_root = Path(output.strip())
+    if not path.is_relative_to(git_root):
+        raise ValueError(f"Path {path!r} is not inside the git repository!")
+    return path.relative_to(git_root)
 
 
 def run_checks(filespec: str, /, checker: Callable[[Path], int]) -> None:

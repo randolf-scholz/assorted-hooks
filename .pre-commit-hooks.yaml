@@ -27,8 +27,8 @@
   description: "AST-based linting rule for type-hints."
   language: python
   types: [python]
-- id: check-runtime-dataprotocol
-  entry: check-runtime-dataprotocol
+- id: check-runtime-data-protocol
+  entry: check-runtime-data-protocol
   name: '[py] checks for @runtime-checkable data protocols.'
   description: 'Do not use @runtime-checkable with data protocols.'
   language: python
