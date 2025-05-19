@@ -104,13 +104,13 @@ def test_no_return_union_protocol() -> None:
     tree = ast.parse(dedent(code))
     assert (
         check_no_return_union(
-            tree, exclude_protocols=False, recursive=False, filename="test.py"
+            tree, include_protocols=False, recursive=False, filename="test.py"
         )
         == 0
     )
     assert (
         check_no_return_union(
-            tree, exclude_protocols=False, recursive=True, filename="test.py"
+            tree, include_protocols=False, recursive=True, filename="test.py"
         )
         == 0
     )
@@ -159,13 +159,13 @@ def test_no_return_union_protocol_contrafactual() -> None:
     tree = ast.parse(dedent(code))
     assert (
         check_no_return_union(
-            tree, exclude_protocols=False, recursive=False, filename="test.py"
+            tree, include_protocols=False, recursive=False, filename="test.py"
         )
         == 1
     )
     assert (
         check_no_return_union(
-            tree, exclude_protocols=False, recursive=True, filename="test.py"
+            tree, include_protocols=False, recursive=True, filename="test.py"
         )
         == 1
     )

@@ -124,8 +124,8 @@ def check_no_return_union(
     *,
     recursive: bool,
     filename: str,
-    include_overload_implementation: bool = True,
-    exclude_protocols: bool = True,
+    include_overload_implementation: bool = False,
+    include_protocols: bool = True,
 ) -> int:
     r"""Check if function returns a union type.
 
@@ -136,7 +136,7 @@ def check_no_return_union(
         recursive (bool): If True, check recursively for unions.
         filename (str): The name of the file being checked.
         include_overload_implementation (bool): If True, include the implementation of overloads in the check.
-        exclude_protocols (bool): If True, exclude protocol classes from the check.
+        include_protocols (bool): If True, exclude protocol classes from the check.
     """
     violations = 0
 
@@ -146,7 +146,7 @@ def check_no_return_union(
     for fn_ctx in OverloadVisitor(tree):
         # skip if inside protocol context.
         if (
-            exclude_protocols
+            not include_protocols
             and isinstance(fn_ctx.context, ClassDef)
             and any(is_protocol(base) for base in fn_ctx.context.bases)
         ):
@@ -155,15 +155,18 @@ def check_no_return_union(
         # always include overload definitions
         funcs += fn_ctx.overloads
 
-        # include function implementations
-        if include_overload_implementation:
-            funcs.extend(fn_ctx.overloads)
+        if (fn_ctx.implementation is not None) and (
+            not fn_ctx.overloads or include_overload_implementation
+        ):
+            # include implementation if it is not an overload
+            # or if we want to include the implementation
+            funcs.append(fn_ctx.implementation)
 
     # emit violations
     for fn in funcs:
-        if (fn.returns is not None) and (
-            is_union(fn.returns) or (recursive and has_union(fn.returns))
-        ):
+        if fn.returns is None:
+            continue
+        if is_union(fn.returns) or (recursive and has_union(fn.returns)):
             violations += 1
             print(f"{filename}:{fn.lineno}: Avoid returning union types!")
 
@@ -368,7 +371,7 @@ def check_file(filepath: str | Path, /, *, options: argparse.Namespace) -> int:
             tree,
             filename=filename,
             recursive=options.check_no_return_union_recursive,
-            exclude_protocols=options.check_no_return_union_protocol,
+            include_protocols=options.check_no_return_union_protocol,
         )
     if options.check_no_tuple_isinstance:
         violations += check_no_tuple_isinstance(tree, filename=filename)
