@@ -102,6 +102,7 @@ def check_file(
     for fn_ctx in yield_functions_and_context(tree):
         node = fn_ctx.node
         kind = fn_ctx.kind
+        fn_repr = f"{kind.value} {node.name!r}"
         if is_ignorable(node):
             continue
         match kind:
@@ -120,30 +121,30 @@ def check_file(
                     else node.args.posonlyargs[1:]  # exclude self/cls
                 )
             case _:
-                raise TypeError(f"Unknown function kind: {kind!r}")
+                raise TypeError(f"Unknown function kind: {fn_repr}")
 
         if pk_args and (node.args.vararg is not None):
             violations += 1
             print(
                 f"{filename}:{node.lineno}:"
-                f" Mixed varargs and positional_or_keyword arguments in {kind!r}!"
+                f" Mixed varargs and positional_or_keyword arguments in {fn_repr}"
             )
         if pk_args and po_args and not allow_mixed_args:
             violations += 1
             print(
                 f"{filename}:{node.lineno}:"
-                f" Mixed positional_only and positional_or_keyword arguments in {kind!r}!"
+                f" Mixed positional_only and positional_or_keyword arguments in {fn_repr}"
             )
         if len(pk_args) > max_args:
             violations += 1
             print(
-                f"{filename}:{node.lineno}: Too many positional_or_keyword arguments in {kind!r}!"
+                f"{filename}:{node.lineno}: Too many positional_or_keyword arguments in {fn_repr}"
                 f" (max {max_args})"
             )
         if (len(po_args) + len(pk_args)) > max_positional_args:
             violations += 1
             print(
-                f"{filename}:{node.lineno}: Too many positional arguments in {kind!r}!"
+                f"{filename}:{node.lineno}: Too many positional arguments in {fn_repr}"
                 f" (max {max_positional_args})"
             )
         if (
