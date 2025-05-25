@@ -158,7 +158,7 @@ def check_file(
         if (
             not ignore_dunder
             and is_dunder(node.name)
-            and pk_args
+            and (len(pk_args) - len(node.args.defaults))
             and node.name not in _DUNDER_BLACKLIST
         ):
             violations += 1
