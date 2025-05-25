@@ -38,6 +38,18 @@ class Foo:
         other: object,
     ) -> "Foo":
         r"""ADDITION."""
+
+    def __eq__(self, other):
+        """od.__eq__(y) <==> od==y.  Comparison to another OD is order-sensitive
+        while comparison to a regular mapping is order-insensitive.
+
+        """
+        if isinstance(other, OrderedDict):
+            return dict.__eq__(self, other) and all(map(_eq, self, other))
+        return dict.__eq__(self, other)
+
+    def __rmod__(self, template):
+        return self.__class__(str(template) % self)
 '''
 
 
@@ -69,6 +81,18 @@ class Foo:
         self, other: object, /,
     ) -> "Foo":
         r"""ADDITION."""
+
+    def __eq__(self, other, /):
+        """od.__eq__(y) <==> od==y.  Comparison to another OD is order-sensitive
+        while comparison to a regular mapping is order-insensitive.
+
+        """
+        if isinstance(other, OrderedDict):
+            return dict.__eq__(self, other) and all(map(_eq, self, other))
+        return dict.__eq__(self, other)
+
+    def __rmod__(self, template, /):
+        return self.__class__(str(template) % self)
 '''
 
 
@@ -78,5 +102,4 @@ def test_fix_dunder_positional_only() -> None:
     nodes = list(yield_functions(tree))
     patched_lines = fix_dunder_positional_only(lines, nodes)
     expected_lines = expected.splitlines(keepends=True)
-    for line, expected_line in zip(patched_lines, expected_lines, strict=True):
-        assert line == expected_line, f"Expected: {expected_line!r}, but got: {line!r}"
+    assert patched_lines == expected_lines

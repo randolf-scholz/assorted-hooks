@@ -179,11 +179,10 @@ def check_file(
 
     if fix and fixable_dunders:
         original = Path(filename).read_text().splitlines(keepends=True)
-        modified = deepcopy(original)
-        fix_dunder_positional_only(modified, fixable_dunders)
+        new_lines = fix_dunder_positional_only(original, fixable_dunders)
         # write back
         with open(filename, "w", encoding="utf8") as f:
-            f.writelines(modified)
+            f.writelines(new_lines)
 
     return violations
 
