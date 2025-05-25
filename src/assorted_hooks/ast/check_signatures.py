@@ -19,8 +19,9 @@ Rationale:
 
 __all__ = [
     # Functions
-    "is_fixable",
     "check_file",
+    "fix_dunder_positional_only",
+    "is_fixable",
     "main",
 ]
 
@@ -38,7 +39,7 @@ from assorted_hooks.ast.ast_utils import (
     is_decorated_with,
     is_overload,
     is_staticmethod,
-    replace_node,
+    patch_node,
     yield_functions_and_context,
 )
 from assorted_hooks.utils import is_dunder, is_private, run_checks
@@ -60,6 +61,21 @@ def is_fixable(args: ast.arguments) -> bool:
     We allow automatic fix if the function only uses positional arguments without defaults.
     """
     return not (args.defaults or args.kwarg or args.kwonlyargs)
+
+
+def fix_dunder_positional_only(lines: list[str], nodes: list[Func], /) -> list[str]:
+    patched_lines = deepcopy(lines)
+
+    for fn in sorted(
+        nodes,
+        key=lambda n: (n.lineno, n.col_offset),
+        reverse=True,
+    ):
+        new_fn = deepcopy(fn)
+        new_fn.args.posonlyargs = fn.args.posonlyargs + fn.args.args
+        new_fn.args.args = []
+        patched_lines = patch_node(patched_lines, fn.args, new_fn.args)
+    return patched_lines
 
 
 def check_file(
@@ -162,20 +178,12 @@ def check_file(
                 fixable_dunders.append(node)
 
     if fix and fixable_dunders:
-        lines = Path(filename).read_text().splitlines(keepends=True)
-        for fn in sorted(
-            fixable_dunders,
-            key=lambda n: (n.lineno, n.col_offset),
-            reverse=True,
-        ):
-            new_fn = deepcopy(fn)
-            new_fn.args.posonlyargs = fn.args.posonlyargs + fn.args.args
-            new_fn.args.args = []
-            replace_node(lines, fn, new_fn)
-
+        original = Path(filename).read_text().splitlines(keepends=True)
+        modified = deepcopy(original)
+        fix_dunder_positional_only(modified, fixable_dunders)
         # write back
         with open(filename, "w", encoding="utf8") as f:
-            f.writelines(lines)
+            f.writelines(modified)
 
     return violations
 

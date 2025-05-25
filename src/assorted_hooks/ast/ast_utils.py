@@ -14,7 +14,7 @@ __all__ = [
     "get_full_name_and_parent",
     "get_imported_symbols",
     "has_union",
-    "replace_node",
+    "patch_node",
     # checks
     "is_abc",
     "is_abstractmethod",
@@ -49,6 +49,8 @@ __all__ = [
 ]
 
 import ast
+import logging
+import warnings
 from ast import (
     AST,
     AnnAssign,
@@ -76,7 +78,9 @@ from ast import (
 from collections.abc import Iterator
 from dataclasses import KW_ONLY, dataclass, field
 from enum import StrEnum
-from typing import TypeAlias, TypeGuard
+from typing import NamedTuple, Self, TypeAlias, TypeGuard
+
+__logger__ = logging.getLogger(__name__)
 
 Func: TypeAlias = FunctionDef | AsyncFunctionDef  # noqa: UP040
 r"""Type alias for function-defs."""
@@ -617,21 +621,95 @@ class OverloadVisitor(ast.NodeVisitor):
         yield from OverloadVisitor(node, context=node)
 
 
-def replace_node(
-    lines: list[str], old_node: ast.stmt, new_node: ast.stmt, /
-) -> list[str]:
-    r"""Replace a node in the AST with a new node."""
-    if old_node.end_lineno is None:
-        raise ValueError("Node has no end line number.")
-    if old_node.end_col_offset is None:
-        raise ValueError("Node has no end column offset.")
+class _Bounds(NamedTuple):
+    lineno: int
+    col_offset: int
+    end_lineno: int
+    end_col_offset: int
 
-    row = old_node.lineno - 1
-    col = old_node.col_offset
-    end_row = old_node.end_lineno - 1
-    end_col = old_node.end_col_offset
+    @classmethod
+    def from_node(cls, node: AST, /, *, recursive: bool = False) -> Self:
+        r"""Create bounds from an AST node."""
+        lineno: float | int = float("inf")
+        col_offset: float | int = float("inf")
+        end_lineno: float | int = float("-inf")
+        end_col_offset: float | int = float("-inf")
 
-    lines[row : end_row + 1] = [
-        f"{lines[row][:col]}{ast.unparse(new_node)}{lines[end_row][end_col:]}"
+        for n in ast.walk(node):
+            new_lineno = getattr(n, "lineno", float("inf"))
+            new_col_offset = getattr(n, "col_offset", float("inf"))
+            new_end_lineno = getattr(n, "end_lineno", float("-inf"))
+            new_end_col_offset = getattr(n, "end_col_offset", float("-inf"))
+
+            if (new_lineno is not None) and (new_col_offset is not None):
+                if new_lineno < lineno:
+                    lineno = new_lineno
+                    col_offset = new_col_offset
+                elif new_lineno == lineno:
+                    col_offset = min(col_offset, new_col_offset)
+            if (new_end_lineno is not None) and (new_end_col_offset is not None):
+                if new_end_lineno > end_lineno:
+                    end_lineno = new_end_lineno
+                    end_col_offset = new_end_col_offset
+                elif new_end_lineno == end_lineno:
+                    end_col_offset = max(end_col_offset, new_end_col_offset)
+
+            # finish after top node if not recursing
+            if not recursive:
+                break
+
+        if isinstance(lineno, float):
+            raise TypeError("Node has no starting line number.")
+        if isinstance(col_offset, float):
+            raise TypeError("Node has no starting column offset.")
+        if isinstance(end_lineno, float):
+            raise TypeError("Node has no ending line number.")
+        if isinstance(end_col_offset, float):
+            raise TypeError("Node has no ending column offset.")
+
+        return cls(
+            lineno=lineno,
+            col_offset=col_offset,
+            end_lineno=end_lineno,
+            end_col_offset=end_col_offset,
+        )
+
+    def print(self, lines: list[str], /) -> None:
+        for row in range(self.lineno - 1, self.end_lineno):
+            if row == self.lineno - 1:
+                print(f"ROW {row}: {lines[row][self.col_offset :]!r}")
+            elif row == self.end_lineno - 1:
+                print(f"ROW {row}: {lines[row][: self.end_col_offset]!r}")
+            else:
+                print(f"ROW {row}: {lines[row]!r}")
+
+
+def patch_node(lines: list[str], old_node: AST, new_node: AST, /) -> list[str]:
+    r"""Replace a node in the ast."""
+    # determine the bounds of the old node
+    patch = ast.unparse(new_node)
+    if "\n" in patch:
+        warnings.warn(
+            "Multi-line patch detected. This is currently not supported.",
+            stacklevel=2,
+        )
+        return lines
+
+    # old_node.returns = None
+    bounds = _Bounds.from_node(old_node, recursive=True)
+    row = bounds.lineno - 1
+    col = bounds.col_offset
+    end_row = bounds.end_lineno - 1
+    end_col = bounds.end_col_offset
+
+    snippet = [
+        lines[i][(col if i == row else None) : (end_col if i == end_row else None)]
+        for i in range(row, end_row + 1)
     ]
+    lines[row : end_row + 1] = [f"{lines[row][:col]}{patch}{lines[end_row][end_col:]}"]
+
+    __logger__.debug(f"SELECTION: {snippet!r}")
+    __logger__.debug(f"Patch : {patch!r}")
+    __logger__.debug(f"AFTER: {lines[row : end_row + 1]}")
+
     return lines
