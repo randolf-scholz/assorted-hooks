@@ -50,6 +50,9 @@ class Foo:
 
     def __rmod__(self, template):
         return self.__class__(str(template) % self)
+
+    def __floordiv__(self, other, context=None):
+        r"""self // other"""
 '''
 
 
@@ -93,6 +96,9 @@ class Foo:
 
     def __rmod__(self, template, /):
         return self.__class__(str(template) % self)
+
+    def __floordiv__(self, other, /, context=None):
+        r"""self // other"""
 '''
 
 

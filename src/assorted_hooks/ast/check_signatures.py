@@ -21,7 +21,6 @@ __all__ = [
     # Functions
     "check_file",
     "fix_dunder_positional_only",
-    "is_fixable",
     "main",
 ]
 
@@ -55,14 +54,6 @@ _DUNDER_BLACKLIST: frozenset[str] = frozenset({
 r"""Dunder methods that should not be fixed."""
 
 
-def is_fixable(args: ast.arguments) -> bool:
-    r"""Check if the function arguments can be fixed.
-
-    We allow automatic fix if the function only uses positional arguments without defaults.
-    """
-    return not (args.defaults or args.kwarg or args.kwonlyargs)
-
-
 def fix_dunder_positional_only(lines: list[str], nodes: list[Func], /) -> list[str]:
     patched_lines = deepcopy(lines)
 
@@ -72,8 +63,9 @@ def fix_dunder_positional_only(lines: list[str], nodes: list[Func], /) -> list[s
         reverse=True,
     ):
         new_fn = deepcopy(fn)
-        new_fn.args.posonlyargs = fn.args.posonlyargs + fn.args.args
-        new_fn.args.args = []
+        num = len(fn.args.args) - len(fn.args.defaults)
+        new_fn.args.posonlyargs = fn.args.posonlyargs + fn.args.args[:num]
+        new_fn.args.args = fn.args.args[num:]
         patched_lines = patch_node(patched_lines, fn.args, new_fn.args)
     return patched_lines
 
@@ -174,8 +166,7 @@ def check_file(
                 f"{filename}:{node.lineno}: Dunder method {node.name!r} should use"
                 " positional-only arguments."
             )
-            if is_fixable(node.args):
-                fixable_dunders.append(node)
+            fixable_dunders.append(node)
 
     if fix and fixable_dunders:
         original = Path(filename).read_text().splitlines(keepends=True)
