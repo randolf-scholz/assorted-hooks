@@ -70,7 +70,9 @@ repos:
       - id: uv-lock
         args: ["--upgrade"]
       - id: uv-export
-        args: ["--upgrade", "--output-file", "pylock.toml"]
+        args: ["--no-dev", "--no-hashes", "--frozen", "--output-file=requirements.txt"]
+      - id: uv-export
+        args: [ "--no-dev", "--frozen", "--output-file=pylock.toml" ]
   # tach
   - repo: https://github.com/gauge-sh/tach-pre-commit
     rev: v0.29.0 # change this to the latest tag!

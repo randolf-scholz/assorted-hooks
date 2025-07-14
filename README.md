@@ -43,6 +43,7 @@
 - [`python-match-case-builtins`](docs/pygrep/python_match_case_builtins.md): checks that `str(name)` is used instead of `str() as name` in match-case expressions.
 - [`python-system-exit`](docs/pygrep/python_system_exit.md): Use `raise SystemExit` instead of `sys.exit()`.
 - [`pyarrow-timestamp-seconds`](docs/pygrep/pyarrow_timestamp_seconds.md): flags `timestamp('s')` as a potential bug.
+- [`python-double-comment`](docs/pygrep/python_double_comment.md): checks for the presence comment like `# # comment`.
 
 ## deprecated hooks
 
