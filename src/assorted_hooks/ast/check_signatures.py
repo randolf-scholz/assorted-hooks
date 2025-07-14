@@ -158,7 +158,8 @@ def check_file(
         if (
             not ignore_dunder
             and is_dunder(node.name)
-            and (len(pk_args) - len(node.args.defaults))
+            # exclude signatures with only self/cls and no other arguments
+            and (len(pk_args) > 1 or (pk_args and po_args))
             and node.name not in _DUNDER_BLACKLIST
         ):
             violations += 1
