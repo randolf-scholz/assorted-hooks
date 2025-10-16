@@ -170,7 +170,7 @@ def check_file(
             fixable_dunders.append(node)
 
     if fix and fixable_dunders:
-        original = Path(filename).read_text().splitlines(keepends=True)
+        original = Path(filename).read_text(encoding="utf-8").splitlines(keepends=True)
         new_lines = fix_dunder_positional_only(original, fixable_dunders)
         # write back
         with open(filename, "w", encoding="utf8") as f:
@@ -222,49 +222,42 @@ def main() -> None:
     parser.add_argument(
         "--ignore-overloads",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Ignore FunctionDefs that are @overload decorated.",
     )
     parser.add_argument(
         "--ignore-dunder",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Ignore all dunder methods/functions (e.g. __init__).",
     )
     parser.add_argument(
         "--ignore-private",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Ignore all private methods/functions (e.g. _method).",
     )
     parser.add_argument(
         "--check-dunder-positional-only",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Check that dunder methods use positional-only arguments (excludes init and call) .",
     )
     parser.add_argument(
         "--allow-mixed-args",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Allow the same signature to include both positional_only and positional_or_keyword arguments.",
     )
     parser.add_argument(
         "--fix",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Fix the violations.",
     )
     parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Print debug information.",
     )

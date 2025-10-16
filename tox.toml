@@ -1,0 +1,10 @@
+requires = ["tox>=4"]
+env_list = ["3.14", "3.13", "3.12"]
+
+[env_run_base]
+description = "run unit tests"
+deps = [
+    "pytest>=8",
+    "pytest-sugar"
+]
+commands = [["pytest", { replace = "posargs", default = ["tests"], extend = true }]]

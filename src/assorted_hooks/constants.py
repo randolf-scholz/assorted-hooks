@@ -138,11 +138,11 @@ r"""Builtin exceptions, see: https://docs.python.org/3/library/exceptions.html."
 
 OPERATORS: frozenset[str] = frozenset({
     # unary
-    "__abs__", # abs()
-    "__pos__", # +
-    "__neg__", # -
-    "__invert__", # ~
-    "__index__", # __index__()
+    "__abs__",  # abs()
+    "__pos__",  # +
+    "__neg__",  # -
+    "__invert__",  # ~
+    "__index__",  # __index__()
     # arithmetic
     "__add__", "__radd__", "__iadd__",  # +
     "__sub__", "__rsub__", "__isub__",  # -
@@ -216,7 +216,7 @@ KNOWN_DUNDER_METHODS: frozenset[str] = frozenset({
     "__subclasscheck__",  # (cls, subclass: type) -> bool
     # 3.3.5. Emulating generic types
     # SEE: https://docs.python.org/3/reference/datamodel.html#emulating-generic-types
-    "__class_getitem__", # (cls, item: Any) -> type
+    "__class_getitem__",  # (cls, item: Any) -> type
     # 3.3.6. Emulating callable objects
     # SEE: https://docs.python.org/3/reference/datamodel.html#emulating-callable-objects
     "__call__",        # (self, *args: Any, **kwargs: Any) -> Any
@@ -224,8 +224,8 @@ KNOWN_DUNDER_METHODS: frozenset[str] = frozenset({
     # SEE: https://docs.python.org/3/reference/datamodel.html#emulating-container-types
     "__len__",      # (self) -> int
     "__iter__",     # (self) -> Iterator[Any]
-    "__contains__", # (self, item: Any) -> bool
-    "__reversed__", # (self) -> Iterator[Any]
+    "__contains__",  # (self, item: Any) -> bool
+    "__reversed__",  # (self) -> Iterator[Any]
     "__getitem__",  # (self, index: int | slice) -> Any
     "__setitem__",  # (self, index: int | slice, value: Any) -> None
     "__delitem__",  # (self, index: int | slice) -> None
@@ -234,7 +234,7 @@ KNOWN_DUNDER_METHODS: frozenset[str] = frozenset({
     # SEE: https://docs.python.org/3/reference/datamodel.html#emulating-numeric-types
     # conversion
     "__bool__",    # (self) -> bool
-    "__complex__", # (self) -> complex
+    "__complex__",  # (self) -> complex
     "__float__",   # (self) -> float
     "__int__",     # (self) -> int
     # integer methods
@@ -246,11 +246,11 @@ KNOWN_DUNDER_METHODS: frozenset[str] = frozenset({
     "__trunc__",  # (self) -> int
     "__round__",  # (self, ndigits: int | None) -> int | float
     # unary
-    "__abs__", # abs()
-    "__pos__", # +
-    "__neg__", # -
-    "__invert__", # ~
-    "__index__", # __index__()
+    "__abs__",  # abs()
+    "__pos__",  # +
+    "__neg__",  # -
+    "__invert__",  # ~
+    "__index__",  # __index__()
     # arithmetic
     "__add__", "__radd__", "__iadd__",  # +
     "__sub__", "__rsub__", "__isub__",  # -

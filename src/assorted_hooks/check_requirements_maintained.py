@@ -274,14 +274,12 @@ def main() -> None:
         "--check-optional",
         "-o",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="If true, checks optional dependencies.",
     )
     parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Print debug information.",
     )

@@ -963,14 +963,12 @@ def main() -> None:
     parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Print debug information.",
     )
     parser.add_argument(
         "--silent",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Load modules silently.",
     )

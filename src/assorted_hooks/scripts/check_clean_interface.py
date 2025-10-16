@@ -349,77 +349,66 @@ def main() -> None:
     parser.add_argument(
         "--check-modules",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Whether to check modules, otherwise only checks packages (`__init__.py`-files).",
     )
     parser.add_argument(
         "--check-packages",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Whether to check packages (`__init__.py`-files).",
     )
     parser.add_argument(
         "--check-private",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Whether to check 'private' modules/packages, i.e. files starting with a single underscore.",
     )
     parser.add_argument(
         "--erroron-dunder-all-missing",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Skip files that do not contain an __all__ attribute.",
     )
     parser.add_argument(
         "--ignore-imported-variables-module",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Ignore imported variables in (non-package) modules.",
     )
     parser.add_argument(
         "--ignore-imported-variables-package",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Ignore imported variables in packages (__init__.py).",
     )
     parser.add_argument(
         "--ignore-dunder-variables",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Ignore 'dunder' variables, i.e. attributes starting and ending in double underscores.",
     )
     parser.add_argument(
         "--ignore-private-variables",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Ignore 'private' variables, i.e. attributes starting with a single underscore.",
     )
     parser.add_argument(
         "--ignore-type-variables",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Ignore type variables.",
     )
     parser.add_argument(
         "--ignore-type-aliases",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Ignore type aliases.",
     )
     parser.add_argument(
         "--load-silent",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Load modules silently.",
     )
@@ -428,7 +417,6 @@ def main() -> None:
     parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Print debug information.",
     )

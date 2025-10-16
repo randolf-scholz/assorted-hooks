@@ -87,14 +87,12 @@ def main() -> None:
     parser.add_argument(
         "--disallow-extra-dirs",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Check that tests/ does not have directories not in src/",
     )
     parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Enable debug mode.",
     )

@@ -3,55 +3,53 @@
 -e .
 aiohappyeyeballs==2.6.1
     # via aiohttp
-aiohttp==3.12.14
+aiohttp==3.13.0
     # via assorted-hooks
 aiosignal==1.4.0
     # via aiohttp
-attrs==25.3.0
+attrs==25.4.0
     # via aiohttp
-certifi==2025.7.14
+certifi==2025.10.5
     # via requests
-cffi==1.17.1
+cffi==2.0.0 ; platform_python_implementation != 'PyPy'
     # via
     #   cryptography
     #   pynacl
-charset-normalizer==3.4.2
+charset-normalizer==3.4.4
     # via requests
-cryptography==45.0.5
+cryptography==46.0.3
     # via pyjwt
-deprecated==1.2.18
-    # via pygithub
-frozenlist==1.7.0
+frozenlist==1.8.0
     # via
     #   aiohttp
     #   aiosignal
-idna==3.10
+idna==3.11
     # via
     #   requests
     #   yarl
-multidict==6.6.3
+multidict==6.7.0
     # via
     #   aiohttp
     #   yarl
 packaging==25.0
     # via assorted-hooks
-propcache==0.3.2
+propcache==0.4.1
     # via
     #   aiohttp
     #   yarl
-pycparser==2.22
+pycparser==2.23 ; implementation_name != 'PyPy' and platform_python_implementation != 'PyPy'
     # via cffi
-pygithub==2.6.1
+pygithub==2.8.1
     # via assorted-hooks
 pyjwt==2.10.1
     # via pygithub
-pynacl==1.5.0
+pynacl==1.6.0
     # via pygithub
-pyyaml==6.0.2
+pyyaml==6.0.3
     # via assorted-hooks
-requests==2.32.4
+requests==2.32.5
     # via pygithub
-typing-extensions==4.14.1
+typing-extensions==4.15.0
     # via
     #   aiosignal
     #   assorted-hooks
@@ -60,7 +58,5 @@ urllib3==2.5.0
     # via
     #   pygithub
     #   requests
-wrapt==1.17.2
-    # via deprecated
-yarl==1.20.1
+yarl==1.22.0
     # via aiohttp

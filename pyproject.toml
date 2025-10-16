@@ -1,11 +1,11 @@
 [build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
+requires = ["uv_build>=0.9.2,<0.10.0"]
+build-backend = "uv_build"
 
 # region project configuration ---------------------------------------------------------
 [project]
 name = "assorted-hooks"
-version = "0.6.30"
+version = "0.7.0"
 authors = [{ name = "Randolf Scholz", email = "randolf.scholz@gmail.com" }]
 description = "Custom pre-commit hooks"
 
@@ -21,6 +21,8 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.12",
     "Topic :: Utilities",
     "Typing :: Typed",
@@ -29,11 +31,11 @@ classifiers = [
 # dependencies
 requires-python = ">=3.12"
 dependencies = [
-    "aiohttp>=3.12.14",
+    "aiohttp>=3.13.0",
     "packaging>=25.0",
-    "pygithub>=2.6.1",
-    "pyyaml>=6.0.2",
-    "typing-extensions>=4.14.1",
+    "pygithub>=2.8.1",
+    "pyyaml>=6.0.3",
+    "typing-extensions>=4.15.0",
 ]
 
 [project.urls]
@@ -67,17 +69,21 @@ dev = [
     {include-group="linters"}, {include-group="tests"}, {include-group="typing"},
 ]
 typing = [
-    "mypy>=1.16.1",
-    "pyright>=1.1.403",
-    "types-pyyaml>=6.0.12.20250516",
+    "mypy>=1.18.2",
+    "pyright>=1.1.406",
+    "types-pyyaml>=6.0.12.20250915",
 ]
     linters = [
-    "pre-commit>=4.2.0",
-    "pylint>=3.3.7",
-    "ruff>=0.12.3",
+    "pre-commit>=4.3.0",
+    "pylint>=4.0.1",
+    "ruff>=0.14.0",
     "tach>=0.29.0",
 ]
-tests = ["pytest>=8.4.1"]
+tests = [
+    "pytest>=8.4.2",
+    "tox>=4.31.0",
+    "tox-uv>=1.29.0",
+]
 # endregion development dependencies ---------------------------------------------------
 
 

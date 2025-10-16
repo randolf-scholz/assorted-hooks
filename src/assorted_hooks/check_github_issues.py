@@ -193,7 +193,6 @@ def main() -> None:
     parser.add_argument(
         "--ignore-comments",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Ignore urls that point to comments on issues rather than issues themselves.",
     )
@@ -206,7 +205,6 @@ def main() -> None:
     parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Print debug information.",
     )

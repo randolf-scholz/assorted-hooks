@@ -176,63 +176,54 @@ def main() -> None:
     parser.add_argument(
         "--warn-missing",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Warn if __all__ is missing.",
     )
     parser.add_argument(
         "--allow-missing-empty",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Allow missing __all__ if files is essentially empty.",
     )
     parser.add_argument(
         "--warn-non-literal",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Check that __all__ is a literal list of strings.",
     )
     parser.add_argument(
         "--warn-annotated",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Warn if __all__ is annotated.",
     )
     parser.add_argument(
         "--warn-location",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Warn if __all__ is not at the top of the file.",
     )
     parser.add_argument(
         "--warn-superfluous",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Warn if __all__ is superfluous.",
     )
     parser.add_argument(
         "--warn-multiple-definitions",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Warn if multiple __all__ definitions are present.",
     )
     parser.add_argument(
         "--warn-duplicate-keys",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Warn if __all__ contains the same key twice.",
     )
     parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Print debug information.",
     )

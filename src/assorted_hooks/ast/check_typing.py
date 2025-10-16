@@ -400,21 +400,18 @@ def main() -> None:
     parser.add_argument(
         "--check-overload-default-ellipsis",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Check that in overloads Ellipsis is used as default value.",
     )
     parser.add_argument(
         "--check-pep604-union",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Check that `X | Y` is used instead of `Union[X, Y]`.",
     )
     parser.add_argument(
         "--check-no-future-annotations",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Check that `from __future__ import annotations` is not used.",
     )
@@ -423,63 +420,54 @@ def main() -> None:
     parser.add_argument(
         "--check-no-optional",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Check that `T | None` is not used instead of `Optional[T]`.",
     )
     parser.add_argument(
         "--check-optional",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Check that `Optional[T]` is used instead of `T | None`.",
     )
     parser.add_argument(
         "--check-no-return-union",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Check that functions do not return Unions.",
     )
     parser.add_argument(
         "--check-no-return-union-recursive",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Recursively check that functions do not return Unions.",
     )
     parser.add_argument(
         "--check-concrete",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Check that concrete classes return concrete types.",
     )
     parser.add_argument(
         "--check-no-return-union-protocol",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Check that functions do not return Unions inside protocols.",
     )
     parser.add_argument(
         "--check-no-hints-overload-implementation",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Check that overloaded function implementations have no type hints.",
     )
     parser.add_argument(
         "--check-no-tuple-isinstance",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Check that isinstance uses union instead of tuples.",
     )
     parser.add_argument(
         "--check-no-union-isinstance",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Check that isinstance uses tuples instead of unions.",
     )
@@ -487,7 +475,6 @@ def main() -> None:
     parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Print debug information.",
     )

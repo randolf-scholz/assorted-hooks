@@ -127,14 +127,12 @@ def main() -> None:
     parser.add_argument(
         "--use-never",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=True,
         help="Hint to use typing.Never instead of typing.NoReturn.",
     )
     parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,
-        type=bool,
         default=False,
         help="Print debug information.",
     )

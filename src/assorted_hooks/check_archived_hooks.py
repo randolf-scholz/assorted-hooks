@@ -36,7 +36,7 @@ def check_file(filepath: str | Path, /) -> int:
     r"""Check the pre-commit configuration file for archived repositories."""
     path = Path(filepath)
     fname = path.name
-    with path.open() as file:
+    with path.open(encoding="utf-8") as file:
         config = yaml.safe_load(file)
 
     git = Github(timeout=5, retry=False)

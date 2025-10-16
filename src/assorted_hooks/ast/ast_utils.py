@@ -506,8 +506,6 @@ class FunctionCTX:
         r"""Get the function kind."""
         return FunctionKind.from_context(self.context)
 
-    yield_from_ast = staticmethod(yield_functions_and_context)
-
 
 def yield_overloads_and_context(
     tree: AST, /, *, context: Func | ClassDef | None = None
@@ -560,8 +558,6 @@ class OverloadCTX:
         r"""Get the function kind."""
         return FunctionKind.from_context(self.context)
 
-    yield_from_ast = staticmethod(yield_overloads_and_context)
-
 
 class OverloadVisitor(ast.NodeVisitor):
     r"""Get all function-defs and corresponding overloads from the tree.
@@ -606,17 +602,17 @@ class OverloadVisitor(ast.NodeVisitor):
         # yield all discovered functions
         yield from self.fn_dict.values()
 
-    def visit_FunctionDef(self, node: FunctionDef) -> Iterator[OverloadCTX]:  # noqa: N802
+    def visit_FunctionDef(self, node: FunctionDef) -> Iterator[OverloadCTX]:
         r"""Visit a function definition."""
         yield from self._add_fn(node)
         yield from OverloadVisitor(node, context=node)
 
-    def visit_AsyncFunctionDef(self, node: AsyncFunctionDef) -> Iterator[OverloadCTX]:  # noqa: N802
+    def visit_AsyncFunctionDef(self, node: AsyncFunctionDef) -> Iterator[OverloadCTX]:
         r"""Visit an async function definition."""
         yield from self._add_fn(node)
         yield from OverloadVisitor(node, context=node)
 
-    def visit_ClassDef(self, node: ClassDef) -> Iterator[OverloadCTX]:  # noqa: N802
+    def visit_ClassDef(self, node: ClassDef) -> Iterator[OverloadCTX]:
         r"""Visit a class definition."""
         yield from OverloadVisitor(node, context=node)
 

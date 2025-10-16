@@ -14,13 +14,13 @@ def test_no_future_annotations() -> None:
     assert check_no_future_annotations(tree, filename="test.py") == 1
 
     code = r"""
-    from __future__ import foo
+    from __future__ import division
     """
     tree = ast.parse(dedent(code))
     assert check_no_future_annotations(tree, filename="test.py") == 0
 
     code = r"""
-    from __future__ import foo, annotations
+    from __future__ import division, annotations
     """
     tree = ast.parse(dedent(code))
     assert check_no_future_annotations(tree, filename="test.py") == 1
