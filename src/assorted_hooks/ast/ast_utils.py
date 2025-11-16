@@ -140,9 +140,9 @@ def get_imported_symbols(tree: AST, /) -> dict[str, str]:
     return imported_symbols
 
 
-def has_union(tree: AST, /) -> bool:
+def has_union(tree: AST, /, *, allow_optional: bool) -> bool:
     r"""True if the return node is a union."""
-    return any(is_union(node) for node in ast.walk(tree))
+    return any(is_union(node, allow_optional=allow_optional) for node in ast.walk(tree))
 
 
 def is_decorated_with(node: Func, name: str, /) -> bool:
@@ -233,13 +233,23 @@ def is_typing_union(node: AST, /) -> TypeGuard[Subscript]:
             return False
 
 
-def is_union(node: AST, /) -> TypeGuard[Subscript | BinOp]:
+def is_union(
+    node: AST, /, *, allow_optional: bool = True
+) -> TypeGuard[Subscript | BinOp]:
     r"""True if the return node is a union."""
     match node:
-        case Subscript(value=Name(id="Union")):
-            return True
-        case BinOp(op=BitOr()):
-            return True
+        case Subscript(value=Name(id="Union"), slice=ast.Tuple(elts=elts)):
+            return not (
+                allow_optional
+                and len(elts) == 2
+                and any(isinstance(e, Constant) and e.value is None for e in elts)
+            )
+        case BinOp(op=BitOr(), left=left, right=right):
+            elts = [left, right]
+            return not (
+                allow_optional
+                and (any(isinstance(e, Constant) and e.value is None for e in elts))
+            )
         case _:
             return False
 

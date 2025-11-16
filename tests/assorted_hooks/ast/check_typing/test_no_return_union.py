@@ -6,22 +6,26 @@ from textwrap import dedent
 from assorted_hooks.ast.check_typing import check_no_return_union
 
 
+def test_no_return_union_typing() -> None:
+    code = r"""
+    def foo(x: int) -> Union[int, None]: ...
+    """
+    tree = ast.parse(dedent(code))
+    assert check_no_return_union(tree, "", recursive=True, allow_optional=True) == 0
+    assert check_no_return_union(tree, "", recursive=False, allow_optional=True) == 0
+    assert check_no_return_union(tree, "", recursive=True, allow_optional=False) == 1
+    assert check_no_return_union(tree, "", recursive=False, allow_optional=False) == 1
+
+
 def test_no_return_union_pep604() -> None:
     code = r"""
     def foo(x: int) -> int | None: ...
     """
     tree = ast.parse(dedent(code))
-    assert check_no_return_union(tree, recursive=False, filename="test.py") == 1
-    assert check_no_return_union(tree, recursive=True, filename="test.py") == 1
-
-
-def test_no_return_union_pep604_recursion() -> None:
-    code = r"""
-    def foo(x: int) -> list[None | int]: ...
-    """
-    tree = ast.parse(dedent(code))
-    assert check_no_return_union(tree, recursive=False, filename="test.py") == 0
-    assert check_no_return_union(tree, recursive=True, filename="test.py") == 1
+    assert check_no_return_union(tree, "", recursive=True, allow_optional=True) == 0
+    assert check_no_return_union(tree, "", recursive=False, allow_optional=True) == 0
+    assert check_no_return_union(tree, "", recursive=True, allow_optional=False) == 1
+    assert check_no_return_union(tree, "", recursive=False, allow_optional=False) == 1
 
 
 def test_no_return_union_typing_recursion() -> None:
@@ -29,17 +33,21 @@ def test_no_return_union_typing_recursion() -> None:
     def foo(x: int) -> list[Union[None, int]]: ...
     """
     tree = ast.parse(dedent(code))
-    assert check_no_return_union(tree, recursive=False, filename="test.py") == 0
-    assert check_no_return_union(tree, recursive=True, filename="test.py") == 1
+    assert check_no_return_union(tree, "", recursive=True, allow_optional=True) == 0
+    assert check_no_return_union(tree, "", recursive=False, allow_optional=True) == 0
+    assert check_no_return_union(tree, "", recursive=True, allow_optional=False) == 1
+    assert check_no_return_union(tree, "", recursive=False, allow_optional=False) == 0
 
 
-def test_no_return_union_typing() -> None:
+def test_no_return_union_pep604_recursion() -> None:
     code = r"""
-    def foo(x: int) -> Union[int, None]: ...
+    def foo(x: int) -> list[None | int]: ...
     """
     tree = ast.parse(dedent(code))
-    assert check_no_return_union(tree, recursive=False, filename="test.py") == 1
-    assert check_no_return_union(tree, recursive=True, filename="test.py") == 1
+    assert check_no_return_union(tree, "", recursive=True, allow_optional=True) == 0
+    assert check_no_return_union(tree, "", recursive=False, allow_optional=True) == 0
+    assert check_no_return_union(tree, "", recursive=True, allow_optional=False) == 1
+    assert check_no_return_union(tree, "", recursive=False, allow_optional=False) == 0
 
 
 def test_no_return_union_overload() -> None:

@@ -121,9 +121,10 @@ def check_pep604_union(tree: AST, /, *, filename: str) -> int:
 def check_no_return_union(
     tree: AST,
     /,
+    filename: str,
     *,
     recursive: bool,
-    filename: str,
+    allow_optional: bool = True,
     include_overload_implementation: bool = False,
     include_protocols: bool = True,
 ) -> int:
@@ -135,6 +136,7 @@ def check_no_return_union(
         tree (AST): The AST to check.
         recursive (bool): If True, check recursively for unions.
         filename (str): The name of the file being checked.
+        allow_optional (bool): If True, Optional[T] and `T | None` are allowed. `T | S | None` is still not allowed.
         include_overload_implementation (bool): If True, include the implementation of overloads in the check.
         include_protocols (bool): If True, exclude protocol classes from the check.
     """
@@ -166,7 +168,9 @@ def check_no_return_union(
     for fn in funcs:
         if fn.returns is None:
             continue
-        if is_union(fn.returns) or (recursive and has_union(fn.returns)):
+        if is_union(fn.returns, allow_optional=allow_optional) or (
+            recursive and has_union(fn.returns, allow_optional=allow_optional)
+        ):
             violations += 1
             print(f"{filename}:{fn.lineno}: Avoid returning union types!")
 
@@ -310,11 +314,9 @@ def check_no_hints_overload_implementation(
         for node in funcs:
             match node:
                 case (
-                    (
-                        FunctionDef(decorator_list=[Name(id="overload"), *_])
-                        | AsyncFunctionDef(decorator_list=[Name(id="overload"), *_])
-                    ) as func
-                ):
+                    FunctionDef(decorator_list=[Name(id="overload"), *_])
+                    | AsyncFunctionDef(decorator_list=[Name(id="overload"), *_])
+                ) as func:
                     overloaded_funcs.add(func.name)
                 case func if func.name in overloaded_funcs:
                     if (

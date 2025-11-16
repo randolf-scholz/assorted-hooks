@@ -3,13 +3,13 @@
 -e .
 aiohappyeyeballs==2.6.1
     # via aiohttp
-aiohttp==3.13.0
+aiohttp==3.13.2
     # via assorted-hooks
 aiosignal==1.4.0
     # via aiohttp
 attrs==25.4.0
     # via aiohttp
-certifi==2025.10.5
+certifi==2025.11.12
     # via requests
 cffi==2.0.0 ; platform_python_implementation != 'PyPy'
     # via
@@ -43,7 +43,7 @@ pygithub==2.8.1
     # via assorted-hooks
 pyjwt==2.10.1
     # via pygithub
-pynacl==1.6.0
+pynacl==1.6.1
     # via pygithub
 pyyaml==6.0.3
     # via assorted-hooks
