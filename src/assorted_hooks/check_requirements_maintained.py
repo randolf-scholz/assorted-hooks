@@ -290,7 +290,6 @@ def main() -> None:
             args.pyproject_file,
             exclude=args.exclude,
             check_optional=args.check_optional,
-            check_unlisted=args.check_unlisted,
             threshold=args.threshold,
             debug=args.debug,
         )

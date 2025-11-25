@@ -36,23 +36,6 @@
 # endregion ast-based ------------------------------------------------------------------
 
 # region misc --------------------------------------------------------------------------
-- id: check-archived-hooks
-  entry: check-archived-hooks
-  name: '[pre-commit] Check for deprecated hooks.'
-  description: "Check for references to archived hooks. (Requires network access)"
-  require_serial: true
-  language: python
-  types: [yaml]
-  files: ^\.pre-commit-config\.yaml$
-  stages: [pre-push]
-- id: check-resolved-github-issues
-  entry: check-github-issues
-  name: '[text] Check for resolved GitHub issues.'
-  description: 'Check for references to resolved GitHub issues.'
-  require_serial: true
-  language: python
-  stages: [manual]
-  types: [text]
 - id: check-requirements-valid
   entry: check-requirements-valid
   name: '[pyproject] Check requirements valid.'
@@ -60,14 +43,6 @@
   files: ^pyproject\.toml$
   language: python
   types: [toml]
-- id: check-requirements-maintained
-  entry: check-requirements-maintained
-  name: '[pyproject] Check requirements maintained.'
-  description: 'Check that dependencies have been maintained. (Requires network access)'
-  files: ^pyproject\.toml$
-  language: python
-  types: [toml]
-  stages: [pre-push]
 - id: check-spelling-wise-suffix
   entry: check-spelling-wise-suffix
   name: '[text] Avoid inconsistent "-wise" suffix spelling.'
@@ -82,6 +57,36 @@
   types: [directory]
   language: python
 # endregion misc -----------------------------------------------------------------------
+
+# region online-hooks ------------------------------------------------------------------
+# These hooks require network access. Therefore they are set up to run on pre-push or manually.
+- id: check-archived-hooks
+  entry: check-archived-hooks
+  name: '[pre-commit] Check for deprecated hooks.'
+  description: "Check for references to archived hooks. (Requires network access)"
+  require_serial: true
+  language: python
+  types: [yaml]
+  files: ^\.pre-commit-config\.yaml$
+  stages: [pre-push, manual]
+- id: check-requirements-maintained
+  entry: check-requirements-maintained
+  name: '[pyproject] Check requirements maintained.'
+  description: 'Check that dependencies have been maintained. (Requires network access)'
+  files: ^pyproject\.toml$
+  language: python
+  types: [toml]
+  stages: [pre-push, manual]
+- id: check-resolved-github-issues
+  entry: check-github-issues
+  name: '[text] Check for resolved GitHub issues.'
+  description: 'Check for references to resolved GitHub issues.'
+  require_serial: true
+  language: python
+  types: [text]
+  stages: [pre-push, manual]
+# endregion online-hooks ---------------------------------------------------------------
+
 
 # region scripts -----------------------------------------------------------------------
 - id: check-requirements-used
