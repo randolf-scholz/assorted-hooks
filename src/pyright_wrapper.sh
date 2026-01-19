@@ -1,11 +1,13 @@
 #!/bin/env bash
 
+PYRIGHT_CONCISE_LOG_FILENAME="pyright-concise.log"
+
 # check that the git root is relative to the current path PWD
 # run git root, terminate early if it fails
 git_root=$(git rev-parse --show-toplevel) || exit 1
 if [[ ! "$PWD" =~ ^"$git_root".* ]]; then
-    echo "Error: git root is not a parent of the current path";
-    exit 1;
+	echo "Error: git root is not a parent of the current path";
+	exit 1;
 fi
 
 # ANSI color codes with escaping '['.
@@ -44,11 +46,12 @@ output="\$path - \$fail\$fail_code\$warn\$warn_code\$info";
 # handling of arguments (needed to deal with files with spaces)
 cmd="$(printf '%q ' pyright "$@")";
 
-# run the command and capture the exit code
+original_output=$(mktemp)
 result="$(
-  script /dev/null -efqc "$cmd" |  # -e: forward exit code, -q: quiet, -f: flush output
-  rg --multiline --multiline-dotall "$regex" -or "$output";
-  exit "${PIPESTATUS[0]}"  # capture the exit code of pyright
+	script /dev/null -efqc "$cmd" |  # -e: forward exit code, -q: quiet, -f: flush output
+		tee "$original_output" |  # save a copy of the original output
+		rg --multiline --multiline-dotall "$regex" -or "$output";
+	exit "${PIPESTATUS[0]}"  # capture the exit code of pyright
 )";
 pyright_exit_code=$?;
 echo "$result";
@@ -63,10 +66,15 @@ echo -e "${BLUE_BOLD}${info_count} information${RESET}"
 
 # check that pyright_exit_code agrees with (fail_count == 0):
 if [ "$pyright_exit_code" -ne $(( fail_count > 0 )) ]; then
-    echo "Error: pyright exit code does not agree with error count!";
-    echo "pyright_exit_code: $pyright_exit_code, fail_count: $fail_count";
-    echo "Please file a bug report.";
-    exit 1;
+	# dump the original output to `pyright-concise.log`
+	if [ -f "$original_output" ]; then
+		cat "$original_output" > "$PYRIGHT_CONCISE_LOG_FILENAME" || true
+	fi
+	echo "Error: pyright exit code does not agree with error count!";
+	echo "pyright_exit_code: $pyright_exit_code, fail_count: $fail_count";
+	echo "A copy of the original output has been saved to: $PYRIGHT_CONCISE_LOG_FILENAME";
+	echo "Please file a bug report.";
+	exit 1;
 fi
 
 exit "$pyright_exit_code"

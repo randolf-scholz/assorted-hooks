@@ -53,7 +53,7 @@ repos:
       - id: trailing-whitespace
   # ruff
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.6
+    rev: v0.14.13
     hooks:
       - id: ruff
         name: ruff-isort
@@ -65,7 +65,7 @@ repos:
         files: '^src/|^tests/'
   # uv
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.9.11
+    rev: 0.9.26
     hooks:
       - id: uv-lock
         args: ["--upgrade"]
@@ -80,7 +80,7 @@ repos:
       - id: tach
   # markdownlint
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.46.0
+    rev: v0.47.0
     hooks:
       - id: markdownlint
         args:
