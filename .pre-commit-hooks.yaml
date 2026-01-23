@@ -90,21 +90,21 @@
 
 # region scripts -----------------------------------------------------------------------
 - id: check-requirements-used
-  entry: src/assorted_hooks/scripts/check_requirements_used.py
+  entry: ./src/assorted_hooks/scripts/check_requirements_used.py
   name: '[pyproject] Check requirements used.'
   description: "Check that listed dependencies are used in code and vice-versa."
   files: ^pyproject\.toml$
   language: script
   types: [toml]
 - id: update-requirements
-  entry: python3 src/assorted_hooks/scripts/update_requirements.py
+  entry: bash -c 'python -m assorted_hooks.scripts.update_requirements "$@"' --
   name: '[pyproject] Update requirements.'
   description: "Update dependencies to >=currently_installed."
   files: ^pyproject\.toml$
   language: script
   types: [toml]
 - id: check-clean-interface
-  entry: python3 src/assorted_hooks/scripts/check_clean_interface.py
+  entry: bash -c 'python -m assorted_hooks.scripts.check_clean_interface "$@"' --
   name: '[py] Check clean interface.'
   description: "Check that __all__ holds all exported variables."
   language: script
