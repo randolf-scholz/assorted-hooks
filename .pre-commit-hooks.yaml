@@ -40,7 +40,7 @@
   entry: check-requirements-valid
   name: '[pyproject] Check requirements valid.'
   description: 'Check that requirements are well-formed.'
-  files: ^pyproject\.toml$
+  files: '^pyproject\.toml$'
   language: python
   types: [toml]
 - id: check-spelling-wise-suffix
@@ -67,13 +67,13 @@
   require_serial: true
   language: python
   types: [yaml]
-  files: ^\.pre-commit-config\.yaml$
+  files: '^\.pre-commit-config\.yaml$'
   stages: [pre-push, manual]
 - id: check-requirements-maintained
   entry: check-requirements-maintained
   name: '[pyproject] Check requirements maintained.'
   description: 'Check that dependencies have been maintained. (Requires network access)'
-  files: ^pyproject\.toml$
+  files: '^pyproject\.toml$'
   language: python
   types: [toml]
   stages: [pre-push, manual]
@@ -90,21 +90,21 @@
 
 # region scripts -----------------------------------------------------------------------
 - id: check-requirements-used
-  entry: src/check_requirements_used.py
+  entry: src/check_requirements_used.sh
   name: '[pyproject] Check requirements used.'
   description: "Check that listed dependencies are used in code and vice-versa."
-  files: ^pyproject\.toml$
+  files: '^pyproject\.toml$'
   language: script
   types: [toml]
 - id: update-requirements
-  entry: src/update-requirements.sh
+  entry: src/update_requirements.sh
   name: '[pyproject] Update requirements.'
   description: "Update dependencies to >=currently_installed."
-  files: ^pyproject\.toml$
+  files: '^pyproject\.toml$'
   language: script
   types: [toml]
 - id: check-clean-interface
-  entry: src/check_clean_interface.py
+  entry: src/check_clean_interface.sh
   name: '[py] Check clean interface.'
   description: "Check that __all__ holds all exported variables."
   language: script

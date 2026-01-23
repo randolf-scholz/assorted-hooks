@@ -94,21 +94,13 @@ def canonicalize_name(name: str, /) -> PypiName:
     return cast("PypiName", normalized)
 
 
-def _make_pkg_dict() -> dict[PypiName, str]:
-    r"""Create a dictionary of installed packages."""
-    result = {}
-    for dist in distributions():
-        key = dist.name
-        if key is None:
-            msg = f"Distribution {dist} has no name."
-            msg += f"\n{[(dist.name, dist.version) for dist in distributions()]}"
-            raise TypeError(msg)
-        result[key] = dist.version
+PKG_DICT: dict[PypiName, str] = {
+    canonicalize_name(dist.name): dist.version
+    # NOTE: dist.name can be None despite the type hint
+    for dist in distributions()
+    if dist.name
+}
 
-    return result
-
-
-PKG_DICT: dict[PypiName, str] = _make_pkg_dict()
 r"""A dictionary of installed packages."""
 
 
