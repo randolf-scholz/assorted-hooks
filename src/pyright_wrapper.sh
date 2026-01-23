@@ -1,6 +1,19 @@
-#!/bin/env bash
+#!/usr/bin/env bash
+set -euo pipefail  # exit on error, unset variable, or failed pipe
 
-PYRIGHT_CONCISE_LOG_FILENAME="pyright-concise.log"
+require_cmd() {
+	if ! command -v "$1" >/dev/null 2>&1; then
+		printf "Error: required command '%s' not found on PATH\n" "$1" >&2
+		exit 1
+	fi
+}
+require_cmd git
+require_cmd pyright
+require_cmd rg
+require_cmd script
+
+PYRIGHT_CONCISE_ORIGINAL_LOG=".pyright-concise-original.log"
+PYRIGHT_CONCISE_PARSED_LOG=".pyright-concise-parsed.log"
 
 # check that the git root is relative to the current path PWD
 # run git root, terminate early if it fails
@@ -46,20 +59,30 @@ output="\$path - \$fail\$fail_code\$warn\$warn_code\$info";
 # handling of arguments (needed to deal with files with spaces)
 cmd="$(printf '%q ' pyright "$@")";
 
+# create temporary file to store original output
 original_output=$(mktemp)
+
+# run pyright and filter output through ripgrep
+set +eou pipefail
 result="$(
-	script /dev/null -efqc "$cmd" |  # -e: forward exit code, -q: quiet, -f: flush output
-		tee "$original_output" |  # save a copy of the original output
+	export TERM=xterm-256color
+	export FORCE_COLOR=1
+
+	script -qefc "$cmd" "$original_output" | # -e: forward exit code, -q: quiet, -f: flush output
 		rg --multiline --multiline-dotall "$regex" -or "$output";
 	exit "${PIPESTATUS[0]}"  # capture the exit code of pyright
 )";
-pyright_exit_code=$?;
-echo "$result";
+pyright_exit_code=$?
+set +eou pipefail
 
-# summary statistics
-fail_count=$(echo -n "$result" | rg -c --include-zero "${fail_pattern}");
-warn_count=$(echo -n "$result" | rg -c --include-zero "${warn_pattern}");
-info_count=$(echo -n "$result" | rg -c --include-zero "${info_pattern}");
+
+# compute summary statistics
+fail_count=$(echo -n "$result" | rg "${fail_pattern}" | wc -l);
+warn_count=$(echo -n "$result" | rg "${warn_pattern}" | wc -l);
+info_count=$(echo -n "$result" | rg "${info_pattern}" | wc -l);
+
+# display the results
+echo "$result";
 echo -e -n "${RED_BOLD}${fail_count} error${RESET}, "
 echo -e -n "${TEAL_BOLD}${warn_count} warning${RESET}, "
 echo -e "${BLUE_BOLD}${info_count} information${RESET}"
@@ -68,11 +91,13 @@ echo -e "${BLUE_BOLD}${info_count} information${RESET}"
 if [ "$pyright_exit_code" -ne $(( fail_count > 0 )) ]; then
 	# dump the original output to `pyright-concise.log`
 	if [ -f "$original_output" ]; then
-		cat "$original_output" > "$PYRIGHT_CONCISE_LOG_FILENAME" || true
+		cat "$original_output" > "$PYRIGHT_CONCISE_ORIGINAL_LOG" || true
+		cat "$result" > "$PYRIGHT_CONCISE_PARSED_LOG" || true
 	fi
-	echo "Error: pyright exit code does not agree with error count!";
-	echo "pyright_exit_code: $pyright_exit_code, fail_count: $fail_count";
-	echo "A copy of the original output has been saved to: $PYRIGHT_CONCISE_LOG_FILENAME";
+	echo "Error: exit code of '${cmd}' does not agree with error count!";
+	echo "pyright_exit_code: ${pyright_exit_code}, fail_count: ${fail_count}";
+	echo "A copy of the original output has been saved to: ${PYRIGHT_CONCISE_ORIGINAL_LOG}";
+	echo "A copy of the parsed output has been saved to: ${PYRIGHT_CONCISE_PARSED_LOG}";
 	echo "Please file a bug report.";
 	exit 1;
 fi

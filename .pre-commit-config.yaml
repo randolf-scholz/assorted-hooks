@@ -1,121 +1,122 @@
 exclude: '(\.git/|\.venv/|\.idea/|\docs/_build/)'
-minimum_pre_commit_version: 3.6.0
+minimum_pre_commit_version: 4.5.1
 default_language_version:
-  python: '3.13'
-  node: '22.15.1'
+  python: '3.14'
+  node: '24.13.0'
 repos:
-  # test with pre-commit try-repo ../assorted-hooks --verbose --all-files
-  - repo: https://github.com/randolf-scholz/assorted-hooks
-    rev: v0.7.2
-    hooks:
-      # pygrep-based hooks
-      - id: check-separator-length-88
-      - id: pyarrow-timestamp-seconds
-      - id: numpy-rename-axes-axis
-      - id: python-consider-using-raw-string
-      - id: python-match-case-builtins
-      - id: python-no-blanket-type-ignore
-      - id: python-no-builtin-eval
-      - id: python-system-exit
-      # ast-based hooks
-      - id: check-direct-imports
-      - id: check-dunder-all
-      - id: check-typing
-      - id: check-signatures
-      - id: check-runtime-data-protocol
-      # script-based hooks
-      - id: check-clean-interface
-        files: "^src/"
-      - id: update-requirements
-      - id: check-requirements-used
-      # pyproject hooks
-      - id: check-requirements-valid
-      - id: check-requirements-maintained
-      # other hooks
-      - id: check-resolved-github-issues
-      - id: check-archived-hooks
-      - id: check-tests-mirror-source
-  # https://pre-commit.com/hooks.html
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
-    hooks:
-      - id: check-added-large-files
-      - id: check-case-conflict
-      - id: check-illegal-windows-names
-      - id: check-json
-      - id: check-executables-have-shebangs
-      - id: check-shebang-scripts-are-executable
-      - id: check-symlinks
-      - id: check-toml
-      - id: check-xml
-      - id: check-yaml
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
-  # ruff
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.13
-    hooks:
-      - id: ruff
-        name: ruff-isort
-        files: '^src/|^tests/'
-        args: [ "--select", "I", "--fix" ]
-      - id: ruff-format
-        files: '^src/|^tests/'
-      - id: ruff
-        files: '^src/|^tests/'
-  # uv
-  - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.9.26
-    hooks:
-      - id: uv-lock
-        args: ["--upgrade"]
-      - id: uv-export
-        args: ["--no-dev", "--no-hashes", "--frozen", "--output-file=requirements.txt"]
-      - id: uv-export
-        args: [ "--no-dev", "--frozen", "--output-file=pylock.toml" ]
-  # tach
-  - repo: https://github.com/gauge-sh/tach-pre-commit
-    rev: v0.29.0 # change this to the latest tag!
-    hooks:
-      - id: tach
-  # markdownlint
-  - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.47.0
-    hooks:
-      - id: markdownlint
-        args:
-          - "--disable" # disable rules
-          - "MD013"     # Line length
-          - "MD033"     # Inline HTML
-          - "--"        # otherwise files are interpreted as args
-  # shellcheck
-  - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.11.0.1
-    hooks:
-      - id: shellcheck
-        args: ["-x", "--shell=bash", "--color=always", "--format=gcc", "--"]
-  # pyright-concise
-  - repo: local
-    hooks:
-      - id: pyright-concise
-        name: pyright-concise
-        language: system
-        types_or: [ python, pyi ]
-        entry: src/pyright_wrapper.sh
-        require_serial: true
-        files: '^src/|^tests/'
-  # mypy
-  - repo: local
-    hooks:
-      - id: mypy
-        name: mypy
-        language: system
-        require_serial: true
-        types_or: [python, pyi]
-        files: '^src/|^tests/'
-        entry: mypy
-        args:
-          - "--hide-error-context"
-          - "--hide-error-end"
-          - "--no-pretty"
-          - "--"
+# test with pre-commit try-repo ../assorted-hooks --verbose --all-files
+- repo: https://github.com/randolf-scholz/assorted-hooks
+  rev: v0.7.3
+  hooks:
+  # pygrep-based hooks
+  - id: check-separator-length-88
+  - id: pyarrow-timestamp-seconds
+  - id: numpy-rename-axes-axis
+  - id: python-consider-using-raw-string
+  - id: python-match-case-builtins
+  - id: python-no-blanket-type-ignore
+  - id: python-no-builtin-eval
+  - id: python-system-exit
+  # ast-based hooks
+  - id: check-direct-imports
+  - id: check-dunder-all
+  - id: check-typing
+  - id: check-signatures
+  - id: check-runtime-data-protocol
+  # script-based hooks
+  - id: check-clean-interface
+    files: "^src/"
+  - id: update-requirements
+  - id: check-requirements-used
+  # pyproject hooks
+  - id: check-requirements-valid
+  - id: check-requirements-maintained
+  # other hooks
+  - id: check-resolved-github-issues
+  - id: check-archived-hooks
+  - id: check-tests-mirror-source
+# https://pre-commit.com/hooks.html
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v6.0.0
+  hooks:
+  - id: check-added-large-files
+  - id: check-case-conflict
+  - id: check-illegal-windows-names
+  - id: check-json
+  - id: check-executables-have-shebangs
+  - id: check-shebang-scripts-are-executable
+  - id: check-symlinks
+  - id: check-toml
+  - id: check-xml
+  - id: check-yaml
+  - id: end-of-file-fixer
+  - id: trailing-whitespace
+# ruff
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.14.14
+  hooks:
+  - id: ruff
+    name: ruff-isort
+    files: '^src/|^tests/'
+    args: [ "--select", "I", "--fix" ]
+  - id: ruff-format
+    files: '^src/|^tests/'
+  - id: ruff
+    files: '^src/|^tests/'
+# uv
+- repo: https://github.com/astral-sh/uv-pre-commit
+  rev: 0.9.26
+  hooks:
+  - id: uv-lock
+    args: [ "--upgrade" ]
+  - id: uv-export
+    args: [ "--no-dev", "--no-hashes", "--frozen", "--output-file=requirements.txt" ]
+  - id: uv-export
+    args: [ "--no-dev", "--frozen", "--output-file=pylock.toml" ]
+# markdownlint
+- repo: https://github.com/igorshubovych/markdownlint-cli
+  rev: v0.47.0
+  hooks:
+  - id: markdownlint
+    args:
+    - "--disable" # disable rules
+    - "MD013"     # Line length
+    - "MD033"     # Inline HTML
+    - "--"        # otherwise files are interpreted as args
+# shellcheck
+- repo: https://github.com/shellcheck-py/shellcheck-py
+  rev: v0.11.0.1
+  hooks:
+  - id: shellcheck
+    args: [ "-x", "--shell=bash", "--color=always", "--format=gcc", "--" ]
+# pyright-concise
+- repo: local
+  hooks:
+  - id: pyright-concise
+    name: pyright-concise
+    language: system
+    types_or: [ python, pyi ]
+    entry: src/pyright_wrapper.sh
+    require_serial: true
+    files: '^src/|^tests/'
+# mypy, tach
+- repo: local
+  hooks:
+  - id: mypy
+    name: mypy
+    language: system
+    require_serial: true
+    types_or: [ python, pyi ]
+    files: '^src/|^tests/'
+    entry: mypy
+    args:
+    - "--hide-error-context"
+    - "--hide-error-end"
+    - "--no-pretty"
+    - "--"
+  - id: tach
+    name: tach
+    description: Validate package dependencies
+    entry: tach check
+    language: python
+    pass_filenames: false

@@ -5,7 +5,7 @@ build-backend = "uv_build"
 # region project configuration ---------------------------------------------------------
 [project]
 name = "assorted-hooks"
-version = "0.7.3"
+version = "0.7.4"
 authors = [{ name = "Randolf Scholz", email = "randolf.scholz@gmail.com" }]
 description = "Custom pre-commit hooks"
 
@@ -16,26 +16,26 @@ readme = "README.md"
 # meta-information
 keywords = ["pre-commit"]
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "Environment :: Console",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3.14",
-    "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Utilities",
-    "Typing :: Typed",
+	"Development Status :: 4 - Beta",
+	"Environment :: Console",
+	"Intended Audience :: Developers",
+	"License :: OSI Approved :: MIT License",
+	"Operating System :: OS Independent",
+	"Programming Language :: Python :: 3.14",
+	"Programming Language :: Python :: 3.13",
+	"Programming Language :: Python :: 3.12",
+	"Topic :: Utilities",
+	"Typing :: Typed",
 ]
 
 # dependencies
 requires-python = ">=3.12"
 dependencies = [
-    "aiohttp>=3.13.3",
-    "packaging>=25.0",
-    "pygithub>=2.8.1",
-    "pyyaml>=6.0.3",
-    "typing-extensions>=4.15.0",
+	"aiohttp>=3.13.3",
+	"packaging>=26.0",
+	"pygithub>=2.8.1",
+	"pyyaml>=6.0.3",
+	"typing-extensions>=4.15.0",
 ]
 
 [project.urls]
@@ -66,23 +66,25 @@ update-requirements = "assorted_hooks.scripts.update_requirements:main"
 # region development dependencies ------------------------------------------------------
 [dependency-groups]
 dev = [
-    {include-group="linters"}, {include-group="tests"}, {include-group="typing"},
+	{ include-group = "linters" }, { include-group = "tests" }, { include-group = "typing" },
 ]
 typing = [
-    "mypy>=1.19.1",
-    "pyright>=1.1.408",
-    "types-pyyaml>=6.0.12.20250915",
+	"mypy>=1.19.1",
+	"pyrefly>=0.49.0",
+	"pyright>=1.1.408",
+	"types-pyyaml>=6.0.12.20250915",
 ]
-    linters = [
-    "pre-commit>=4.5.1",
-    "pylint>=4.0.4",
-    "ruff>=0.14.13",
-    "tach>=0.33.0",
+linters = [
+	"pre-commit>=4.5.1",
+	"pylint>=4.0.4",
+	"ruff>=0.14.14",
+	"tach>=0.33.1",
+	"prek>=0.3.0",
 ]
 tests = [
-    "pytest>=9.0.2",
-    "tox>=4.34.1",
-    "tox-uv>=1.29.0",
+	"pytest>=9.0.2",
+	"tox>=4.34.1",
+	"tox-uv>=1.29.0",
 ]
 # endregion development dependencies ---------------------------------------------------
 
@@ -133,69 +135,69 @@ unfixable = []
 #]
 select = ["ALL"]
 ignore = [
-    # fully ignored:
-    "COM",      # comma
-    "CPY",      # missing-copyright
-    "DTZ",      # timezone-naive-datetime
-    "EM",       # error-messages
-    "ERA",   # commented-out-code
-    "FIX",      # fixme
-    "T20",      # flake8-print
-    "TD",       # todo
-    # partially ignored:
-    # mccabe
-    "C90",      # too-complex
-    # pydocstyle
-    "D102",     # Missing docstring in public method
-    "D103",     # Missing docstring in public function
-    "D105",     # Missing docstring in magic method
-    "D107",     # Missing docstring in __init__
-    # pydoclint
-    "DOC201",   # docstring-missing-returns
-    "DOC402",   # docstring-missing-yields
-    "DOC501",   # docstring-missing-exception
-    # pycodestyle
-    "E201",     # Whitespace after '('
-    "E202",     # Whitespace before ')'
-    "E203",     # Whitespace before ':'
-    "E221",     # Multiple spaces before operator
-    "E241",     # Multiple spaces after comma
-    "E271",     # Multiple spaces after keyword
-    "E272",     # Multiple spaces before keyword
-    # pylint
-    "PLC2401",  # non-ascii-name
-    "PLC2801",  # unnecessary-dunder-call
-    "PLR0124",  # Name compared with itself
-    "PLR2004",  # Magic value used in comparison
-    "PLR6104",  # non-augmented-assignment
-    "PLR6301",  # no-self-use
-    # pylint "too-many-*" rules
-    "PLR0904",  # Too many public methods
-    "PLR0911",  # Too many return statements
-    "PLR0912",  # Too many branches
-    "PLR0913",  # Too many arguments in function definition
-    "PLR0914",  # Too many local variables
-    "PLR0915",  # Too many statements
-    "PLR0916",  # Too many boolean expressions
-    "PLR0917",  # Too many positional arguments
-    # flake8-use-pathlib
-    "PTH123",   # builtin-open
-    # RET
-    "RET504",   # unnecessary-assign
-    # RUFF
-    "RUF001",   # ambiguous-unicode-character-string
-    "RUF002",   # ambiguous-unicode-character-docstring
-    "RUF003",   # ambiguous-unicode-character-comment
-    "RUF012",   # Mutable class attributes should be annotated with typing.ClassVar # FIXME: PEP 603
-    "RUF013",   # PEP 484 prohibits implicit Optional
-    "RUF022",   # __all__ not sorted
-    # bandit
-    "S603",     # subprocess-popen-with-shell
-    # tryceratops
-    "TRY003",   # Avoid specifying long messages outside the exception class
-    # pyupgrade
-    "UP007",    # Use `X | Y` for type annotations
-    "UP045",    # Use `X | None` for type annotations
+	# fully ignored:
+	"COM", # comma
+	"CPY", # missing-copyright
+	"DTZ", # timezone-naive-datetime
+	"EM", # error-messages
+	"ERA", # commented-out-code
+	"FIX", # fixme
+	"T20", # flake8-print
+	"TD", # todo
+	# partially ignored:
+	# mccabe
+	"C90", # too-complex
+	# pydocstyle
+	"D102", # Missing docstring in public method
+	"D103", # Missing docstring in public function
+	"D105", # Missing docstring in magic method
+	"D107", # Missing docstring in __init__
+	# pydoclint
+	"DOC201", # docstring-missing-returns
+	"DOC402", # docstring-missing-yields
+	"DOC501", # docstring-missing-exception
+	# pycodestyle
+	"E201", # Whitespace after '('
+	"E202", # Whitespace before ')'
+	"E203", # Whitespace before ':'
+	"E221", # Multiple spaces before operator
+	"E241", # Multiple spaces after comma
+	"E271", # Multiple spaces after keyword
+	"E272", # Multiple spaces before keyword
+	# pylint
+	"PLC2401", # non-ascii-name
+	"PLC2801", # unnecessary-dunder-call
+	"PLR0124", # Name compared with itself
+	"PLR2004", # Magic value used in comparison
+	"PLR6104", # non-augmented-assignment
+	"PLR6301", # no-self-use
+	# pylint "too-many-*" rules
+	"PLR0904", # Too many public methods
+	"PLR0911", # Too many return statements
+	"PLR0912", # Too many branches
+	"PLR0913", # Too many arguments in function definition
+	"PLR0914", # Too many local variables
+	"PLR0915", # Too many statements
+	"PLR0916", # Too many boolean expressions
+	"PLR0917", # Too many positional arguments
+	# flake8-use-pathlib
+	"PTH123", # builtin-open
+	# RET
+	"RET504", # unnecessary-assign
+	# RUFF
+	"RUF001", # ambiguous-unicode-character-string
+	"RUF002", # ambiguous-unicode-character-docstring
+	"RUF003", # ambiguous-unicode-character-comment
+	"RUF012", # Mutable class attributes should be annotated with typing.ClassVar # FIXME: PEP 603
+	"RUF013", # PEP 484 prohibits implicit Optional
+	"RUF022", # __all__ not sorted
+	# bandit
+	"S603", # subprocess-popen-with-shell
+	# tryceratops
+	"TRY003", # Avoid specifying long messages outside the exception class
+	# pyupgrade
+	"UP007", # Use `X | Y` for type annotations
+	"UP045", # Use `X | None` for type annotations
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -231,31 +233,31 @@ docstring-code-line-length = "dynamic"
 [tool.pylint."MESSAGES CONTROL"]
 enable = ["useless-suppression"]
 disable = [
-    "C0103",  # invalid-name  # Ridiculous...
-    "C0144",  # non-ascii-name
-    "C0204",  # bad-mcs-classmethod-argument
-    "C0301",  # line-too-long
-    "E0611",  # no-name-in-module
-    "E1101",  # no-member  # FIXME: too many false positives
-    "E1102",  # not-callable  # FIXME: too many false positives (torch)
-    "E1121",  # too-many-function-args  # FIXME: too many false positives
-    "E1123",  # unexpected-keyword-arg  # FIXME: too many false positives
-    "E1130",  # invalid-unary-operand-type
-    "E1139",  # invalid-metaclass  # FIXME: too many false positives
-    "R0801",  # similar lines
-    "R0902",  # too-many-instance-attributes
-    "R0903",  # too-few-public-methods
-    "R0911",  # too-many-return-statements
-    "R0913",  # too-many-arguments
-    "R0914",  # too-many-locals
-    "R0915",  # too-many-statements
-    # "W0221",  # arguments-differ
-    # "W0511",  # (fixme) (todos)
-    "W1113",  # keyword-arg-before-vararg
-    "W2301",  # unnecessary-ellipsis
+	"C0103", # invalid-name  # Ridiculous...
+	"C0144", # non-ascii-name
+	"C0204", # bad-mcs-classmethod-argument
+	"C0301", # line-too-long
+	"E0611", # no-name-in-module
+	"E1101", # no-member  # FIXME: too many false positives
+	"E1102", # not-callable  # FIXME: too many false positives (torch)
+	"E1121", # too-many-function-args  # FIXME: too many false positives
+	"E1123", # unexpected-keyword-arg  # FIXME: too many false positives
+	"E1130", # invalid-unary-operand-type
+	"E1139", # invalid-metaclass  # FIXME: too many false positives
+	"R0801", # similar lines
+	"R0902", # too-many-instance-attributes
+	"R0903", # too-few-public-methods
+	"R0911", # too-many-return-statements
+	"R0913", # too-many-arguments
+	"R0914", # too-many-locals
+	"R0915", # too-many-statements
+	# "W0221",  # arguments-differ
+	# "W0511",  # (fixme) (todos)
+	"W1113", # keyword-arg-before-vararg
+	"W2301", # unnecessary-ellipsis
 ]
 fail-on = [
-    "C0116",  # missing-function-docstring
+	"C0116", # missing-function-docstring
 ]
 fail-under = 9.0
 
@@ -281,10 +283,10 @@ platform = "linux"
 plugins = []
 
 disable_error_code = [
-    "func-returns-value", # SEE: https://github.com/python/mypy/issues/6549
-    "method-assign",      # SEE: https://github.com/python/mypy/issues/2427#issuecomment-1419206807
-    "no-overload-impl",   # SEE: https://github.com/python/mypy/issues/17618
-    # "overload-overlap",   # SEE: https://mypy.readthedocs.io/en/stable/more_types.html#type-checking-the-variants
+	"func-returns-value", # SEE: https://github.com/python/mypy/issues/6549
+	"method-assign", # SEE: https://github.com/python/mypy/issues/2427#issuecomment-1419206807
+	"no-overload-impl", # SEE: https://github.com/python/mypy/issues/17618
+	# "overload-overlap",   # SEE: https://mypy.readthedocs.io/en/stable/more_types.html#type-checking-the-variants
 ]
 
 # warnings
@@ -380,7 +382,7 @@ reportConstantRedefinition = false  # we use uppercase for matrices/tensors.
 minversion = "8.0"
 testpaths = ["src/", "tests/"]
 addopts = [
-    "--doctest-modules",
+	"--doctest-modules",
 ]
 markers = []
 required_plugins = []

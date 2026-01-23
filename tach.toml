@@ -1,13 +1,13 @@
 interfaces = []
 exclude = [
-    "**/*__pycache__",
-    "**/*egg-info",
-    "**/docs",
-    "**/tests",
-    "**/venv",
+	"**/*__pycache__",
+	"**/*egg-info",
+	"**/docs",
+	"**/tests",
+	"**/venv",
 ]
 source_roots = [
-    "src",
+	"src",
 ]
 
 [[modules]]
@@ -30,16 +30,16 @@ depends_on = []
 [[modules]]
 path = "assorted_hooks.ast.check_direct_imports"
 depends_on = [
-    "assorted_hooks.ast.ast_utils",
-    "assorted_hooks.utils",
+	"assorted_hooks.ast.ast_utils",
+	"assorted_hooks.utils",
 ]
 utility = true
 
 [[modules]]
 path = "assorted_hooks.ast.check_dunder_all"
 depends_on = [
-    "assorted_hooks.ast.ast_utils",
-    "assorted_hooks.utils",
+	"assorted_hooks.ast.ast_utils",
+	"assorted_hooks.utils",
 ]
 utility = true
 
@@ -51,44 +51,44 @@ utility = true
 [[modules]]
 path = "assorted_hooks.ast.check_standard_generics"
 depends_on = [
-    "assorted_hooks.ast.ast_utils",
-    "assorted_hooks.utils",
+	"assorted_hooks.ast.ast_utils",
+	"assorted_hooks.utils",
 ]
 utility = true
 
 [[modules]]
 path = "assorted_hooks.ast.check_typing"
 depends_on = [
-    "assorted_hooks.ast.ast_utils",
-    "assorted_hooks.utils",
+	"assorted_hooks.ast.ast_utils",
+	"assorted_hooks.utils",
 ]
 utility = true
 
 [[modules]]
 path = "assorted_hooks.check_archived_hooks"
 depends_on = [
-    "assorted_hooks.utils",
+	"assorted_hooks.utils",
 ]
 utility = true
 
 [[modules]]
 path = "assorted_hooks.check_github_issues"
 depends_on = [
-    "assorted_hooks.utils",
+	"assorted_hooks.utils",
 ]
 utility = true
 
 [[modules]]
 path = "assorted_hooks.check_requirements_maintained"
 depends_on = [
-    "assorted_hooks.utils",
+	"assorted_hooks.utils",
 ]
 utility = true
 
 [[modules]]
 path = "assorted_hooks.check_requirements_valid"
 depends_on = [
-    "assorted_hooks.utils",
+	"assorted_hooks.utils",
 ]
 utility = true
 

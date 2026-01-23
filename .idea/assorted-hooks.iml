@@ -12,7 +12,7 @@
       <excludeFolder url="file://$MODULE_DIR$/.pdm-build" />
       <excludeFolder url="file://$MODULE_DIR$/.tach" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.12 (assorted-hooks)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="uv (assorted-hooks)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PackageRequirementsSettings">

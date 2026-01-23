@@ -97,14 +97,14 @@
   language: script
   types: [toml]
 - id: update-requirements
-  entry: src/assorted_hooks/scripts/update_requirements.py
+  entry: python3 src/assorted_hooks/scripts/update_requirements.py
   name: '[pyproject] Update requirements.'
   description: "Update dependencies to >=currently_installed."
   files: ^pyproject\.toml$
   language: script
   types: [toml]
 - id: check-clean-interface
-  entry: src/assorted_hooks/scripts/check_clean_interface.py
+  entry: python3 src/assorted_hooks/scripts/check_clean_interface.py
   name: '[py] Check clean interface.'
   description: "Check that __all__ holds all exported variables."
   language: script

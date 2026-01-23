@@ -5,7 +5,7 @@
     <option name="pathToExecutable" value="$USER_HOME$/.pyenv/shims/black" />
     <option name="sdkName" value="Python 3.11 (assorted-hooks)" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.12 (assorted-hooks)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="uv (assorted-hooks)" project-jdk-type="Python SDK" />
   <component name="PythonCompatibilityInspectionAdvertiser">
     <option name="version" value="3" />
   </component>
