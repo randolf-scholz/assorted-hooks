@@ -87,24 +87,23 @@
   stages: [pre-push, manual]
 # endregion online-hooks ---------------------------------------------------------------
 
-
 # region scripts -----------------------------------------------------------------------
 - id: check-requirements-used
-  entry: src/check_requirements_used.sh
+  entry: src/check_requirements_used.py
   name: '[pyproject] Check requirements used.'
   description: "Check that listed dependencies are used in code and vice-versa."
   files: '^pyproject\.toml$'
   language: script
   types: [toml]
 - id: update-requirements
-  entry: src/update_requirements.sh
+  entry: src/update_requirements.py
   name: '[pyproject] Update requirements.'
   description: "Update dependencies to >=currently_installed."
   files: '^pyproject\.toml$'
   language: script
   types: [toml]
 - id: check-clean-interface
-  entry: src/check_clean_interface.sh
+  entry: src/check_clean_interface.py
   name: '[py] Check clean interface.'
   description: "Check that __all__ holds all exported variables."
   language: script
