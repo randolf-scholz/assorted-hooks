@@ -209,8 +209,14 @@ def load_module(file: str | Path, /, *, load_silent: bool = False) -> ModuleType
     if spec is None or spec.loader is None:
         raise ImportError(f"{path=} has no spec or loader!")
 
+    # reuse existing module to avoid re-running one-time setup
+    existing = sys.modules.get(spec.name)
+    if existing is not None and getattr(existing, "__file__", None) == str(path):
+        return existing
+
     # load the module silently
     module = module_from_spec(spec)
+    sys.modules[spec.name] = module
     with (
         open(os.devnull, "w", encoding="utf8") as devnull,
         redirect_stdout(devnull if load_silent else sys.stdout),
