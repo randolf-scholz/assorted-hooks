@@ -49,6 +49,7 @@ __all__ = [
 
 import argparse
 import ast
+import importlib
 import logging
 import os
 import sys
@@ -266,6 +267,10 @@ def get_python_files(
 
 def load_module(file: str | Path, /, *, load_silent: bool = False) -> ModuleType:
     r"""Load a module from a file."""
+    # NOTE: need to invalidate caches to ensure that changes to the file are picked up when loading the module
+    # SEE: https://docs.python.org/3/library/importlib.html#importlib.invalidate_caches
+    importlib.invalidate_caches()
+
     path = Path(file).resolve()
     if not path.exists() or not path.is_file() or path.suffix != ".py":
         raise FileNotFoundError(f"{path=} is not a python file!")
