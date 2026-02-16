@@ -234,7 +234,7 @@ def check_pyproject(
     return violations
 
 
-def check_file(filename: str, /, **opts: Any) -> int:  # noqa: ANN401
+def check_file(filename: str, /, **opts: Any) -> int:
     r"""Check the pyproject.toml file for unmaintained dependencies."""
     # load the pyproject.toml as dict
     with open(filename, "rb") as file:

@@ -2,7 +2,6 @@
 # /// script
 # requires-python = ">=3.11"
 # ///
-# ruff: noqa: S101
 r"""Update dependencies in pyproject.toml to the currently installed versions.
 
 Note:

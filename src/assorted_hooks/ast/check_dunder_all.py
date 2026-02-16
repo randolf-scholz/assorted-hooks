@@ -5,6 +5,7 @@ __all__ = [
     "check_file",
     "get_duplicate_keys",
     "is_at_top",
+    "is_executable",
     "is_superfluous",
     "main",
 ]
@@ -12,6 +13,7 @@ __all__ = [
 import argparse
 import ast
 import logging
+import os
 import sys
 from ast import (
     AnnAssign,
@@ -23,6 +25,7 @@ from ast import (
 )
 from collections import Counter
 from pathlib import Path
+from stat import S_IXGRP, S_IXOTH, S_IXUSR
 
 from assorted_hooks.ast.ast_utils import (
     is_dunder_all,
@@ -94,6 +97,17 @@ def get_duplicate_keys(node: Assign | AnnAssign | AugAssign, /) -> set[str]:
     return {key for key, count in elements.items() if count > 1}
 
 
+def is_executable(path: Path, /) -> bool:
+    r"""Check whether a file is executable."""
+    if not path.is_file():
+        return False
+    if os.name == "nt":
+        text = path.read_text(encoding="utf8")
+        tree = ast.parse(text, filename=str(path))
+        return any(is_dunder_main(node) for node in ast.walk(tree))
+    return bool(path.stat().st_mode & (S_IXUSR | S_IXGRP | S_IXOTH))
+
+
 def check_file(
     filepath: str | Path,
     /,
@@ -106,6 +120,7 @@ def check_file(
     warn_multiple_definitions: bool = True,
     warn_non_literal: bool = True,
     warn_superfluous: bool = True,
+    ignore_executables: bool = False,
 ) -> int:
     r"""Check a single file."""
     # Get the AST
@@ -130,7 +145,9 @@ def check_file(
 
     match node_list:
         case []:
-            if warn_missing and not is_superfluous(tree):
+            if ignore_executables and is_executable(path):
+                pass
+            elif warn_missing and not is_superfluous(tree):
                 violations += 1
                 print(f"{filename}:0: No __all__ found.")
         case [node, *nodes]:
@@ -223,6 +240,15 @@ def main() -> None:
         help="Warn if __all__ contains the same key twice.",
     )
     parser.add_argument(
+        "--ignore-executables",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help=(
+            "Allow missing __all__ in executable files "
+            '(on Windows checks for the presence of `if __name__ == "__main__"`).'
+        ),
+    )
+    parser.add_argument(
         "--debug",
         action=argparse.BooleanOptionalAction,
         default=False,
@@ -236,7 +262,6 @@ def main() -> None:
 
     # find all files
     files: list[Path] = get_python_files(args.files)
-
     # apply script to all files
     violations = 0
     for file in files:
@@ -252,6 +277,7 @@ def main() -> None:
                 warn_multiple_definitions=args.warn_multiple_definitions,
                 warn_non_literal=args.warn_non_literal,
                 warn_superfluous=args.warn_superfluous,
+                ignore_executables=args.ignore_executables,
             )
         except Exception as exc:
             exc.add_note(f"{file!s}:0 Checking file failed!")
