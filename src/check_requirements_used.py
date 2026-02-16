@@ -53,6 +53,7 @@ __all__ = [
     "get_requirements_from_ast",
     "get_requirements_from_module",
     "get_requirements_from_pyproject",
+    "get_local_deps",
     "main",
     "resolve_dependencies",
     "yield_deps",
@@ -742,6 +743,28 @@ def check_deps(
     # endregion check project dependencies ---------------------------------------------
 
 
+def get_local_deps(config: dict, /) -> frozenset[CanonicalName]:
+    r"""Get the local dependencies from pyproject.toml.
+
+    If `import-names` or `import-namespaces` is defined, these are used,
+    otherwise the project name is used.
+
+    References:
+        PEP 794 – Import Name Metadata: https://peps.python.org/pep-0794/
+    """
+    if (import_names := config.get("project", {}).get("import-names")) is not None:
+        assert isinstance(import_names, list), "Expected 'import-names' to be a list."
+        return get_canonical_names(import_names)
+    if (
+        import_namespaces := config.get("project", {}).get("import-namespaces")
+    ) is not None:
+        assert isinstance(import_namespaces, list), (
+            "Expected 'import-namespaces' to be a list."
+        )
+        return get_canonical_names(import_namespaces)
+    return frozenset({canonicalize(get_name_pyproject(config))})
+
+
 def check_pyproject(
     pyproject_file: str | Path,
     /,
@@ -774,8 +797,8 @@ def check_pyproject(
         config = tomllib.load(file)
 
     # get the normalized project name
-    project_name: Any = canonicalize(get_name_pyproject(config))
-    testdir_name: Any = canonicalize(Path(tests_dir).stem) if tests_dir else None
+    project_name = canonicalize(get_name_pyproject(config))
+    testdir_name = canonicalize(Path(tests_dir).stem) if tests_dir else None
 
     excluded_deps = get_canonical_names(exclude)
     excluded_subdirs = set() if testdir_name is None else {testdir_name}
@@ -788,7 +811,7 @@ def check_pyproject(
     detected_deps = detect_dependencies(module_dir, excluded=excluded_subdirs)
     declared_deps = get_pypi_names(main_requirements)
     imported_deps = get_import_names(detected_deps.third_party)
-    local_deps = frozenset({project_name})
+    local_deps = get_local_deps(config)
     known_unimported_deps = get_pypi_names(known_unimported)
     known_undeclared_deps = get_import_names(known_undeclared)
 
@@ -817,12 +840,12 @@ def check_pyproject(
     detected_test_deps = detect_dependencies(tests_dir, excluded=set())
     imported_test_deps = get_import_names(detected_test_deps.third_party)
     declared_test_deps = get_pypi_names(test_requirements)
-    local_test_deps = frozenset({testdir_name})
+    local_test_deps = local_deps | ({testdir_name} if testdir_name else set())
     known_unimported_test_deps = get_pypi_names(known_unimported_test)
     known_undeclared_test_deps = get_import_names(known_undeclared_test)
 
     # check for superfluous test dependencies
-    superfluous_test_deps = (declared_test_deps & declared_deps) - {project_name}
+    superfluous_test_deps = (declared_test_deps & declared_deps) - {project_name}  # type: ignore[arg-type]
     if superfluous_test_deps and error_on_superfluous_test_deps:
         violations += 1
         print(f"Detected superfluous dependencies: {sorted(superfluous_test_deps)}")
