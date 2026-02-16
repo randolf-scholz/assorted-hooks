@@ -56,7 +56,6 @@ import sys
 from ast import AST, AnnAssign, Assign, Call, Import, ImportFrom, Name
 from collections.abc import Iterable
 from contextlib import redirect_stderr, redirect_stdout
-from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from types import ModuleType
 from typing import Literal, Optional, Self
@@ -267,47 +266,18 @@ def get_python_files(
 
 def load_module(file: str | Path, /, *, load_silent: bool = False) -> ModuleType:
     r"""Load a module from a file."""
-    # NOTE: need to invalidate caches to ensure that changes to the file are picked up when loading the module
-    # SEE: https://docs.python.org/3/library/importlib.html#importlib.invalidate_caches
-    importlib.invalidate_caches()
-
     path = Path(file).resolve()
-    if not path.exists() or not path.is_file() or path.suffix != ".py":
-        raise FileNotFoundError(f"{path=} is not a python file!")
-
-    # get module specification
-    module_name = _module_name_from_path(path)
-    spec = spec_from_file_location(module_name, path)
-
-    # validate spec and loader
-    if spec is None or spec.loader is None:
-        raise ImportError(f"{path=} has no spec or loader!")
-    assert spec.name == module_name, "Name mismatch between spec and module name!"
-
-    # reuse existing module to avoid re-running one-time setup
-    existing = sys.modules.get(module_name)
-    if existing is not None and getattr(existing, "__file__", None) == str(path):
-        __logger__.debug(f"using already loaded module {module_name!r} from {path!s}")
-        return existing
-
-    # otherwise, create the module and load it
-    module = module_from_spec(spec)
+    root = _find_import_root(path)  # same helper you already have
+    module_name = _module_name_from_path(path)  # same helper
 
     # load the module silently
     with (
         open(os.devnull, "w", encoding="utf8") as devnull,
         redirect_stdout(devnull if load_silent else sys.stdout),
         redirect_stderr(devnull if load_silent else sys.stderr),
-        _temporary_sys_path(_find_import_root(path)),
+        _temporary_sys_path(root),
     ):
-        try:
-            spec.loader.exec_module(module)
-        except Exception as exc:
-            raise ImportError(
-                f"Failed to load module {module_name!r} from {path!s}"
-            ) from exc
-        else:
-            sys.modules[module_name] = module
+        module = importlib.import_module(module_name)
 
     # check that packages map to packages and modules to modules
     is_pkg = path.name == "__init__.py"
