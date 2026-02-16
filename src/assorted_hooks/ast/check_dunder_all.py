@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 r"""Checks that __all__ exists in modules."""
 
 __all__ = [

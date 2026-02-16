@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 r"""Checks that data-Protocols are not used with `@runtime_checkable`."""
 
 __all__ = [

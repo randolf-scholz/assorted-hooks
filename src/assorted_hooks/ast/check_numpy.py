@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 r"""Checks for interaction with numpy."""
 
 # 1. axes vs axis: we check that functions definitions use the spelling "axis" instead of axes,
