@@ -18,6 +18,7 @@ For this purpose, we use the following defaults:
 - `--check-private`: False
 - `--ignore-imports-modules`: True
 - `--ignore-imports-packages`: False
+- `--ignore-imported-submodules`: False
 - `--ignore-dunder-attributes`: True
 - `--ignore-private-attributes`: True
 
@@ -32,6 +33,7 @@ __all__ = [
     "check_file",
     "check_module",
     "get_imported_names",
+    "get_imported_submodules",
     "get_python_files",
     "get_type_aliases",
     "get_type_variables",
@@ -55,9 +57,47 @@ from contextlib import redirect_stderr, redirect_stdout
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from types import ModuleType
-from typing import Optional
+from typing import Literal, Optional, Self
 
 __logger__ = logging.getLogger(__name__)
+
+
+def _find_import_root(path: Path, /) -> Path:
+    r"""Walk up the tree until we find a directory that does not contain an __init__.py file."""
+    current = path if path.is_dir() else path.parent
+    while (current / "__init__.py").is_file():
+        current = current.parent
+    return current
+
+
+def _module_name_from_path(path: Path, /, *, import_root: Path) -> str:
+    try:
+        relative = path.relative_to(import_root)
+    except ValueError:
+        return path.stem
+    relative = (
+        relative.parent if relative.name == "__init__.py" else relative.with_suffix("")
+    )
+    return ".".join(relative.parts) if relative.parts else path.stem
+
+
+class _temporary_sys_path:  # noqa: N801
+    r"""Context manager to temporarily insert a path into sys.path."""
+
+    def __init__(self, path: Path) -> None:
+        self._path = str(path)
+        self._inserted = False
+
+    def __enter__(self) -> Self:
+        if self._path not in sys.path:
+            sys.path.insert(0, self._path)
+            self._inserted = True
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback, /) -> Literal[False]:  # type: ignore[no-untyped-def]
+        if self._inserted:
+            sys.path.remove(self._path)
+        return False
 
 
 def is_private(s: str, /) -> bool:
@@ -124,6 +164,25 @@ def get_imported_names(tree: AST, /) -> set[str]:
                 imported_symbols.update(alias.asname or alias.name for alias in imports)
 
     return imported_symbols
+
+
+def get_imported_submodules(pkg: ModuleType, /) -> set[str]:
+    r"""Get imported submodules for the current package."""
+    package = pkg.__package__ or ""
+    if not package:
+        return set()
+    prefix = f"{package}."
+    imported_submodules: set[str] = set()
+
+    for name, value in vars(pkg).items():
+        if (
+            isinstance(value, ModuleType)
+            and value.__name__.startswith(prefix)
+            and value.__name__ != package
+        ):
+            imported_submodules.add(name)
+
+    return imported_submodules
 
 
 def get_type_variables(tree: AST, /) -> set[str]:
@@ -200,18 +259,28 @@ def get_python_files(
 
 def load_module(file: str | Path, /, *, load_silent: bool = False) -> ModuleType:
     r"""Load a module from a file."""
-    path = Path(file)
+    path = Path(file).resolve()
     if not path.exists() or not path.is_file() or path.suffix != ".py":
         raise FileNotFoundError(f"{path=} is not a python file!")
 
     # get module specification
-    spec = spec_from_file_location(path.stem, path)
+    import_root = _find_import_root(path)
+    module_name = _module_name_from_path(path, import_root=import_root)
+    if path.name == "__init__.py":
+        spec = spec_from_file_location(
+            module_name,
+            path,
+            submodule_search_locations=[str(path.parent)],
+        )
+    else:
+        spec = spec_from_file_location(module_name, path)
     if spec is None or spec.loader is None:
         raise ImportError(f"{path=} has no spec or loader!")
 
     # reuse existing module to avoid re-running one-time setup
     existing = sys.modules.get(spec.name)
     if existing is not None and getattr(existing, "__file__", None) == str(path):
+        __logger__.debug(f"using already loaded module {spec.name!r} from {path!s}")
         return existing
 
     # load the module silently
@@ -221,6 +290,7 @@ def load_module(file: str | Path, /, *, load_silent: bool = False) -> ModuleType
         open(os.devnull, "w", encoding="utf8") as devnull,
         redirect_stdout(devnull if load_silent else sys.stdout),
         redirect_stderr(devnull if load_silent else sys.stderr),
+        _temporary_sys_path(import_root),
     ):
         spec.loader.exec_module(module)
 
@@ -232,6 +302,7 @@ def check_module(
     /,
     *,
     erroron_dunder_all_missing: bool,
+    ignore_imported_submodules: bool,
     ignore_dunder_variables: bool,
     ignore_imported_variables_module: bool,
     ignore_imported_variables_package: bool,
@@ -274,6 +345,8 @@ def check_module(
         excluded_vars |= get_imported_names(tree)
     if ignore_imported_variables_package and is_package(pkg):
         excluded_vars |= get_imported_names(tree)
+    if ignore_imported_submodules:
+        excluded_vars |= get_imported_submodules(pkg)
     if ignore_type_variables:
         excluded_vars |= get_type_variables(tree)
     if ignore_type_aliases:
@@ -299,6 +372,7 @@ def check_file(
     check_packages: bool,
     check_private: bool,
     erroron_dunder_all_missing: bool,
+    ignore_imported_submodules: bool,
     ignore_dunder_variables: bool,
     ignore_imported_variables_module: bool,
     ignore_imported_variables_package: bool,
@@ -331,6 +405,7 @@ def check_file(
     return check_module(
         pkg,
         erroron_dunder_all_missing=erroron_dunder_all_missing,
+        ignore_imported_submodules=ignore_imported_submodules,
         ignore_imported_variables_module=ignore_imported_variables_module,
         ignore_imported_variables_package=ignore_imported_variables_package,
         ignore_dunder_variables=ignore_dunder_variables,
@@ -387,6 +462,12 @@ def main() -> None:
         action=argparse.BooleanOptionalAction,
         default=False,
         help="Ignore imported variables in packages (__init__.py).",
+    )
+    parser.add_argument(
+        "--ignore-imported-submodules",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Ignore imported submodules in the current package.",
     )
     parser.add_argument(
         "--ignore-dunder-variables",
@@ -446,6 +527,7 @@ def main() -> None:
                 check_packages=args.check_packages,
                 check_private=args.check_private,
                 erroron_dunder_all_missing=args.erroron_dunder_all_missing,
+                ignore_imported_submodules=args.ignore_imported_submodules,
                 ignore_imported_variables_module=args.ignore_imported_variables_module,
                 ignore_imported_variables_package=args.ignore_imported_variables_package,
                 ignore_dunder_variables=args.ignore_dunder_variables,

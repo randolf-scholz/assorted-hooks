@@ -5,7 +5,7 @@ build-backend = "uv_build"
 # region project configuration ---------------------------------------------------------
 [project]
 name = "assorted-hooks"
-version = "0.7.13"
+version = "0.7.14"
 authors = [{ name = "Randolf Scholz", email = "randolf.scholz@gmail.com" }]
 description = "Custom pre-commit hooks"
 
@@ -77,13 +77,13 @@ typing = [
 linters = [
 	"pre-commit>=4.5.1",
 	"pylint>=4.0.4",
-	"ruff>=0.15.0",
-	"tach>=0.33.2",
-	"prek>=0.3.2",
+	"ruff>=0.15.1",
+	"tach>=0.33.3",
+	"prek>=0.3.3",
 ]
 tests = [
 	"pytest>=9.0.2",
-	"tox>=4.34.1",
+	"tox>=4.36.0",
 	"tox-uv>=1.29.0",
 ]
 # endregion development dependencies ---------------------------------------------------
@@ -136,6 +136,7 @@ unfixable = []
 select = ["ALL"]
 ignore = [
 	# fully ignored:
+	"ANN", # missing-type-annotation
 	"COM", # comma
 	"CPY", # missing-copyright
 	"DTZ", # timezone-naive-datetime
