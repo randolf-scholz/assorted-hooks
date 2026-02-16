@@ -37,11 +37,12 @@ __all__ = [
     "get_python_files",
     "get_type_aliases",
     "get_type_variables",
-    "is_class_private",
+    "is_class_private_var",
     "is_dunder",
     "is_module",
     "is_package",
-    "is_private",
+    "is_private_module",
+    "is_private_var",
     "load_module",
     "main",
 ]
@@ -70,11 +71,9 @@ def _find_import_root(path: Path, /) -> Path:
     return current
 
 
-def _module_name_from_path(path: Path, /, *, import_root: Path) -> str:
-    try:
-        relative = path.relative_to(import_root)
-    except ValueError:
-        return path.stem
+def _module_name_from_path(path: Path, /) -> str:
+    root = _find_import_root(path)
+    relative = path.relative_to(root)
     relative = (
         relative.parent if relative.name == "__init__.py" else relative.with_suffix("")
     )
@@ -100,26 +99,33 @@ class _temporary_sys_path:  # noqa: N801
         return False
 
 
-def is_private(s: str, /) -> bool:
+def is_private_module(path: Path, /) -> bool:
+    r"""Checks if a module is considered private based on its file name."""
+    module_name = _module_name_from_path(path)
+    parts = module_name.split(".")
+    return any(is_private_var(part) for part in parts)
+
+
+def is_private_var(s: str, /) -> bool:
     r"""Checks if variable name is considered private.
 
     References:
         https://stackoverflow.com/a/62865302/9318372
     """
-    return s.isidentifier() and (
-        (s.startswith("_") and not s.startswith("__") and (len(s) > 1))
-        or is_class_private(s)
-    )
-
-
-def is_class_private(s: str, /) -> bool:
-    r"""Check if variable name is considered class-private."""
+    assert s.isidentifier(), f"{s!r} is not a valid identifier!"
     return (
-        s.isidentifier()
+        (len(s) > 1) and s.startswith("_") and not s.startswith("__")
+    ) or is_class_private_var(s)
+
+
+def is_class_private_var(s: str, /) -> bool:
+    r"""Check if variable name is considered class-private."""
+    assert s.isidentifier(), f"{s!r} is not a valid identifier!"
+    return (
+        (len(s) > 2)
         and s.startswith("__")
         and not s.startswith("___")
         and not s.endswith("__")
-        and (len(s) > 2)
     )
 
 
@@ -138,18 +144,19 @@ def is_dunder(s: str, /) -> bool:
     )
 
 
-def is_package(module: str | ModuleType, /) -> bool:
+def is_package(module: Path | ModuleType, /) -> bool:
     r"""True if module is a package."""
     match module:
-        case str(name):
-            return name == "__init__"
+        case Path() as path:
+            return path.is_dir() or path.name == "__init__.py"
         case ModuleType():
-            return module.__name__ in {module.__package__, "__init__"}
+            # via https://docs.python.org/3/glossary.html#term-package
+            return hasattr(module, "__path__")
         case _:
             raise TypeError
 
 
-def is_module(module: str | ModuleType, /) -> bool:
+def is_module(module: Path | ModuleType, /) -> bool:
     r"""True if module is a non-package module."""
     return not is_package(module)
 
@@ -264,35 +271,42 @@ def load_module(file: str | Path, /, *, load_silent: bool = False) -> ModuleType
         raise FileNotFoundError(f"{path=} is not a python file!")
 
     # get module specification
-    import_root = _find_import_root(path)
-    module_name = _module_name_from_path(path, import_root=import_root)
-    if path.name == "__init__.py":
-        spec = spec_from_file_location(
-            module_name,
-            path,
-            submodule_search_locations=[str(path.parent)],
-        )
-    else:
-        spec = spec_from_file_location(module_name, path)
+    module_name = _module_name_from_path(path)
+    spec = spec_from_file_location(module_name, path)
+
+    # validate spec and loader
     if spec is None or spec.loader is None:
         raise ImportError(f"{path=} has no spec or loader!")
+    assert spec.name == module_name, "Name mismatch between spec and module name!"
 
     # reuse existing module to avoid re-running one-time setup
-    existing = sys.modules.get(spec.name)
+    existing = sys.modules.get(module_name)
     if existing is not None and getattr(existing, "__file__", None) == str(path):
-        __logger__.debug(f"using already loaded module {spec.name!r} from {path!s}")
+        __logger__.debug(f"using already loaded module {module_name!r} from {path!s}")
         return existing
 
-    # load the module silently
+    # otherwise, create the module and load it
     module = module_from_spec(spec)
-    sys.modules[spec.name] = module
+
+    # load the module silently
     with (
         open(os.devnull, "w", encoding="utf8") as devnull,
         redirect_stdout(devnull if load_silent else sys.stdout),
         redirect_stderr(devnull if load_silent else sys.stderr),
-        _temporary_sys_path(import_root),
+        _temporary_sys_path(_find_import_root(path)),
     ):
-        spec.loader.exec_module(module)
+        try:
+            spec.loader.exec_module(module)
+        except Exception as exc:
+            raise ImportError(
+                f"Failed to load module {module_name!r} from {path!s}"
+            ) from exc
+        else:
+            sys.modules[module_name] = module
+
+    # check that packages map to packages and modules to modules
+    is_pkg = path.name == "__init__.py"
+    assert is_package(module) == is_pkg, "Mismatch between file type and module type!"
 
     return module
 
@@ -352,13 +366,14 @@ def check_module(
     if ignore_type_aliases:
         excluded_vars |= get_type_aliases(tree)
     if ignore_private_variables:
-        excluded_vars |= {key for key in exported_vars if is_private(key)}
+        excluded_vars |= {key for key in exported_vars if is_private_var(key)}
     if ignore_dunder_variables:
         excluded_vars |= {key for key in exported_vars if is_dunder(key)}
 
     undeclared_vars = exported_vars - (declared_vars | excluded_vars)
     if undeclared_vars:
-        print(f"{path!s}:0 exports {undeclared_vars!r} not listed in __all__!")
+        kind = "package" if is_package(pkg) else "module"
+        print(f"{path!s}:0 ({kind}) exports {undeclared_vars!r} not listed in __all__!")
         return 1
 
     return 0
@@ -386,16 +401,13 @@ def check_file(
     if not path.exists() or not path.is_file() or path.suffix != ".py":
         raise FileNotFoundError(f"{path=} is not a python file!")
 
-    # determine whether to check the file at all
-    module_name = path.stem
-
-    if is_private(module_name) and not check_private:
+    if is_private_module(path) and not check_private:
         __logger__.debug('Skipped "%s:0" - Ignoring private module!', path)
         return 0
-    if is_package(module_name) and not check_packages:
+    if is_package(path) and not check_packages:
         __logger__.debug('Skipped "%s:0" - Ignoring packages!', path)
         return 0
-    if is_module(module_name) and not check_modules:
+    if is_module(path) and not check_modules:
         __logger__.debug('Skipped "%s:0" - Ignoring modules!', path)
         return 0
 
