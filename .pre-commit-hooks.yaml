@@ -14,9 +14,9 @@
   language: python
   types: [python]
   require_serial: true
-- id: rewrite-absolute-imports
-  entry: rewrite-absolute-imports
-  name: '[py] Rewrite absolute imports.'
+- id: use-relative-imports
+  entry: use-relative-imports
+  name: '[py] Prefer relative imports.'
   description: "Rewrite absolute imports into relative ones within the current package."
   language: python
   types: [python]

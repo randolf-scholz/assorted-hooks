@@ -1,11 +1,11 @@
 [build-system]
-requires = ["uv_build>=0.9.2,<0.10.0"]
+requires = ["uv_build>=0.11.0,<0.12"]
 build-backend = "uv_build"
 
 # region project configuration ---------------------------------------------------------
 [project]
 name = "assorted-hooks"
-version = "0.7.19"
+version = "0.7.20"
 authors = [{ name = "Randolf Scholz", email = "randolf.scholz@gmail.com" }]
 description = "Custom pre-commit hooks"
 
@@ -46,7 +46,7 @@ repository = "https://github.com/randolf-scholz/assorted-hooks"
 check-dunder-all = "assorted_hooks.ast.check_dunder_all:main"
 check-direct-imports = "assorted_hooks.ast.check_direct_imports:main"
 check-signatures = "assorted_hooks.ast.check_signatures:main"
-rewrite-absolute-imports = "assorted_hooks.ast.rewrite_absolute_imports:main"
+use-relative-imports = "assorted_hooks.ast.use_realive_imports:main"
 check-standard-generics = "assorted_hooks.ast.check_standard_generics:main"
 check-typing = "assorted_hooks.ast.check_typing:main"
 check-runtime-data-protocol = "assorted_hooks.ast.check_runtime_data_protocol:main"

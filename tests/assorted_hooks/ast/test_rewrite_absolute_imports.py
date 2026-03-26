@@ -6,7 +6,7 @@ from textwrap import dedent
 
 import pytest
 
-from assorted_hooks.ast.rewrite_absolute_imports import check_file, get_package_parts
+from assorted_hooks.ast.use_relative_imports import check_file, get_package_parts
 
 
 def test_get_package_parts() -> None:
