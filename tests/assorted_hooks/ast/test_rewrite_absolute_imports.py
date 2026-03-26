@@ -152,3 +152,55 @@ def test_check_init_file_rewrites_package_import(
 
         assert check_file(file, fix=True) == 1
         assert file.read_text(encoding="utf8") == "from . import module_a, module_b\n"
+
+
+def test_check_file_keeps_module_named_like_package(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with tempfile.TemporaryDirectory(dir=Path.cwd()) as tempdir:
+        src = Path(tempdir) / "src"
+        pkg = src / "pkg"
+        pkg.mkdir(parents=True)
+        (pkg / "__init__.py").write_text("", encoding="utf8")
+
+        file = pkg / "pkg.py"
+        file.write_text("from lib.sublib.pkg.pkg import symbol\n", encoding="utf8")
+
+        assert check_file(file) == 1
+        assert file.read_text(encoding="utf8") == (
+            "from lib.sublib.pkg.pkg import symbol\n"
+        )
+        captured = capsys.readouterr()
+        assert "pkg.py:1:" in captured.out
+
+        assert check_file(file, fix=True) == 1
+        assert file.read_text(encoding="utf8") == "from .pkg import symbol\n"
+
+
+def test_check_file_uses_shortest_relative_match(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with tempfile.TemporaryDirectory(dir=Path.cwd()) as tempdir:
+        root = Path(tempdir) / "lib" / "pkg" / "sublib" / "pkg"
+        root.mkdir(parents=True)
+        (Path(tempdir) / "lib" / "__init__.py").write_text("", encoding="utf8")
+        (Path(tempdir) / "lib" / "pkg" / "__init__.py").write_text("", encoding="utf8")
+        (Path(tempdir) / "lib" / "pkg" / "sublib" / "__init__.py").write_text(
+            "", encoding="utf8"
+        )
+        (root / "__init__.py").write_text("", encoding="utf8")
+
+        file = root / "module_b.py"
+        file.write_text(
+            "from lib.pkg.sublib.pkg.module_a import symbol\n", encoding="utf8"
+        )
+
+        assert check_file(file) == 1
+        assert file.read_text(encoding="utf8") == (
+            "from lib.pkg.sublib.pkg.module_a import symbol\n"
+        )
+        captured = capsys.readouterr()
+        assert "module_b.py:1:" in captured.out
+
+        assert check_file(file, fix=True) == 1
+        assert file.read_text(encoding="utf8") == "from .module_a import symbol\n"

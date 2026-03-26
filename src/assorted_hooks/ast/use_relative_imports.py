@@ -35,7 +35,11 @@ def get_package_parts(path: str | Path, /) -> tuple[str, ...]:
 
 
 def _relative_module_for_current_package(
-    module: str, package_parts: tuple[str, ...], /
+    module: str,
+    package_parts: tuple[str, ...],
+    /,
+    *,
+    current_module: str | None,
 ) -> str | None:
     r"""Return the relative module inside the current package, if any."""
     if not package_parts:
@@ -43,17 +47,29 @@ def _relative_module_for_current_package(
 
     module_parts = module.split(".")
     package_len = len(package_parts)
+    remainders = [
+        tuple(module_parts[idx + package_len :])
+        for idx in range(len(module_parts) - package_len + 1)
+        if tuple(module_parts[idx : idx + package_len]) == package_parts
+    ]
 
-    for idx in range(len(module_parts) - package_len, -1, -1):
-        if tuple(module_parts[idx : idx + package_len]) == package_parts:
-            remainder = module_parts[idx + package_len :]
-            return ".".join(remainder)
+    if not remainders:
+        return None
 
-    return None
+    if current_module is not None:
+        for remainder in remainders:
+            if remainder == (current_module,):
+                return current_module
+    return ".".join(min(remainders, key=len))  # type: ignore[arg-type]  # mypy false positive
 
 
 def fix_absolute_imports(
-    lines: list[str], nodes: list[ast.ImportFrom], package_parts: tuple[str, ...], /
+    lines: list[str],
+    nodes: list[ast.ImportFrom],
+    package_parts: tuple[str, ...],
+    /,
+    *,
+    current_module: str | None,
 ) -> list[str]:
     r"""Rewrite absolute imports to relative imports within the current package."""
     patched_lines = deepcopy(lines)
@@ -63,7 +79,7 @@ def fix_absolute_imports(
             continue
 
         relative_module = _relative_module_for_current_package(
-            node.module, package_parts
+            node.module, package_parts, current_module=current_module
         )
         if relative_module is None:
             continue
@@ -77,7 +93,7 @@ def fix_absolute_imports(
 
 
 def get_candidates(
-    tree: ast.AST, package_parts: tuple[str, ...], /
+    tree: ast.AST, package_parts: tuple[str, ...], /, *, current_module: str | None
 ) -> list[ast.ImportFrom]:
     r"""Return absolute imports that can be rewritten for the current package."""
     return [
@@ -86,7 +102,10 @@ def get_candidates(
         if isinstance(node, ast.ImportFrom)
         and node.level == 0
         and node.module is not None
-        and _relative_module_for_current_package(node.module, package_parts) is not None
+        and _relative_module_for_current_package(
+            node.module, package_parts, current_module=current_module
+        )
+        is not None
     ]
 
 
@@ -95,12 +114,13 @@ def check_file(filepath: str | Path, /, *, fix: bool = False) -> int:
     path = Path(filepath)
     filename = str(get_path_relative_to_git_root(path))
     package_parts = get_package_parts(path)
+    current_module = None if path.name == "__init__.py" else path.stem
     if not package_parts:
         return 0
 
     original = path.read_text(encoding="utf8")
     tree = ast.parse(original, filename=filename)
-    candidates = get_candidates(tree, package_parts)
+    candidates = get_candidates(tree, package_parts, current_module=current_module)
 
     if not candidates:
         return 0
@@ -115,7 +135,10 @@ def check_file(filepath: str | Path, /, *, fix: bool = False) -> int:
         return len(candidates)
 
     new_lines = fix_absolute_imports(
-        original.splitlines(keepends=True), candidates, package_parts
+        original.splitlines(keepends=True),
+        candidates,
+        package_parts,
+        current_module=current_module,
     )
     new_text = "".join(new_lines)
 
