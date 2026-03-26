@@ -346,7 +346,7 @@ def yield_imports(tree: ast.AST, /) -> Iterator[str]:
         match node:
             case Import(names=aliases):
                 yield from (alias.name for alias in aliases)
-            case ImportFrom(module=str(module)):
+            case ImportFrom(level=0, module=str(module)):
                 yield module
 
 
