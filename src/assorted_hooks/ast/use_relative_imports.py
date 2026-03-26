@@ -15,8 +15,9 @@ import sys
 from copy import deepcopy
 from pathlib import Path
 
-from assorted_hooks.ast.ast_utils import patch_node
 from assorted_hooks.utils import get_path_relative_to_git_root, get_python_files
+
+from .ast_utils import patch_node
 
 __logger__ = logging.getLogger(__name__)
 

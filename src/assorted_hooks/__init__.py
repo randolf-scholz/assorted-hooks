@@ -13,7 +13,7 @@ __all__ = [
 
 from importlib import metadata
 
-from assorted_hooks import (
+from . import (
     check_archived_hooks,
     check_github_issues,
     check_requirements_maintained,

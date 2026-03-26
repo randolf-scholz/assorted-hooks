@@ -37,7 +37,7 @@ import aiohttp
 from packaging.utils import NormalizedName, canonicalize_name
 from typing_extensions import deprecated
 
-from assorted_hooks.utils import (
+from .utils import (
     get_canonical_names,
     get_dev_requirements_from_pyproject,
     get_requirements_from_pyproject,

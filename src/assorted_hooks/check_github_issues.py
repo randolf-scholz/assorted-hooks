@@ -29,7 +29,7 @@ from pathlib import Path
 from github import Auth, Github
 from github.GithubException import BadCredentialsException, RateLimitExceededException
 
-from assorted_hooks.utils import get_python_files
+from .utils import get_python_files
 
 __logger__ = logging.getLogger(__name__)
 

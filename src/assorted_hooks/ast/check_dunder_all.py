@@ -27,14 +27,15 @@ from collections import Counter
 from pathlib import Path
 from stat import S_IXGRP, S_IXOTH, S_IXUSR
 
-from assorted_hooks.ast.ast_utils import (
+from assorted_hooks.utils import get_path_relative_to_git_root, get_python_files
+
+from .ast_utils import (
     is_dunder_all,
     is_dunder_main,
     is_future_import,
     is_literal_list,
     yield_dunder_all,
 )
-from assorted_hooks.utils import get_path_relative_to_git_root, get_python_files
 
 __logger__ = logging.getLogger(__name__)
 

@@ -33,7 +33,9 @@ from copy import deepcopy
 from functools import partial
 from pathlib import Path
 
-from assorted_hooks.ast.ast_utils import (
+from assorted_hooks.utils import is_dunder, is_private, run_checks
+
+from .ast_utils import (
     Func,
     is_decorated_with,
     is_overload,
@@ -41,7 +43,6 @@ from assorted_hooks.ast.ast_utils import (
     patch_node,
     yield_functions_and_context,
 )
-from assorted_hooks.utils import is_dunder, is_private, run_checks
 
 __logger__ = logging.getLogger(__name__)
 

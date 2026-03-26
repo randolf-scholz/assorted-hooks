@@ -20,8 +20,9 @@ from collections import abc
 from pathlib import Path
 from typing import Final
 
-from assorted_hooks.ast.ast_utils import yield_aliases
 from assorted_hooks.utils import get_path_relative_to_git_root, get_python_files
+
+from .ast_utils import yield_aliases
 
 __logger__ = logging.getLogger(__name__)
 

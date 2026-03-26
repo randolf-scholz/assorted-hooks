@@ -24,8 +24,9 @@ import logging
 import sys
 from pathlib import Path
 
-from assorted_hooks.ast.ast_utils import get_imported_symbols, yield_imported_attributes
 from assorted_hooks.utils import get_path_relative_to_git_root, get_python_files
+
+from .ast_utils import get_imported_symbols, yield_imported_attributes
 
 __logger__ = logging.getLogger(__name__)
 

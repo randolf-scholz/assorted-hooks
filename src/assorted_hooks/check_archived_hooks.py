@@ -17,7 +17,7 @@ from typing import Any, Final
 import yaml
 from github import Github
 
-from assorted_hooks.utils import get_repository
+from .utils import get_repository
 
 EXCLUDED: Final[frozenset[str]] = frozenset({"local", "META"})
 r"""Excluded repositories."""

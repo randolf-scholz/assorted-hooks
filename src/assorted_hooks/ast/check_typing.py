@@ -41,7 +41,9 @@ from ast import (
 )
 from pathlib import Path
 
-from assorted_hooks.ast.ast_utils import (
+from assorted_hooks.utils import get_python_files
+
+from .ast_utils import (
     Func,
     OverloadVisitor,
     has_union,
@@ -52,7 +54,6 @@ from assorted_hooks.ast.ast_utils import (
     yield_namespace_and_funcs,
     yield_overloads,
 )
-from assorted_hooks.utils import get_python_files
 
 __logger__ = logging.getLogger(__name__)
 

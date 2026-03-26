@@ -17,7 +17,7 @@ from itertools import chain
 
 from packaging.requirements import InvalidRequirement, Requirement
 
-from assorted_hooks.utils import yield_deps, yield_dev_deps
+from .utils import yield_deps, yield_dev_deps
 
 
 def check_file(fname: str, /, *, debug: bool = False) -> int:
