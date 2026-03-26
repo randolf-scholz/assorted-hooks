@@ -19,7 +19,7 @@ depends_on = []
 
 [[modules]]
 path = "ast"
-depends_on = []
+depends_on = ["ast.ast_utils"]
 
 [[modules]]
 path = "constants"
