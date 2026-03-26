@@ -14,6 +14,13 @@
   language: python
   types: [python]
   require_serial: true
+- id: rewrite-absolute-imports
+  entry: rewrite-absolute-imports
+  name: '[py] Rewrite absolute imports.'
+  description: "Rewrite absolute imports into relative ones within the current package."
+  language: python
+  types: [python]
+  require_serial: true
 - id: check-dunder-all
   entry: check-dunder-all
   name: '[py] check __all__.'
