@@ -6,135 +6,29 @@ exclude = [
 	"**/tests",
 	"**/venv",
 ]
-source_roots = [
-	"src",
+source_roots = [ "src/assorted_hooks",
 ]
 
 [[modules]]
-path = "assorted_hooks.ast"
+path = "ast.base"
+depends_on = ["ast"]
+
+[[modules]]
+path = "utils"
 depends_on = []
 
 [[modules]]
-path = "assorted_hooks.ast._unimplemented_check_typing_style"
-depends_on = []
-utility = true
-
-[[modules]]
-path = "assorted_hooks.ast.ast_utils"
+path = "ast"
 depends_on = []
 
 [[modules]]
-path = "assorted_hooks.ast.base"
+path = "constants"
 depends_on = []
 
 [[modules]]
-path = "assorted_hooks.ast.check_direct_imports"
-depends_on = [
-	"assorted_hooks.ast.ast_utils",
-	"assorted_hooks.utils",
-]
-utility = true
+path = "ast.ast_utils"
+depends_on = ["ast"]
 
 [[modules]]
-path = "assorted_hooks.ast.check_dunder_all"
-depends_on = [
-	"assorted_hooks.ast.ast_utils",
-	"assorted_hooks.utils",
-]
-utility = true
-
-[[modules]]
-path = "assorted_hooks.ast.check_numpy"
+path = "parser"
 depends_on = []
-utility = true
-
-[[modules]]
-path = "assorted_hooks.ast.check_standard_generics"
-depends_on = [
-	"assorted_hooks.ast.ast_utils",
-	"assorted_hooks.utils",
-]
-utility = true
-
-[[modules]]
-path = "assorted_hooks.ast.check_typing"
-depends_on = [
-	"assorted_hooks.ast.ast_utils",
-	"assorted_hooks.utils",
-]
-utility = true
-
-[[modules]]
-path = "assorted_hooks.check_archived_hooks"
-depends_on = [
-	"assorted_hooks.utils",
-]
-utility = true
-
-[[modules]]
-path = "assorted_hooks.check_github_issues"
-depends_on = [
-	"assorted_hooks.utils",
-]
-utility = true
-
-[[modules]]
-path = "assorted_hooks.check_requirements_maintained"
-depends_on = [
-	"assorted_hooks.utils",
-]
-utility = true
-
-[[modules]]
-path = "assorted_hooks.check_requirements_valid"
-depends_on = [
-	"assorted_hooks.utils",
-]
-utility = true
-
-[[modules]]
-path = "assorted_hooks.parser"
-depends_on = []
-
-[[modules]]
-path = "assorted_hooks.scripts"
-depends_on = []
-
-[[modules]]
-path = "assorted_hooks.scripts.check_clean_interface"
-depends_on = []
-utility = true
-
-[[modules]]
-path = "assorted_hooks.scripts.check_requirements_used"
-depends_on = []
-utility = true
-
-[[modules]]
-path = "assorted_hooks.scripts.update_requirements"
-depends_on = []
-utility = true
-
-[[modules]]
-path = "assorted_hooks.utils"
-depends_on = []
-
-[[modules]]
-path = "assorted_hooks.check_tests_mirror_source"
-depends_on = []
-utility = true
-
-[[modules]]
-path = "assorted_hooks.check_spelling_wise_suffix"
-depends_on = []
-utility = true
-
-[[modules]]
-path = "assorted_hooks.ast.check_signatures"
-depends_on = ["assorted_hooks.ast.ast_utils", "assorted_hooks.utils"]
-utility = true
-
-[[modules]]
-path = "assorted_hooks.ast.check_runtime_data_protocol"
-depends_on = ["assorted_hooks.utils"]
-utility = true
