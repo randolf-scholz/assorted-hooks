@@ -3,7 +3,7 @@ r"""Tests for ``check_requirements_used``."""
 import ast
 from textwrap import dedent
 
-from check_requirements_used import get_requirements_from_ast
+from assorted_hooks.standalone.check_requirements_used import get_requirements_from_ast
 
 
 def test_get_requirements_from_ast_ignores_relative_imports() -> None:

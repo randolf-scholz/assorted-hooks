@@ -57,9 +57,9 @@ check-requirements-valid = "assorted_hooks.check_requirements_valid:main"
 check-spelling-wise-suffix = "assorted_hooks.check_spelling_wise_suffix:main"
 check-tests-mirror-source = "assorted_hooks.check_tests_mirror_source:main"
 # script hooks
-check-clean-interface = "check_clean_interface:main"
-check-requirements-used = "check_requirements_used:main"
-update-requirements = "update_requirements:main"
+check-clean-interface = "assorted_hooks.standalone.check_clean_interface:main"
+check-requirements-used = "assorted_hooks.standalone.check_requirements_used:main"
+update-requirements = "assorted_hooks.standalone.update_requirements:main"
 # endregion project configuration ------------------------------------------------------
 
 
