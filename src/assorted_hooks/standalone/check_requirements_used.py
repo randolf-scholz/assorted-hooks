@@ -845,7 +845,7 @@ def check_pyproject(
     known_undeclared_test_deps = get_import_names(known_undeclared_test)
 
     # check for superfluous test dependencies
-    superfluous_test_deps = (declared_test_deps & declared_deps) - {project_name}  # type: ignore[arg-type]
+    superfluous_test_deps = (declared_test_deps & declared_deps) - {project_name}
     if superfluous_test_deps and error_on_superfluous_test_deps:
         violations += 1
         print(f"Detected superfluous dependencies: {sorted(superfluous_test_deps)}")
