@@ -191,7 +191,7 @@ def is_future_import(node: AST, /) -> TypeGuard[Import | ImportFrom]:
             return False
 
 
-def is_literal_list(node: AST, /) -> TypeGuard[List]:
+def is_literal_list(node: object, /) -> TypeGuard[List]:
     r"""Check whether node is a literal list of strings."""
     match node:
         case List(elts=items):

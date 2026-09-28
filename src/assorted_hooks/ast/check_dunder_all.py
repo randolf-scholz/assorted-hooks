@@ -4,6 +4,8 @@ r"""Checks that __all__ exists in modules."""
 __all__ = [
     "check_file",
     "get_duplicate_keys",
+    "get_non_identifier_keys",
+    "get_private_keys",
     "is_at_top",
     "is_executable",
     "is_superfluous",
@@ -15,19 +17,16 @@ import ast
 import logging
 import os
 import sys
-from ast import (
-    AnnAssign,
-    Assign,
-    AugAssign,
-    Expr,
-    Module,
-    Pass,
-)
+from ast import AnnAssign, Assign, AugAssign, Constant, Expr, List, Module, Pass
 from collections import Counter
 from pathlib import Path
 from stat import S_IXGRP, S_IXOTH, S_IXUSR
 
-from assorted_hooks.utils import get_path_relative_to_git_root, get_python_files
+from assorted_hooks.utils import (
+    get_path_relative_to_git_root,
+    get_python_files,
+    is_private,
+)
 
 from .ast_utils import (
     is_dunder_all,
@@ -82,20 +81,19 @@ def is_at_top(node: Assign | AnnAssign, /, *, module: Module) -> bool:
     return all(is_future_import(_node) for _node in body[start:loc])
 
 
-def get_duplicate_keys(node: Assign | AnnAssign | AugAssign, /) -> set[str]:
+def get_duplicate_keys(keys: list[str], /) -> set[str]:
     r"""Check if __all__ node has duplicate keys."""
-    if node.value is None:
-        raise ValueError("Expected __all__ to have a value.")
-    match node.value:
-        case ast.List(elts=items):
-            pass
-        case ast.Tuple(elts=items):
-            pass
-        case _:
-            raise ValueError("Expected __all__ to be a list or tuple.")
+    return {key for key, count in Counter(keys).items() if count > 1}
 
-    elements = Counter(el.value for el in items)  # type: ignore[attr-defined]
-    return {key for key, count in elements.items() if count > 1}
+
+def get_non_identifier_keys(keys: list[str], /) -> set[str]:
+    r"""Get the string keys that are not valid Python identifiers."""
+    return {k for k in keys if not k.isidentifier()}
+
+
+def get_private_keys(keys: list[str], /) -> set[str]:
+    r"""Get the string keys that are private identifiers."""
+    return {k for k in keys if is_private(k)}
 
 
 def is_executable(path: Path, /) -> bool:
@@ -119,7 +117,9 @@ def check_file(
     warn_missing: bool = True,
     allow_missing_empty: bool = True,
     warn_multiple_definitions: bool = True,
+    warn_not_identifier: bool = True,
     warn_non_literal: bool = True,
+    warn_private_export: bool = True,
     warn_superfluous: bool = True,
     ignore_executables: bool = False,
 ) -> int:
@@ -152,30 +152,60 @@ def check_file(
                 violations += 1
                 print(f"{filename}:0: No __all__ found.")
         case [node, *nodes]:
-            if not isinstance(node, Assign | AnnAssign):
-                raise TypeError("Expected __all__ to be an assignment.")
-            if node.value is None:
-                raise ValueError("Expected __all__ to have a value.")
-            if warn_non_literal and not is_literal_list(node.value):
+            if warn_superfluous and is_superfluous(tree):
                 violations += 1
-                print(f"{filename}:{node.lineno}: __all__ is not a literal list.")
-            if warn_annotated and isinstance(node, AnnAssign):
-                violations += 1
-                print(f"{filename}:{node.lineno}: __all__ is annotated.")
+                print(f"{filename}:{node.lineno}: __all__ is superfluous.")
+
             if warn_multiple_definitions and nodes:
                 violations += 1
                 print(f"{filename}:{node.lineno}: Multiple __all__ found.")
                 for n in nodes:
                     print(f"{filename}:{n.lineno}: additional __all__.")
-            if warn_superfluous and is_superfluous(tree):
-                violations += 1
-                print(f"{filename}:{node.lineno}: __all__ is superfluous.")
+
+            if not isinstance(node, Assign | AnnAssign):
+                raise TypeError("Expected __all__ to be an assignment.")
+
             if warn_location and not is_at_top(node, module=tree):
                 violations += 1
                 print(f"{filename}:{node.lineno}: __all__ is not at the top.")
-            if warn_duplicate_keys and (keys := get_duplicate_keys(node)):
+
+            # content based checks
+
+            if warn_annotated and isinstance(node, AnnAssign):
                 violations += 1
-                print(f"{filename}:{node.lineno}: __all__ has duplicate {keys=}.")
+                print(f"{filename}:{node.lineno}: __all__ is annotated.")
+
+            if warn_non_literal and not is_literal_list(node.value):
+                violations += 1
+                print(f"{filename}:{node.lineno}: __all__ is not a literal list.")
+
+            match node.value:
+                case List(elts=elts):
+                    keys = [
+                        e.value
+                        for e in elts
+                        if (isinstance(e, Constant) and isinstance(e.value, str))
+                    ]
+                case _:
+                    keys = []
+
+            if warn_duplicate_keys and (dup_keys := get_duplicate_keys(keys)):
+                violations += 1
+                print(f"{filename}:{node.lineno}: __all__ has duplicate {dup_keys=}.")
+
+            if warn_not_identifier and (invalid_keys := get_non_identifier_keys(keys)):
+                violations += 1
+                print(
+                    f"{filename}:{node.lineno}: "
+                    f"__all__ contains non-identifier {invalid_keys=}."
+                )
+
+            if warn_private_export and (private_keys := get_private_keys(keys)):
+                violations += 1
+                print(
+                    f"{filename}:{node.lineno}: "
+                    f"__all__ contains private export {private_keys=}."
+                )
 
     return violations
 
@@ -209,6 +239,18 @@ def main() -> None:
         action=argparse.BooleanOptionalAction,
         default=True,
         help="Check that __all__ is a literal list of strings.",
+    )
+    parser.add_argument(
+        "--warn-not-identifier",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Warn if __all__ contains a value that is not a valid identifier.",
+    )
+    parser.add_argument(
+        "--warn-private-export",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Warn if __all__ exports a private identifier.",
     )
     parser.add_argument(
         "--warn-annotated",
@@ -276,7 +318,9 @@ def main() -> None:
                 warn_location=args.warn_location,
                 warn_missing=args.warn_missing,
                 warn_multiple_definitions=args.warn_multiple_definitions,
+                warn_not_identifier=args.warn_not_identifier,
                 warn_non_literal=args.warn_non_literal,
+                warn_private_export=args.warn_private_export,
                 warn_superfluous=args.warn_superfluous,
                 ignore_executables=args.ignore_executables,
             )
