@@ -130,7 +130,7 @@ wheels = [
 
 [[package]]
 name = "assorted-hooks"
-version = "0.7.22"
+version = "0.7.23"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },

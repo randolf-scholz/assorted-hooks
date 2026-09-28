@@ -1,16 +1,16 @@
 [build-system]
-requires = ["uv_build>=0.11.0,<0.12"]
+requires = ["uv_build>=0.12.19,<0.13"]
 build-backend = "uv_build"
 
 # region project configuration ---------------------------------------------------------
 [project]
 name = "assorted-hooks"
-version = "0.7.22"
+version = "0.7.23"
 authors = [{ name = "Randolf Scholz", email = "randolf.scholz@gmail.com" }]
 description = "Custom pre-commit hooks"
 
 # package content
-license = { file = "LICENSE" }
+license-files = ["LICENSE"]
 readme = "README.md"
 
 # meta-information
