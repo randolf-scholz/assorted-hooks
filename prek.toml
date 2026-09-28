@@ -2,7 +2,7 @@
 # See https://prek.j178.dev for more information.
 #:schema https://www.schemastore.org/prek.json
 
-minimum_prek_version = "0.4.4"
+minimum_prek_version = "0.5.4"
 default_language_version = { python = "3.14", node = "26.3.0" }
 
 [[repos]]
@@ -29,56 +29,56 @@ hooks = [
   { id = "detect-private-key" },
   # { id = "no-commit-to-branch" },
   { id = "check-shebang-scripts-are-executable" },
-  { id = "check-executables-have-shebangs" }
+  { id = "check-executables-have-shebangs" },
 ]
 
 [[repos]]
 repo = "https://github.com/astral-sh/ruff-pre-commit"
-rev = "v0.15.16"
+rev = "v0.16.9"
 hooks = [
   {
     id = "ruff-check",
     name = "ruff-isort",
     files = "^src/|^tests/",
-    args = ["--select", "I", "--fix"]
+    args = ["--select", "I", "--fix"],
   },
   { id = "ruff-format", files = "^src/|^tests/" },
-  { id = "ruff-check", files = "^src/|^tests/" }
+  { id = "ruff-check", files = "^src/|^tests/" },
 ]
 
 [[repos]]
 repo = "https://github.com/astral-sh/uv-pre-commit"
-rev = "0.11.19"
+rev = "0.12.19"
 hooks = [
   { id = "uv-lock" },
   {
     id = "uv-export",
-    args = [
-      "--no-dev",
-      "--no-hashes",
-      "--frozen",
-      "--output-file=requirements.txt"
-    ]
+    args = ["--no-dev", "--no-hashes", "--frozen", "--output-file=requirements.txt"],
   },
   {
     id = "uv-export",
-    args = ["--no-dev", "--frozen", "--output-file=pylock.toml"]
-  }
+    args = ["--no-dev", "--frozen", "--output-file=pylock.toml"],
+  },
 ]
 
 [[repos]]
 repo = "https://github.com/igorshubovych/markdownlint-cli"
-rev = "v0.48.0"
-hooks = [{ id = "markdownlint", args = ["--disable", "MD013", "MD033", "--"] }]
+rev = "v0.49.1"
+hooks = [
+  {
+    id = "markdownlint",
+    args = ["--disable", "MD013", "MD033", "--"],
+  },
+]
 
 [[repos]]
 repo = "https://github.com/shellcheck-py/shellcheck-py"
-rev = "v0.11.0.1"
+rev = "v0.11.0.1-1"
 hooks = [
   {
     id = "shellcheck",
-    args = ["-x", "--shell=bash", "--color=always", "--format=gcc", "--"]
-  }
+    args = ["-x", "--shell=bash", "--color=always", "--format=gcc", "--"],
+  },
 ]
 
 [[repos]]
@@ -91,7 +91,7 @@ hooks = [
     types_or = ["python", "pyi"],
     entry = "src/pyright_wrapper.sh",
     require_serial = true,
-    files = "^src/|^tests/"
+    files = "^src/|^tests/",
   }
 ]
 
@@ -106,7 +106,7 @@ hooks = [
     types_or = ["python", "pyi"],
     files = "^src/|^tests/",
     entry = "mypy",
-    args = ["--hide-error-context", "--hide-error-end", "--no-pretty", "--"]
+    args = ["--hide-error-context", "--hide-error-end", "--no-pretty", "--"],
   },
   {
     id = "tach",
@@ -114,6 +114,6 @@ hooks = [
     description = "Validate package dependencies",
     entry = "tach check",
     language = "python",
-    pass_filenames = false
+    pass_filenames = false,
   }
 ]

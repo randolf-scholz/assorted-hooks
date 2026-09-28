@@ -289,7 +289,7 @@ KNOWN_DUNDER_METHODS: frozenset[str] = frozenset({
     "__subclasshook__",  # (cls, subclass: type) -> bool
     # os
     # SEE: https://docs.python.org/3/library/os.html
-    "__fspath__"  # (self) -> str | bytes
+    "__fspath__",  # (self) -> str | bytes
     # copy
     # SEE: https://docs.python.org/3/library/copy.html
     "__copy__",  # (self) -> Any
@@ -314,7 +314,7 @@ KNOWN_DUNDER_ATTRIBUTES: frozenset[str] = frozenset({
     "__debug__",  # bool
     # modules
     "__all__",  # list[str]
-    "__version__"  # str
+    "__version__",  # str
     # 3.2.8. Callable types
     # SEE: https://docs.python.org/3/reference/datamodel.html#callable-types
     "__globals__",  # dict[str, Any]
