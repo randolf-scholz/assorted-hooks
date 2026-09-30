@@ -39,8 +39,6 @@ __all__ = [
     "URL_GROUP",
     "VERSION",
     "VERSION_GROUP",
-    "VERSION_NUMERIC",
-    "VERSION_NUMERIC_GROUP",
     # REGEXPS
     "RE_EXTRAS",
     "RE_EXTRAS_GROUP",
@@ -56,8 +54,6 @@ __all__ = [
     "RE_URL_GROUP",
     "RE_VERSION",
     "RE_VERSION_GROUP",
-    "RE_VERSION_NUMERIC",
-    "RE_VERSION_NUMERIC_GROUP",
     # CONSTANTS
     "PKG_DICT",
     # Types
@@ -68,7 +64,6 @@ __all__ = [
     "is_dependency_pattern",
     "main",
     "check_file",
-    "strip_version",
     "update_versions",
 ]
 
@@ -80,8 +75,9 @@ from pathlib import Path
 from re import Pattern
 from typing import NewType, cast
 
-_LOGGER = logging.getLogger(__name__)
+from packaging.version import Version
 
+_LOGGER = logging.getLogger(__name__)
 
 PypiName = NewType("PypiName", str)
 r"""A type hint for PyPI package names."""
@@ -99,7 +95,6 @@ PKG_DICT: dict[PypiName, str] = {
     for dist in distributions()
     if dist.name
 }
-
 r"""A dictionary of installed packages."""
 
 
@@ -154,11 +149,6 @@ RE_VERSION_GROUP = re.compile(rf"""(?P<version>{VERSION})""")
 VERSION_GROUP = RE_VERSION_GROUP.pattern
 assert "version" in RE_VERSION_GROUP.groupindex, f"{RE_VERSION_GROUP.groupindex=}."
 
-RE_VERSION_NUMERIC = re.compile(r"""[0-9]+(?:[.][0-9]+)*""")
-VERSION_NUMERIC = RE_VERSION_NUMERIC.pattern
-RE_VERSION_NUMERIC_GROUP = re.compile(rf"""(?P<version>{VERSION_NUMERIC})""")
-VERSION_NUMERIC_GROUP = RE_VERSION_NUMERIC_GROUP.pattern
-
 # https://peps.python.org/pep-0508/#names
 # NOTE: we modify this regex a bit to allow to match inside context
 RE_NAME = re.compile(r"""\b[a-zA-Z0-9](?:[a-zA-Z0-9._-]*[a-zA-Z0-9])?\b""")
@@ -195,13 +185,15 @@ assert is_dependency_pattern(RE_PROJECT_DEP_GROUP), (
     f"{RE_PROJECT_DEP_GROUP.groupindex=}."
 )
 
-RE_POETRY_DEP = re.compile(rf"""(?x:
+RE_POETRY_DEP = re.compile(
+    rf"""(?x:
         {NAME_GROUP}
         (?:\s*=\s*)
         (?:{{\s*version\s*=\s*)?   # deps of the form `black = {{version = ">=23.7.0", extras = ["d"]}}`
         (?:['"]\s*>=\s*)
         {VERSION_GROUP}
-    )""")
+    )"""
+)
 POETRY_DEP = RE_POETRY_DEP.pattern
 RE_POETRY_DEP_GROUP = re.compile(rf"""(?P<dependency>{POETRY_DEP})""")
 POETRY_DEP_GROUP = RE_POETRY_DEP_GROUP.pattern
@@ -224,8 +216,6 @@ PATTERNS: dict[str, str] = {
     "URL_GROUP": URL_GROUP,
     "VERSION": VERSION,
     "VERSION_GROUP": VERSION_GROUP,
-    "VERSION_NUMERIC": VERSION_NUMERIC,
-    "VERSION_NUMERIC_GROUP": VERSION_NUMERIC_GROUP,
 }
 
 REGEXPS: dict[str, Pattern] = {
@@ -243,19 +233,10 @@ REGEXPS: dict[str, Pattern] = {
     "RE_URL_GROUP": RE_URL_GROUP,
     "RE_VERSION": RE_VERSION,
     "RE_VERSION_GROUP": RE_VERSION_GROUP,
-    "RE_VERSION_NUMERIC": RE_VERSION_NUMERIC,
-    "RE_VERSION_NUMERIC_GROUP": RE_VERSION_NUMERIC_GROUP,
 }
+
+
 # endregion Patterns -------------------------------------------------------------------
-
-
-def strip_version(version: str, /) -> str:
-    r"""Strip the version string to the first three parts."""
-    # get numeric part of version
-    numeric_version = re.search(RE_VERSION_NUMERIC_GROUP, version)
-    if numeric_version is None:
-        raise ValueError(f"Invalid version string: {version!r}.")
-    return numeric_version.group("version")
 
 
 def update_versions(
@@ -281,14 +262,14 @@ def update_versions(
         pkg_name: PypiName = canonicalize_name(groups["name"])
         old_version: str = groups["version"]
 
-        # get the new version from the pip list
-        new_version: str = PKG_DICT.get(pkg_name, old_version)
+        # PEP 440 defines version precedence, including pre-, post-, and dev releases.
+        old_parsed_version = Version(old_version)
+        installed_version = Version(PKG_DICT.get(pkg_name, old_version))
 
-        # strip the version to the first three parts
-        new_version = strip_version(new_version)
-
-        # if the version changed, replace the old version with the new one
-        if old_version != new_version:
+        # Only raise the lower bound when the installed version is actually newer.
+        if installed_version > old_parsed_version:
+            # A local version label is not permitted in a >= specifier (PEP 440).
+            new_version = installed_version.public
             new_dependencies[dep] = dep.replace(old_version, new_version)
 
     # make a copy of the original content
