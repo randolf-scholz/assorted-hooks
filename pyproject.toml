@@ -225,7 +225,6 @@ mark-parentheses = false
 combine-as-imports = true
 
 [tool.ruff.format]
-preview = true
 quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
