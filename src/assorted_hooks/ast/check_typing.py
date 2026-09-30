@@ -497,7 +497,7 @@ def main() -> None:
         __logger__.debug('Checking "%s:0"', file)
         try:
             violations += check_file(file, options=args)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:  # ruff: ignore[BLE001]
             exceptions[file] = exc
     if exceptions:
         msg = "\n".join(f"{key}: {value}" for key, value in exceptions.items())

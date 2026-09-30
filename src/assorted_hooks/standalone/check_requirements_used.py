@@ -124,7 +124,7 @@ def get_packages_inverse() -> dict[PypiName, frozenset[ImportName]]:
     return {k: frozenset(v) for k, v in d.items()}
 
 
-class InvalidRequirement(ValueError):  # noqa: N818
+class InvalidRequirement(ValueError):  # ruff: ignore[N818]
     r"""An invalid requirement was found, users should refer to PEP 508."""
 
 
@@ -997,7 +997,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    global DEBUG, SILENT  # noqa: PLW0603
+    global DEBUG, SILENT  # ruff: ignore[PLW0603]
     SILENT = args.silent
     DEBUG = args.debug
 

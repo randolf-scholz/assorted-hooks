@@ -304,7 +304,7 @@ def run_checks(filespec: str, /, checker: Callable[[Path], int]) -> None:
         logger.debug('Checking "%s:0"', file)
         try:
             violations += checker(file)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:  # ruff: ignore[BLE001]
             exceptions[file] = exc
 
     # display results

@@ -78,11 +78,11 @@ from ast import (
 from collections.abc import Iterator
 from dataclasses import KW_ONLY, dataclass, field
 from enum import StrEnum
-from typing import NamedTuple, Self, TypeAlias, TypeGuard
+from typing import NamedTuple, Self, TypeGuard
 
 __logger__ = logging.getLogger(__name__)
 
-Func: TypeAlias = FunctionDef | AsyncFunctionDef  # noqa: UP040
+type Func = FunctionDef | AsyncFunctionDef
 r"""Type alias for function-defs."""
 
 
@@ -204,7 +204,7 @@ def is_literal_list(node: object, /) -> TypeGuard[List]:
 
 def is_function_def(node: AST, /) -> TypeGuard[Func]:
     r"""True if the return node is a function definition."""
-    return isinstance(node, Func)
+    return isinstance(node, FunctionDef | AsyncFunctionDef)
 
 
 def is_overload(node: AST, /) -> bool:
@@ -303,7 +303,7 @@ def yield_overloads(tree: AST, /) -> Iterator[Func]:
 def yield_functions(tree: AST, /) -> Iterator[Func]:
     r"""Get all function-defs from the tree."""
     for node in ast.walk(tree):
-        if isinstance(node, Func):
+        if isinstance(node, FunctionDef | AsyncFunctionDef):
             yield node
 
 
@@ -318,7 +318,7 @@ def yield_methods(tree: AST, /) -> Iterator[Func]:
     r"""Get all functions that are defined directly inside class bodies."""
     for cls in yield_classes(tree):
         for node in cls.body:
-            if isinstance(node, Func):
+            if isinstance(node, FunctionDef | AsyncFunctionDef):
                 yield node
 
 

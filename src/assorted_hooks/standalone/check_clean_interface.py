@@ -80,7 +80,7 @@ def _module_name_from_path(path: Path, /) -> str:
     return ".".join(relative.parts) if relative.parts else path.stem
 
 
-class _temporary_sys_path:  # noqa: N801
+class _temporary_sys_path:  # ruff: ignore[N801]
     r"""Context manager to temporarily insert a path into sys.path."""
 
     def __init__(self, path: Path) -> None:

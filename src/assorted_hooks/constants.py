@@ -1,5 +1,5 @@
 r"""Constants for assorted_hooks."""
-# ruff: noqa: B033
+# ruff: file-ignore[B033]
 
 __all__ = [
     "BUILTIN_CONSTANTS",
