@@ -7,9 +7,7 @@ r"""Check for clean interface.
 By this, we mean that when a module is imported the `dir(mymodule)` should contain
 only things listed in `mymodule.__all__`, with a few exceptions for convenience.
 More specifically, usually a module contains a few pre-defined variables, such as
-
-    >>> dir()
-    ['__annotations__', '__builtins__', '__doc__', '__loader__', '__name__', '__package__', '__spec__']
+`__annotations__` or `__loader__`, which can be inspected by `dir()`.
 
 For this purpose, we use the following defaults:
 

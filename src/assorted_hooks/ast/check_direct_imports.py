@@ -6,7 +6,7 @@ Example:
     >>> from collections.abc import Sequence
     >>>
     >>> def foo(x: abc.Sequence) -> abc.Sequence:
-    >>>     return x
+    ...     return x
 
     Would raise an error because `pd.DataFrame` shadows directly imported `DataFrame`.
 """
