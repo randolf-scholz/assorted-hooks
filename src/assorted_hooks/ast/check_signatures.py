@@ -46,12 +46,14 @@ from .ast_utils import (
 
 __logger__ = logging.getLogger(__name__)
 
-_DUNDER_BLACKLIST: frozenset[str] = frozenset({
-    "__init__",
-    "__new__",
-    "__call__",
-    "__post_init__",
-})
+_DUNDER_BLACKLIST: frozenset[str] = frozenset(
+    {
+        "__init__",
+        "__new__",
+        "__call__",
+        "__post_init__",
+    }
+)
 r"""Dunder methods that should not be fixed."""
 
 

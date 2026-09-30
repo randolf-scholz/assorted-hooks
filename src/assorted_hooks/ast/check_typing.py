@@ -250,18 +250,20 @@ def check_concrete_classes_concrete_types(
     filename: str,
     check_attrs: bool = False,
     check_funcs: bool = True,
-    values: frozenset[str] = frozenset({
-        "AbstractSet",
-        "Collection",
-        "Iterable",
-        "Mapping",
-        "MutableMapping",
-        "MutableSequence",
-        "MutableSet",
-        "Sequence",
-        "Set",
-        "Sized",
-    }),
+    values: frozenset[str] = frozenset(
+        {
+            "AbstractSet",
+            "Collection",
+            "Iterable",
+            "Mapping",
+            "MutableMapping",
+            "MutableSequence",
+            "MutableSet",
+            "Sequence",
+            "Set",
+            "Sized",
+        }
+    ),
 ) -> int:
     r"""Check that concrete classes use concrete return types."""
     # These generic types are considered non-concrete.
