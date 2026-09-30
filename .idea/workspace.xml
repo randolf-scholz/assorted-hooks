@@ -4,11 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d0d7f5cc-4221-4682-97b0-21dfe973c12a" name="Changes" comment="regenerate .idea">
-      <change afterPath="$PROJECT_DIR$/.idea/pyLspTools.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/assorted-hooks.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/assorted-hooks.iml" afterDir="false" />
+    <list default="true" id="d0d7f5cc-4221-4682-97b0-21dfe973c12a" name="Changes" comment="update assorted-hooks.iml to mark src folder as non-test source and remove unused components">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/assorted_hooks/constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/assorted_hooks/constants.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/assorted_hooks/ast/ast_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/assorted_hooks/ast/ast_utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/assorted_hooks/ast/check_dunder_all.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/assorted_hooks/ast/check_dunder_all.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/assorted_hooks/check_requirements_maintained.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/assorted_hooks/check_requirements_maintained.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/assorted_hooks/standalone/check_requirements_used.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/assorted_hooks/standalone/check_requirements_used.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/assorted_hooks/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/assorted_hooks/utils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -31,61 +33,61 @@
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
-      <entry key="MS100" value="1.7294547670479816" />
-      <entry key="MS500" value="4.34283656516701" />
-      <entry key="S2" value="7.559158278161957" />
-      <entry key="S5" value="9.309087191724434" />
-      <entry key="S10" value="10.091248397243765" />
-      <entry key="S30" value="14.024601133672345" />
-      <entry key="S60" value="39.07344999216514" />
-      <entry key="M2" value="98.93141094358018" />
-      <entry key="M5" value="192.11469532611207" />
-      <entry key="M10" value="243.48718172171726" />
-      <entry key="M15" value="263.9545596765447" />
-      <entry key="M30" value="286.3893735119306" />
-      <entry key="H1" value="298.40877528565454" />
-      <entry key="H2" value="304.63108291067414" />
-      <entry key="H4" value="307.79698136377056" />
-      <entry key="D1" value="310.46356565279046" />
-      <entry key="W1" value="310.92330263546955" />
+      <entry key="MS100" value="2.1727967656808236" />
+      <entry key="MS500" value="5.701347219083318" />
+      <entry key="S2" value="12.376651414610516" />
+      <entry key="S5" value="21.0859547171157" />
+      <entry key="S10" value="33.89626866062027" />
+      <entry key="S30" value="61.933882937251084" />
+      <entry key="S60" value="76.87535669293142" />
+      <entry key="M2" value="97.83690464977606" />
+      <entry key="M5" value="175.90612421932" />
+      <entry key="M10" value="259.44142161142594" />
+      <entry key="M15" value="302.80052986088623" />
+      <entry key="M30" value="357.5986089711505" />
+      <entry key="H1" value="390.24378258007266" />
+      <entry key="H2" value="408.0760056480147" />
+      <entry key="H4" value="417.3973083482293" />
+      <entry key="D1" value="425.37964119186483" />
+      <entry key="W1" value="426.7680276829908" />
     </decayedCancelled>
     <decayedSelected>
       <entry key="MS100" value="0.0" />
-      <entry key="MS500" value="1.6498993965123663E-106" />
-      <entry key="S2" value="3.5839700018486885E-27" />
-      <entry key="S5" value="2.640862236638799E-11" />
-      <entry key="S10" value="5.138932025857891E-6" />
-      <entry key="S30" value="0.017256695042707205" />
-      <entry key="S60" value="0.1313647404850598" />
-      <entry key="M2" value="0.3624427409744328" />
-      <entry key="M5" value="0.6663398127310689" />
-      <entry key="M10" value="0.8162964000478419" />
-      <entry key="M15" value="0.8734376747915492" />
-      <entry key="M30" value="0.9345788756394764" />
-      <entry key="H1" value="0.9667361975427822" />
-      <entry key="H2" value="0.9832274393764542" />
-      <entry key="H4" value="0.9915782568090402" />
-      <entry key="D1" value="0.9985914252335867" />
-      <entry key="W1" value="0.9997986534528803" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="6.835753837274746E-89" />
+      <entry key="S5" value="5.418942789487481E-36" />
+      <entry key="S10" value="2.3278622788918243E-18" />
+      <entry key="S30" value="1.3253149418937685E-6" />
+      <entry key="S60" value="0.0011512232372106422" />
+      <entry key="M2" value="0.033929680770833165" />
+      <entry key="M5" value="0.2583639463087141" />
+      <entry key="M10" value="0.5082951370106868" />
+      <entry key="M15" value="0.636908878731723" />
+      <entry key="M30" value="0.798065710785597" />
+      <entry key="H1" value="0.8933452360569221" />
+      <entry key="H2" value="0.9451694218799696" />
+      <entry key="H4" value="0.9721982420679298" />
+      <entry key="D1" value="0.995311767137888" />
+      <entry key="W1" value="0.9993289028442975" />
     </decayedSelected>
     <decayedShown>
-      <entry key="MS100" value="1.6847975789432887" />
-      <entry key="MS500" value="4.321385455165889" />
-      <entry key="S2" value="7.550427791179859" />
-      <entry key="S5" value="9.304898467982577" />
-      <entry key="S10" value="10.089004723644951" />
-      <entry key="S30" value="14.040279312806492" />
-      <entry key="S60" value="39.20078195183667" />
-      <entry key="M2" value="99.28724195999591" />
-      <entry key="M5" value="192.77502747547112" />
-      <entry key="M10" value="244.29945780355817" />
-      <entry key="M15" value="264.8250378406516" />
-      <entry key="M30" value="287.32231683654476" />
-      <entry key="H1" value="299.3746514227759" />
-      <entry key="H2" value="305.6138693022663" />
-      <entry key="H4" value="308.7883362845582" />
-      <entry key="D1" value="311.46211945978723" />
-      <entry key="W1" value="311.923095905135" />
+      <entry key="MS100" value="2.1272892874239817" />
+      <entry key="MS500" value="5.674511979528031" />
+      <entry key="S2" value="12.362093602969026" />
+      <entry key="S5" value="21.076130015105964" />
+      <entry key="S10" value="33.888432125876506" />
+      <entry key="S30" value="61.92901153659064" />
+      <entry key="S60" value="76.87246026519848" />
+      <entry key="M2" value="97.86605126738544" />
+      <entry key="M5" value="176.1588850809348" />
+      <entry key="M10" value="259.945095520498" />
+      <entry key="M15" value="303.43373769747643" />
+      <entry key="M30" value="358.3944338100917" />
+      <entry key="H1" value="391.1358912777583" />
+      <entry key="H2" value="409.02052509809494" />
+      <entry key="H4" value="418.3691733185243" />
+      <entry key="D1" value="426.37489623104943" />
+      <entry key="W1" value="427.76734845245414" />
     </decayedShown>
   </component>
   <component name="OptimizeOnSaveOptions">
@@ -115,7 +117,7 @@
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "python.packages.toolwindow.project.migrated.to.right.top.v2": "true",
-    "settings.editor.selected.configurable": "python.external.tools.group.settings"
+    "settings.editor.selected.configurable": "preferences.sourceCode"
   }
 }]]></component>
   <component name="SharedIndexes">
@@ -141,7 +143,23 @@
       <option name="project" value="LOCAL" />
       <updated>1790773630949</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="configure ruff and pyrefly.">
+      <option name="closed" value="true" />
+      <created>1790774110997</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1790774110997</updated>
+    </task>
+    <task id="LOCAL-00003" summary="update assorted-hooks.iml to mark src folder as non-test source and remove unused components">
+      <option name="closed" value="true" />
+      <created>1790774445718</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1790774445718</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -160,6 +178,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="regenerate .idea" />
-    <option name="LAST_COMMIT_MESSAGE" value="regenerate .idea" />
+    <MESSAGE value="configure ruff and pyrefly." />
+    <MESSAGE value="update assorted-hooks.iml to mark src folder as non-test source and remove unused components" />
+    <option name="LAST_COMMIT_MESSAGE" value="update assorted-hooks.iml to mark src folder as non-test source and remove unused components" />
   </component>
 </project>
