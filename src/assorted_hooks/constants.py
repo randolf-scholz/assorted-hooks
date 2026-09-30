@@ -309,97 +309,99 @@ KNOWN_DUNDER_METHODS: frozenset[str] = frozenset({
 })  # fmt: skip
 
 
-KNOWN_DUNDER_ATTRIBUTES: frozenset[str] = frozenset({
-    # constants (https://docs.python.org/3/library/constants.html)
-    "__debug__",  # bool
-    # modules
-    "__all__",  # list[str]
-    "__version__",  # str
-    # 3.2.8. Callable types
-    # SEE: https://docs.python.org/3/reference/datamodel.html#callable-types
-    "__globals__",  # dict[str, Any]
-    "__closure__",  # tuple[Cell, ...]
-    "__doc__",  # str | None
-    "__name__",  # str
-    "__qualname__",  # str
-    "__module__",  # str
-    "__defaults__",  # tuple[Any, ...] | None
-    "__code__",  # CodeType
-    "__dict__",  # dict[str, Any]
-    "__annotations__",  # dict[str, type]
-    "__kwdefaults__",  # dict[str, Any] | None
-    "__type_params__",  # tuple[type, ...]
-    # methods
-    "__self__",  # object
-    "__func__",  # function
-    "__doc__",  # str | None
-    "__name__",  # str
-    "__module__",  # str
-    # 3.2.9. Modules
-    # SEE: https://docs.python.org/3/reference/datamodel.html#modules
-    "__name__",  # str
-    "__spec__",  # str
-    "__package__",  # str
-    "__loader__",  # str
-    "__path__",  # str
-    "__file__",  # str
-    "__cached__",  # str
-    "__doc__",  # str
-    "__annotations__",  # dict[str, type]
-    "__dict__",  # dict[str, Any]
-    # 3.2.10. Custom classes
-    # SEE: https://docs.python.org/3/reference/datamodel.html#custom-classes
-    "__name__",  # str
-    "__qualname__",  # str
-    "__module__",  # str
-    "__dict__",  # dict[str, Any]
-    "__bases__",  # tuple[type, ...]
-    "__doc__",  # str | None
-    "__annotations__",  # dict[str, type]
-    "__type_params__",  # tuple[type, ...]
-    "__static_attributes__",  # dict[str, type]
-    "__firstlineno__",  # int
-    "__mro__",  # tuple[type, ...]
-    # 3.2.11. Class instances
-    # SEE: https://docs.python.org/3/reference/datamodel.html#class-instances
-    "__class__",  # type
-    "__dict__",  # dict[str, Any]
-    # 3.3.2.4. __slots__
-    # SEE: https://docs.python.org/3/reference/datamodel.html#slots
-    "__slots__",  # tuple[str, ...] | None
-    # 3.3.10. Customizing positional arguments in class pattern matching
-    # SEE: https://docs.python.org/3/reference/datamodel.html#customizing-positional-arguments-in-class-pattern-matching
-    "__match_args__",  # Final[tuple[str, ...]]
-    # functools
-    # SEE: https://docs.python.org/3/library/functools.html
-    "__wrapped__",  # Callable[..., Any]
-    # tracebacks
-    # SEE: https://docs.python.org/3/library/traceback.html
-    "__traceback__",  # TracebackType
-    "__cause__",  # BaseException | None
-    "__context__",  # BaseException | None
-    "__suppress_context__",  # bool
-    "__notes__",  # str
-    # Generic Aliases
-    # SEE: https://docs.python.org/3/library/stdtypes.html
-    "__origin__",  # type
-    "__args__",  # tuple[type, ...]
-    "__parameters__",  # tuple[type, ...]
-    "__unpacked__",  # bool
-    "__typing_unpacked_tuple_args__",  # tuple[type, ...]
-    # sys
-    # SEE: https://docs.python.org/3/library/sys.html
-    "__stdin__",  # TextIOWrapper
-    "__stdout__",  # TextIOWrapper
-    "__stderr__",  # TextIOWrapper
-    # dataclasses
-    # SEE: https://docs.python.org/3/library/dataclasses.html
-    "__dataclass_fields__",  # dict[str, Field]
-    # types
-    # SEE: https://docs.python.org/3/library/types.html
-    "__orig_bases__",  # tuple[type, ...]
-    # weakref
-    # SEE: https://docs.python.org/3/library/weakref.html
-    "__weakref__",  # weakref
-})
+KNOWN_DUNDER_ATTRIBUTES: frozenset[str] = frozenset(
+    {
+        # constants (https://docs.python.org/3/library/constants.html)
+        "__debug__",  # bool
+        # modules
+        "__all__",  # list[str]
+        "__version__",  # str
+        # 3.2.8. Callable types
+        # SEE: https://docs.python.org/3/reference/datamodel.html#callable-types
+        "__globals__",  # dict[str, Any]
+        "__closure__",  # tuple[Cell, ...]
+        "__doc__",  # str | None
+        "__name__",  # str
+        "__qualname__",  # str
+        "__module__",  # str
+        "__defaults__",  # tuple[Any, ...] | None
+        "__code__",  # CodeType
+        "__dict__",  # dict[str, Any]
+        "__annotations__",  # dict[str, type]
+        "__kwdefaults__",  # dict[str, Any] | None
+        "__type_params__",  # tuple[type, ...]
+        # methods
+        "__self__",  # object
+        "__func__",  # function
+        "__doc__",  # str | None
+        "__name__",  # str
+        "__module__",  # str
+        # 3.2.9. Modules
+        # SEE: https://docs.python.org/3/reference/datamodel.html#modules
+        "__name__",  # str
+        "__spec__",  # str
+        "__package__",  # str
+        "__loader__",  # str
+        "__path__",  # str
+        "__file__",  # str
+        "__cached__",  # str
+        "__doc__",  # str
+        "__annotations__",  # dict[str, type]
+        "__dict__",  # dict[str, Any]
+        # 3.2.10. Custom classes
+        # SEE: https://docs.python.org/3/reference/datamodel.html#custom-classes
+        "__name__",  # str
+        "__qualname__",  # str
+        "__module__",  # str
+        "__dict__",  # dict[str, Any]
+        "__bases__",  # tuple[type, ...]
+        "__doc__",  # str | None
+        "__annotations__",  # dict[str, type]
+        "__type_params__",  # tuple[type, ...]
+        "__static_attributes__",  # dict[str, type]
+        "__firstlineno__",  # int
+        "__mro__",  # tuple[type, ...]
+        # 3.2.11. Class instances
+        # SEE: https://docs.python.org/3/reference/datamodel.html#class-instances
+        "__class__",  # type
+        "__dict__",  # dict[str, Any]
+        # 3.3.2.4. __slots__
+        # SEE: https://docs.python.org/3/reference/datamodel.html#slots
+        "__slots__",  # tuple[str, ...] | None
+        # 3.3.10. Customizing positional arguments in class pattern matching
+        # SEE: https://docs.python.org/3/reference/datamodel.html#customizing-positional-arguments-in-class-pattern-matching
+        "__match_args__",  # Final[tuple[str, ...]]
+        # functools
+        # SEE: https://docs.python.org/3/library/functools.html
+        "__wrapped__",  # Callable[..., Any]
+        # tracebacks
+        # SEE: https://docs.python.org/3/library/traceback.html
+        "__traceback__",  # TracebackType
+        "__cause__",  # BaseException | None
+        "__context__",  # BaseException | None
+        "__suppress_context__",  # bool
+        "__notes__",  # str
+        # Generic Aliases
+        # SEE: https://docs.python.org/3/library/stdtypes.html
+        "__origin__",  # type
+        "__args__",  # tuple[type, ...]
+        "__parameters__",  # tuple[type, ...]
+        "__unpacked__",  # bool
+        "__typing_unpacked_tuple_args__",  # tuple[type, ...]
+        # sys
+        # SEE: https://docs.python.org/3/library/sys.html
+        "__stdin__",  # TextIOWrapper
+        "__stdout__",  # TextIOWrapper
+        "__stderr__",  # TextIOWrapper
+        # dataclasses
+        # SEE: https://docs.python.org/3/library/dataclasses.html
+        "__dataclass_fields__",  # dict[str, Field]
+        # types
+        # SEE: https://docs.python.org/3/library/types.html
+        "__orig_bases__",  # tuple[type, ...]
+        # weakref
+        # SEE: https://docs.python.org/3/library/weakref.html
+        "__weakref__",  # weakref
+    }
+)
 r"""Dunder attributes."""
