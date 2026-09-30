@@ -2,7 +2,7 @@
 requires = ["uv_build>=0.12.19,<0.13"]
 build-backend = "uv_build"
 
-# region project configuration ---------------------------------------------------------
+
 [project]
 name = "assorted-hooks"
 version = "0.7.24"
@@ -60,9 +60,8 @@ check-tests-mirror-source = "assorted_hooks.check_tests_mirror_source:main"
 check-clean-interface = "assorted_hooks.standalone.check_clean_interface:main"
 check-requirements-used = "assorted_hooks.standalone.check_requirements_used:main"
 update-requirements = "assorted_hooks.standalone.update_requirements:main"
-# endregion project configuration ------------------------------------------------------
 
-# region development dependencies ------------------------------------------------------
+
 [dependency-groups]
 dev = [
     { include-group = "linters" },
@@ -92,9 +91,8 @@ tests = [
     "tox>=4.50.3",
     "tox-uv>=1.33.4",
 ]
-# endregion development dependencies ---------------------------------------------------
 
-# region ruff configuration ------------------------------------------------------------
+
 [tool.ruff]
 src = ["src/", "tests/"]
 indent-width = 4
@@ -231,56 +229,7 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 docstring-code-format = true
 docstring-code-line-length = "dynamic"
-# endregion ruff configuration ---------------------------------------------------------
 
-# region pylint configuration ----------------------------------------------------------
-[tool.pylint]
-[tool.pylint."MESSAGES CONTROL"]
-enable = ["useless-suppression"]
-disable = [
-    "C0103", # invalid-name  # Ridiculous...
-    "C0144", # non-ascii-name
-    "C0204", # bad-mcs-classmethod-argument
-    "C0301", # line-too-long
-    "E0611", # no-name-in-module
-    "E1101", # no-member  # FIXME: too many false positives
-    "E1102", # not-callable  # FIXME: too many false positives (torch)
-    "E1121", # too-many-function-args  # FIXME: too many false positives
-    "E1123", # unexpected-keyword-arg  # FIXME: too many false positives
-    "E1130", # invalid-unary-operand-type
-    "E1139", # invalid-metaclass  # FIXME: too many false positives
-    "R0801", # similar lines
-    "R0902", # too-many-instance-attributes
-    "R0903", # too-few-public-methods
-    "R0911", # too-many-return-statements
-    "R0913", # too-many-arguments
-    "R0914", # too-many-locals
-    "R0915", # too-many-statements
-    # "W0221",  # arguments-differ
-    # "W0511",  # (fixme) (todos)
-    "W1113", # keyword-arg-before-vararg
-    "W2301", # unnecessary-ellipsis
-]
-fail-on = [
-    "C0116", # missing-function-docstring
-]
-fail-under = 9.0
-
-[tool.pylint.REPORTS]
-# Set the output format. Available formats are text, parseable, colorized, json and
-# msvs (visual studio). You can also give a reporter class, e.g. mypackage.mymodule.MyReporterClass
-output-format = "colorized"
-
-[tool.pylint.FORMAT]
-max-line-length = 120
-
-[tool.pylint.TYPECHECK]
-# List of members which are set dynamically and missed by pylint inference system, and so shouldn't
-# trigger E1101 when accessed. Python regular expressions are accepted.
-generated-members = ["numpy.*", "torch.*"]
-# endregion pylint configuration -------------------------------------------------------
-
-# region mypy configuration ------------------------------------------------------------
 [tool.mypy]
 files = ["src/", "tests/"]
 platform = "linux"
@@ -338,9 +287,7 @@ show_error_context = true
 [[tool.mypy.overrides]]
 module = ["github.*"]
 ignore_missing_imports = true
-# endregion mypy configuration ---------------------------------------------------------
 
-# region pyright configuration ---------------------------------------------------------
 [tool.pyright]
 venv = ".venv"
 venvPath = "."
@@ -374,21 +321,13 @@ reportMissingTypeArgument = false
 reportUnknownParameterType = false
 reportMissingTypeStubs = false
 reportConstantRedefinition = false  # we use uppercase for matrices/tensors.
-# endregion pyright configuration ------------------------------------------------------
 
-# region pytest configuration ----------------------------------------------------------
 [tool.pytest]
-# NOTE: currently unused https://docs.pytest.org/en/stable/reference/customize.html
-
-[tool.pytest.ini_options]
-minversion = "8.0"
+minversion = "9.0"
 testpaths = ["src/", "tests/"]
-addopts = [
-    "--doctest-modules",
-]
+addopts = ["--doctest-modules"]
 markers = []
 required_plugins = []
-# endregion pytest configuration -------------------------------------------------------
 
 [tool.tombi]
 [tool.tombi.format.rules]
