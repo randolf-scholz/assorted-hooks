@@ -78,7 +78,7 @@ def is_at_top(node: Assign | AnnAssign, /, *, module: Module) -> bool:
         raise ValueError("Expected at least one node in the body.")
 
     start = isinstance(body[0], Expr)
-    return all(is_future_import(_node) for _node in body[start:loc])
+    return all(is_future_import(n) for n in body[start:loc])
 
 
 def get_duplicate_keys(keys: list[str], /) -> set[str]:

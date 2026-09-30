@@ -70,10 +70,9 @@ def get_local_packages() -> dict[NormalizedName, tuple[str, str, str]]:
 
 @deprecated("Option to check local packages was removed")
 async def get_pypi_fallback(pkg: str, /) -> JSON:
-    url = f"https://pypi.org/pypi/{pkg}/json"
     loop = asyncio.get_event_loop()
-    getter = partial(urlopen, timeout=TIMEOUT)
-    response = await loop.run_in_executor(None, getter, url)
+    getter = partial(urlopen, f"https://pypi.org/pypi/{pkg}/json", timeout=TIMEOUT)
+    response = await loop.run_in_executor(None, getter)
     match response.status:
         case 200:
             return json.load(response)

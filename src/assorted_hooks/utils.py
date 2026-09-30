@@ -75,8 +75,7 @@ def yield_deps(pyproject: dict, pattern: str | Pattern = "", /) -> Iterator[str]
     regex = re.compile(pattern)
 
     # parse [project.dependencies]
-    main_deps = pyproject.get("project", {}).get("dependencies", [])
-    yield from main_deps
+    yield from pyproject.get("project", {}).get("dependencies", [])
 
     # parse [project.optional-dependencies]
     optional_deps = pyproject.get("project", {}).get("optional-dependencies", {})
@@ -279,7 +278,6 @@ def get_path_relative_to_git_root(path: Path, /) -> Path:
     r"""Get the relative path to the git root directory.
 
     Raises:
-        RuntimeError: If the git root directory could not be determined.
         ValueError: If the path is not inside the git repository.
     """
     output = subprocess.check_output(

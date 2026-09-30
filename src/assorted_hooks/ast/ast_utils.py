@@ -513,7 +513,7 @@ class FunctionCTX:
 
     @property
     def kind(self) -> FunctionKind:
-        r"""Get the function kind."""
+        r"""The function kind."""
         return FunctionKind.from_context(self.context)
 
 
@@ -565,7 +565,7 @@ class OverloadCTX:
 
     @property
     def kind(self) -> FunctionKind:
-        r"""Get the function kind."""
+        r"""The function kind."""
         return FunctionKind.from_context(self.context)
 
 

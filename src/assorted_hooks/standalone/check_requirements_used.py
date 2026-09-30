@@ -227,8 +227,7 @@ def yield_deps(pyproject: dict, pattern: str | Pattern = "", /) -> Iterator[str]
     regex = re.compile(pattern)
 
     # parse [project.dependencies]
-    main_deps = pyproject.get("project", {}).get("dependencies", [])
-    yield from main_deps
+    yield from pyproject.get("project", {}).get("dependencies", [])
 
     # parse [project.optional-dependencies]
     optional_deps = pyproject.get("project", {}).get("optional-dependencies", {})
